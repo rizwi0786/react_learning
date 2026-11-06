@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-004 · React vs Vanilla JavaScript</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-004</span><span>Module 2: React Introduction</span><span>Lesson 4</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-003</b></span></div>
+<h1>React vs Vanilla JavaScript</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-004-REV</button></div>
+
+<main id="det">
+<h2>1 · Visual Introduction</h2>
+<p>Two ways to get coffee: <b>vanilla JS</b> is like telling the barista every step ("grind beans, heat milk, pour..."). <b>React</b> is like ordering "one latte" and letting the barista handle the steps.</p>
+<pre class="diagram">
+  VANILLA (imperative)                    REACT (declarative)
+ +-----------------------------+        +-----------------------------+
+ | 1. find &lt;p id="count"&gt;      |        | "count is {count}"          |
+ | 2. find &lt;button&gt;            |        | onClick -&gt; setCount(c + 1)  |
+ | 3. add click listener       |        |                             |
+ | 4. count = count + 1        |        |  React: re-render + patch   |
+ | 5. p.textContent = count    |        |                             |
+ +-----------------------------+        +-----------------------------+
+   You own data AND the DOM.              You own data; React owns DOM.
+</pre>
+
+<h2>2 · Why Do We Need It?</h2>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>// Vanilla: adding a "-1" and a "Reset" means
+// remembering to update the text in 3 handlers
+plus.onclick  = () =&gt; { count++; p.textContent = count; };
+minus.onclick = () =&gt; { count--; p.textContent = count; };
+reset.onclick = () =&gt; { count = 0; /* forgot p! */ };</pre></div>
+<div><span class="good">Fixed</span><pre>// React: handlers only change data
+&lt;button onClick={() =&gt; setCount(count + 1)}&gt;+1&lt;/button&gt;
+&lt;button onClick={() =&gt; setCount(count - 1)}&gt;-1&lt;/button&gt;
+&lt;button onClick={() =&gt; setCount(0)}&gt;Reset&lt;/button&gt;
+&lt;p&gt;{count}&lt;/p&gt; // one place shows it, always right</pre></div>
+</div>
+
+<h2>3 · Core Concept</h2>
+<ul>
+<li><b>Vanilla JS</b> (plain JavaScript, no library) — you select elements and change them yourself.</li>
+<li><b>React</b> — you keep data in <b>state</b> (<code>useState</code>) and return JSX; React updates the DOM.</li>
+<li><b>Event handling</b> — vanilla: <code>addEventListener('click', fn)</code>; React: <code>onClick={fn}</code> (camelCase prop).</li>
+<li><b>Re-render</b> (run the component again) — happens after a state setter call; vanilla has no such concept.</li>
+<li><b>Reuse</b> — vanilla needs ids/classes per copy; React just renders <code>&lt;Counter /&gt;</code> twice, each with its own state.</li>
+<li><b>Trade-off</b> — vanilla has zero dependencies and is fine for tiny widgets; React shines as UI and team size grow.</li>
+</ul>
+
+<h2>4 · Syntax</h2>
+<div class="tablewrap"><table>
+<tr><th>Task</th><th>Vanilla JS</th><th>React</th></tr>
+<tr><td>Store a value</td><td><code>let count = 0</code></td><td><code>const [count, setCount] = useState(0)</code></td></tr>
+<tr><td>Show it</td><td><code>p.textContent = count</code></td><td><code>&lt;p&gt;{count}&lt;/p&gt;</code></td></tr>
+<tr><td>Handle click</td><td><code>btn.addEventListener('click', fn)</code></td><td><code>&lt;button onClick={fn}&gt;</code></td></tr>
+<tr><td>Change it</td><td><code>count++</code> + update DOM</td><td><code>setCount(c =&gt; c + 1)</code></td></tr>
+<tr><td>CSS class</td><td><code>el.className = 'x'</code></td><td><code>className="x"</code></td></tr>
+</table></div>
+
+<h2>5 · Practical Example</h2>
+<h3>Vanilla counter — index.html</h3>
+<pre><code>&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;h2&gt;Coffee cups today&lt;/h2&gt;
+    &lt;p id="count"&gt;0&lt;/p&gt;
+    &lt;button id="minus"&gt;-1&lt;/button&gt;
+    &lt;button id="plus"&gt;+1&lt;/button&gt;
+    &lt;button id="reset"&gt;Reset&lt;/button&gt;
+    &lt;script&gt;
+      let count = 0;
+      const p = document.getElementById('count');
+
+      function update() {
+        p.textContent = count;
+        p.style.color = count &gt; 3 ? 'red' : 'inherit';
+      }
+
+      document.getElementById('plus').addEventListener('click', () =&gt; {
+        count++;
+        update();
+      });
+      document.getElementById('minus').addEventListener('click', () =&gt; {
+        if (count &gt; 0) count--;
+        update();
+      });
+      document.getElementById('reset').addEventListener('click', () =&gt; {
+        count = 0;
+        update();
+      });
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>React counter — src/App.jsx (Vite)</h3>
+<pre><code>import { useState } from 'react';
+
+function Counter({ label }) {
+  const [count, setCount] = useState(0);
+
+  console.log('render', label, count); // see Execution Flow note
+
+  return (
+    &lt;section&gt;
+      &lt;h2&gt;{label}&lt;/h2&gt;
+      &lt;p style={{ color: count &gt; 3 ? 'red' : 'inherit' }}&gt;{count}&lt;/p&gt;
+      &lt;button onClick={() =&gt; setCount((c) =&gt; Math.max(0, c - 1))}&gt;-1&lt;/button&gt;
+      &lt;button onClick={() =&gt; setCount((c) =&gt; c + 1)}&gt;+1&lt;/button&gt;
+      &lt;button onClick={() =&gt; setCount(0)}&gt;Reset&lt;/button&gt;
+    &lt;/section&gt;
+  );
+}
+
+export default function App() {
+  return (
+    &lt;main&gt;
+      &lt;Counter label="Coffee cups today" /&gt;
+      &lt;Counter label="Glasses of water" /&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<p>Notice: two independent counters cost one extra line in React. In vanilla you would duplicate the HTML and all the ids and listeners.</p>
+
+<h2>6 · Expected Output</h2>
+<p>After clicking +1 on coffee five times and +1 on water twice:</p>
+<div class="ui">
+<h3 style="margin:0">Coffee cups today</h3><p style="color:var(--bad);margin:4px 0">5</p><p><button>-1</button> <button>+1</button> <button>Reset</button></p>
+<h3 style="margin:10px 0 0">Glasses of water</h3><p style="margin:4px 0">2</p><p><button>-1</button> <button>+1</button> <button>Reset</button></p>
+</div>
+<p>Console on first load (development, with <code>&lt;StrictMode&gt;</code> in main.jsx — the default Vite template):</p>
+<pre class="output">render Coffee cups today 0
+render Coffee cups today 0
+render Glasses of water 0
+render Glasses of water 0</pre>
+<p>Strict Mode calls components twice in <b>development only</b> to catch impure code (React 19 dims the second log in DevTools). In a production build each line prints once.</p>
+
+<h2>7 · Execution Flow</h2>
+<pre class="diagram">
+ VANILLA click +1
+   listener -&gt; count++ -&gt; update() -&gt; p.textContent = 1   (you did all of it)
+
+ REACT click +1
+   onClick
+     |
+   setCount(c =&gt; c + 1)        queue update for THIS Counter only
+     |
+   React re-runs Counter("Coffee...")   count = 1
+     |
+   new JSX: &lt;p&gt;1&lt;/p&gt;  vs old  &lt;p&gt;0&lt;/p&gt;
+     |
+   diff -&gt; change only that text node
+     |
+   Water counter untouched (its own state)
+</pre>
+
+<h2>8 · Real-World Application</h2>
+<ul>
+<li><b>Shop quantity picker</b> — the +/- stepper on every cart line is a reusable counter.</li>
+<li><b>Food delivery</b> — item counts per dish; each dish has its own state.</li>
+<li><b>Chat reactions</b> — like/heart counters on each message.</li>
+<li><b>When vanilla is fine</b> — a single "copy to clipboard" button on a static blog doesn't need React.</li>
+</ul>
+
+<h2>9 · Common Mistakes</h2>
+<h3>Mistake 1: using a normal variable in React</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>function Counter() {
+  let count = 0;
+  return (
+    &lt;button onClick={() =&gt; count++}&gt;{count}&lt;/button&gt;
+  ); // no re-render; and reset to 0 each render
+}</pre></div>
+<div><span class="good">Fixed</span><pre>function Counter() {
+  const [count, setCount] = useState(0);
+  return (
+    &lt;button onClick={() =&gt; setCount(count + 1)}&gt;{count}&lt;/button&gt;
+  );
+}</pre></div>
+</div>
+<h3>Mistake 2: expecting state to change immediately</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>function handle() {
+  setCount(count + 1);
+  console.log(count); // still old value
+  setCount(count + 1); // still uses old value -&gt; +1 total
+}</pre></div>
+<div><span class="good">Fixed</span><pre>function handle() {
+  setCount((c) =&gt; c + 1);
+  setCount((c) =&gt; c + 1); // +2 total
+}
+// read the new value in the next render</pre></div>
+</div>
+<h3>Mistake 3: vanilla habits in JSX</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>&lt;button class="btn" onclick="add()"&gt;+1&lt;/button&gt;
+// class -&gt; warning; onclick string -&gt; not how React works</pre></div>
+<div><span class="good">Fixed</span><pre>&lt;button className="btn" onClick={add}&gt;+1&lt;/button&gt;</pre></div>
+</div>
+
+<h2>10 · Practice</h2>
+<h3>Beginner 1</h3>
+<p>In vanilla JS, write a click counter for a "Likes" button.</p>
+<details><summary>Solution</summary><pre><code>let likes = 0;
+const btn = document.getElementById('like');
+btn.addEventListener('click', () =&gt; {
+  likes++;
+  btn.textContent = 'Likes: ' + likes;
+});</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Write the same in React.</p>
+<details><summary>Solution</summary><pre><code>function Like() {
+  const [likes, setLikes] = useState(0);
+  return &lt;button onClick={() =&gt; setLikes(likes + 1)}&gt;Likes: {likes}&lt;/button&gt;;
+}</code></pre></details>
+<h3>Intermediate 1</h3>
+<p>Add a <code>step</code> prop so <code>&lt;Counter step={5} /&gt;</code> adds 5.</p>
+<details><summary>Solution</summary><pre><code>function Counter({ step = 1 }) {
+  const [count, setCount] = useState(0);
+  return &lt;button onClick={() =&gt; setCount((c) =&gt; c + step)}&gt;{count}&lt;/button&gt;;
+}</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Show "Limit reached" and disable +1 when the counter hits 10.</p>
+<details><summary>Solution</summary><pre><code>const atLimit = count &gt;= 10;
+return (
+  &lt;&gt;
+    &lt;button disabled={atLimit} onClick={() =&gt; setCount((c) =&gt; c + 1)}&gt;+1&lt;/button&gt;
+    {atLimit &amp;&amp; &lt;p&gt;Limit reached&lt;/p&gt;}
+  &lt;/&gt;
+);</code></pre></details>
+<h3>Challenge</h3>
+<p>A pizza order: Small/Medium/Large quantity counters and a total price line (S 199, M 299, L 399), in React.</p>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+
+const sizes = [
+  { id: 'S', price: 199 },
+  { id: 'M', price: 299 },
+  { id: 'L', price: 399 },
+];
+
+export default function App() {
+  const [qty, setQty] = useState({ S: 0, M: 0, L: 0 });
+
+  function change(id, delta) {
+    setQty((q) =&gt; ({ ...q, [id]: Math.max(0, q[id] + delta) }));
+  }
+
+  const total = sizes.reduce((sum, s) =&gt; sum + s.price * qty[s.id], 0);
+
+  return (
+    &lt;div&gt;
+      {sizes.map((s) =&gt; (
+        &lt;p key={s.id}&gt;
+          {s.id} (Rs {s.price}):
+          &lt;button onClick={() =&gt; change(s.id, -1)}&gt;-&lt;/button&gt;
+          {qty[s.id]}
+          &lt;button onClick={() =&gt; change(s.id, 1)}&gt;+&lt;/button&gt;
+        &lt;/p&gt;
+      ))}
+      &lt;h3&gt;Total: Rs {total}&lt;/h3&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>11 · Quick Revision</h2>
+<ul>
+<li>Vanilla: you change data and the DOM yourself.</li>
+<li>React: you change state; React updates the DOM.</li>
+<li><code>onClick={fn}</code> replaces <code>addEventListener</code>; <code>className</code> replaces <code>class</code>.</li>
+<li>Each component instance has its own state.</li>
+<li>State updates show in the next render; use <code>c =&gt; c + 1</code> for back-to-back updates.</li>
+<li>Strict Mode double-renders in dev only.</li>
+<li>Tiny static widgets: vanilla is fine. Growing apps: React.</li>
+</ul>
+
+<h2>12 · Interview Corner</h2>
+<details><summary>Why can't a normal <code>let</code> variable replace useState?</summary><p>Changing it doesn't tell React to re-render, and it is reset every time the function runs. State is kept by React between renders.</p></details>
+<details><summary>When would you choose vanilla JS over React?</summary><p>Small, mostly static pages with a few interactions, where adding a library and build step isn't worth it.</p></details>
+<details><summary>Why do my console logs appear twice?</summary><p>In development, <code>&lt;StrictMode&gt;</code> renders components twice to expose impure code. Production builds render once.</p></details>
+<details><summary>What is the updater form of setState?</summary><p><code>setCount(c =&gt; c + 1)</code> — React passes the latest queued value, so multiple updates in one event stack correctly.</p></details>
+
+<h2>13 · Related Lessons</h2>
+<div class="related"><a href="INTRO-001.html">INTRO-001 · What is React?</a><a href="INTRO-002.html">INTRO-002 · Why React?</a><a href="INTRO-003.html">INTRO-003 · Problems with DOM manipulation</a><a href="INTRO-004.html#rev">INTRO-004 · Revision</a></div>
+</main>
+
+<main id="rev" class="rev" hidden>
+<h2>A · Concept in 30 Seconds</h2>
+<div class="callout">Vanilla JS: you hold the data and edit the DOM by hand after every change. React: you hold the data in state and describe the UI; React re-renders and patches the DOM. The counter shows it: React handlers only change numbers.</div>
+
+<h2>B · Important Syntax</h2>
+<pre><code>// vanilla
+let count = 0;
+btn.addEventListener('click', () =&gt; { count++; p.textContent = count; });
+
+// React
+const [count, setCount] = useState(0);
+&lt;button onClick={() =&gt; setCount((c) =&gt; c + 1)}&gt;{count}&lt;/button&gt;</code></pre>
+
+<h2>C · Must-Know Points</h2>
+<ul>
+<li>React events are camelCase props: <code>onClick</code>, <code>onChange</code>.</li>
+<li>Pass a function, don't call it: <code>onClick={add}</code>, not <code>onClick={add()}</code>.</li>
+<li>Use <code>className</code>, not <code>class</code>.</li>
+<li>Local <code>let</code> variables reset on every render.</li>
+<li>State is per component instance.</li>
+<li>State reads inside a handler show the value from that render.</li>
+<li>Updater function for sequential updates.</li>
+<li>Strict Mode double render: dev only.</li>
+</ul>
+
+<h2>D · Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>How do you handle a click in React vs vanilla?</summary><p>Vanilla: <code>el.addEventListener('click', fn)</code>. React: <code>&lt;button onClick={fn}&gt;</code>.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Two <code>&lt;Counter /&gt;</code> components — do they share count?</summary><p>No. Each rendered instance gets its own state. To share, lift state to the parent and pass it down.</p></details>
+<h3>Advanced</h3>
+<details><summary>Does React update the DOM synchronously inside setCount?</summary><p>No. It queues the update; React 18+ batches updates (even in timeouts and promises) and re-renders after the handler finishes.</p></details>
+<h3>Tricky</h3>
+<details><summary>Is React always faster than vanilla JS?</summary><p>No. Hand-tuned vanilla code can be faster for a single widget. React adds overhead but makes complex UIs correct and maintainable.</p></details>
+
+<h2>E · Output-Based Questions</h2>
+<pre><code>const [n, setN] = useState(0);
+function click() {
+  setN(n + 5);
+  setN((c) =&gt; c + 1);
+}
+// one click</code></pre>
+<details><summary>Answer</summary><pre class="output">6</pre><p>First queues "set to 5", then the updater gets 5 and returns 6.</p></details>
+
+<h2>F · Debugging Questions</h2>
+<pre><code>function Counter() {
+  const [count, setCount] = useState(0);
+  return &lt;button onClick={setCount(count + 1)}&gt;{count}&lt;/button&gt;;
+}
+// Error: Too many re-renders</code></pre>
+<details><summary>Answer</summary><p><code>setCount</code> is called during render, which triggers another render, forever. Fix: <code>onClick={() =&gt; setCount(count + 1)}</code>.</p></details>
+
+<h2>G · Scenario-Based Questions</h2>
+<details><summary>A restaurant menu page lists 40 dishes, each with a +/- quantity. Vanilla or React?</summary><p>React: one <code>QuantityStepper</code> component reused 40 times, each with its own count, plus a derived cart total. Vanilla would need 40 sets of ids/listeners.</p></details>
+
+<h2>H · Coding Challenges</h2>
+<p>Build a "Votes" widget for a movie with Upvote/Downvote and a score that turns green above 0, red below 0.</p>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+
+export default function Votes() {
+  const [score, setScore] = useState(0);
+  const color = score &gt; 0 ? 'green' : score &lt; 0 ? 'red' : 'inherit';
+  return (
+    &lt;div&gt;
+      &lt;button onClick={() =&gt; setScore((s) =&gt; s + 1)}&gt;Upvote&lt;/button&gt;
+      &lt;strong style={{ color }}&gt; {score} &lt;/strong&gt;
+      &lt;button onClick={() =&gt; setScore((s) =&gt; s - 1)}&gt;Downvote&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>I · Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Point</th><th>Vanilla JS</th><th>React</th></tr>
+<tr><td>Who updates DOM</td><td>You</td><td>React</td></tr>
+<tr><td>Data storage</td><td>Variables (+ DOM)</td><td>State</td></tr>
+<tr><td>Reuse</td><td>Copy HTML, new ids</td><td>Render component again</td></tr>
+<tr><td>Setup</td><td>None</td><td>Vite build tool</td></tr>
+<tr><td>Best for</td><td>Tiny widgets</td><td>Interactive, growing apps</td></tr>
+</table></div>
+
+<h2>J · Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Vanilla</th><th>React</th></tr>
+<tr><td><code>let x = 0</code></td><td><code>const [x, setX] = useState(0)</code></td></tr>
+<tr><td><code>el.textContent = x</code></td><td><code>{x}</code> in JSX</td></tr>
+<tr><td><code>addEventListener('click')</code></td><td><code>onClick={fn}</code></td></tr>
+<tr><td><code>class="a"</code></td><td><code>className="a"</code></td></tr>
+<tr><td><code>x++</code></td><td><code>setX(c =&gt; c + 1)</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

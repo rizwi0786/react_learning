@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-016 · Common JSX errors</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-016</span><span>Module 4: JSX Fundamentals</span><span>Lesson 16</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-015</b></span></div>
+<h1>Common JSX errors</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-016-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a shop order going wrong at two points: the <b>order form</b> is filled badly (rejected at the counter), or the <b>delivery</b> fails on the road.</li>
+<li>JSX errors work the same way. Some are caught while Vite compiles your file (<b>compile-time / syntax errors</b>). Others only appear when the code runs in the browser (<b>runtime errors</b>).</li>
+<li>A third group are <b>warnings</b>: the app works but React tells you, in development only, that something is wrong.</li>
+</ul>
+<pre class="diagram">
+  App.jsx ──► [ COMPILE ]  ──► [ RUN in browser ] ──► [ React DEV checks ]
+                 │                    │                       │
+         Syntax errors          Runtime errors           Warnings (dev only)
+         red Vite overlay       red overlay / blank      yellow/red console text
+         page won't load        part of the app breaks   app still works
+                 │                    │                       │
+   • two roots             • object as child          • missing key
+   • unclosed tag          • x is undefined (.map)    • class / for
+   • if inside { }         • too many re-renders      • unknown lowercase tag
+   • JSX in .js file       • style as string          • onClick is a string
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Beginners lose hours on a handful of repeated errors.</li>
+<li>Most React error messages already tell you the fix if you know how to read them.</li>
+<li>Knowing compile vs runtime vs warning tells you <b>where</b> to look: your syntax, your data, or your habits.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (guessing)</span><pre><code>// Screen is blank. Console:
+// Uncaught Error: Objects are not valid
+// as a React child (found: object with
+// keys {name, price}).
+//
+// Beginner: "React is broken?"
+// Deletes code until it works...</code></pre></div>
+<div><span class="good">After (reading the message)</span><pre><code>// "Objects are not valid as a React child"
+// → I put an object inside { }.
+// "keys {name, price}" → it's a dish object.
+// Fix:
+&lt;p&gt;{dish.name} - ₹{dish.price}&lt;/p&gt;
+// Done in 10 seconds.</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Read the first line</b> of the error and the <b>file:line</b> it points to.</li>
+<li><b>Compile errors</b> (Vite error overlay): broken JSX syntax. Nothing runs until fixed.</li>
+<li><b>Runtime errors</b>: syntax is fine but a value is wrong (undefined, object, function).</li>
+<li><b>Warnings</b>: printed in development builds only; production builds strip them.</li>
+<li>Exact compile-error wording depends on the tool (Vite 8 uses Oxc via the React plugin; Babel and ESLint word things slightly differently). The meaning is the same.</li>
+<li>Top 10 to know:
+ <ol>
+ <li>Adjacent JSX elements (two roots)</li>
+ <li>Unclosed tag / mismatched closing tag</li>
+ <li>Statement (<code>if</code>, <code>for</code>) inside <code>{ }</code></li>
+ <li>JSX inside a <code>.js</code> file (Vite)</li>
+ <li>Objects are not valid as a React child</li>
+ <li>Functions are not valid as a React child</li>
+ <li>Cannot read properties of undefined (reading 'map')</li>
+ <li>Too many re-renders (<code>onClick={fn()}</code>)</li>
+ <li><code>style</code> given a string</li>
+ <li>Lowercase component name</li>
+ </ol></li>
+<li>Silent bugs (no error at all): <code>{count &amp;&amp; ...}</code> showing <code>0</code>; arrow function with <code>{ }</code> and no <code>return</code>.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// ---------- The 10 fixes at a glance ----------
+// 1. Two roots          → wrap
+return &lt;&gt;&lt;h1 /&gt;&lt;p /&gt;&lt;/&gt;;
+
+// 2. Unclosed tag       → close it
+&lt;input /&gt;  &lt;li&gt;Tea&lt;/li&gt;
+
+// 3. if inside JSX      → ternary / &amp;&amp;
+{isVeg ? 'Veg' : 'Non-veg'}
+
+// 4. JSX in .js         → rename the file
+App.js  →  App.jsx
+
+// 5. Object as child    → pick a field
+{user.name}            // not {user}
+
+// 6. Function as child  → call it as a component
+&lt;Header /&gt;             // not {Header}
+
+// 7. undefined.map      → default value
+const [movies, setMovies] = useState([]);
+
+// 8. Too many re-renders → pass a function
+onClick={() =&gt; setQty(qty + 1)}   // not onClick={setQty(qty + 1)}
+
+// 9. style string       → style object
+style={{ color: 'red' }}
+
+// 10. lowercase name    → Capitalise
+function CartBadge() {}  &lt;CartBadge /&gt;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A movie watch-list with every classic bug fixed. Bug numbers in the comments match the list above.</p>
+<pre><code>// src/App.jsx  (file must end in .jsx — bug 4)
+import { useState, useEffect } from 'react';
+
+// Bug 10: component names start with a capital letter
+function MovieRow({ movie, onRemove }) {
+  return (
+    &lt;li&gt;
+      {/* Bug 5: render fields, not the whole object */}
+      {movie.title} ({movie.year}) · ⭐ {movie.rating}{' '}
+      {/* Bug 8: pass a function, don't call it */}
+      &lt;button onClick={() =&gt; onRemove(movie.id)}&gt;Remove&lt;/button&gt;
+    &lt;/li&gt;
+  );
+}
+
+function Header() {
+  return &lt;h1&gt;My Watch-list&lt;/h1&gt;;
+}
+
+export default function App() {
+  // Bug 7: start with [] so .map never runs on undefined
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() =&gt; {
+    // Fake API: data arrives after 1 second
+    const timer = setTimeout(() =&gt; {
+      setMovies([
+        { id: 1, title: 'Inception', year: 2010, rating: 8.8 },
+        { id: 2, title: 'Lagaan', year: 2001, rating: 8.1 },
+        { id: 3, title: 'Up', year: 2009, rating: 8.3 },
+      ]);
+      setLoading(false);
+    }, 1000);
+    return () =&gt; clearTimeout(timer);
+  }, []);
+
+  function remove(id) {
+    setMovies(movies.filter((m) =&gt; m.id !== id));
+  }
+
+  // Bug 1: one root (Fragment)
+  return (
+    &lt;&gt;
+      {/* Bug 6: render the component, not the function */}
+      &lt;Header /&gt;
+
+      {/* Bug 3: ternary instead of if */}
+      {loading ? (
+        &lt;p&gt;Loading movies...&lt;/p&gt;
+      ) : (
+        &lt;ul&gt;
+          {movies.map((m) =&gt; (
+            &lt;MovieRow key={m.id} movie={m} onRemove={remove} /&gt;
+          ))}
+        &lt;/ul&gt;
+      )}
+
+      {/* Silent bug: 0 &amp;&amp; ... would print "0". Compare to a boolean. */}
+      {!loading &amp;&amp; movies.length === 0 &amp;&amp; &lt;p&gt;List is empty.&lt;/p&gt;}
+
+      {/* Bug 9: style is an object. Bug 2: every tag closed. */}
+      &lt;p style={{ color: 'gray', fontSize: 13 }}&gt;
+        {movies.length} movies saved
+        &lt;br /&gt;
+        Tip: open the console to see warnings in dev mode.
+      &lt;/p&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<p>First second:</p>
+<div class="ui">
+<h3>My Watch-list</h3>
+<p>Loading movies...</p>
+<p>0 movies saved<br>Tip: open the console to see warnings in dev mode.</p>
+</div>
+<p>After 1 second:</p>
+<div class="ui">
+<h3>My Watch-list</h3>
+<ul>
+<li>Inception (2010) · ⭐ 8.8 <button>Remove</button></li>
+<li>Lagaan (2001) · ⭐ 8.1 <button>Remove</button></li>
+<li>Up (2009) · ⭐ 8.3 <button>Remove</button></li>
+</ul>
+<p>3 movies saved<br>Tip: open the console to see warnings in dev mode.</p>
+</div>
+<p>Remove all three → "List is empty." and "0 movies saved". Console stays clean.</p>
+<p>If you put back bug 5 (<code>{movie}</code> instead of fields), the console shows:</p>
+<pre class="output">Uncaught Error: Objects are not valid as a React child (found: object with keys {id, title, year, rating}). If you meant to render a collection of children, use an array instead.</pre>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ How to debug any JSX error (follow top to bottom)
+
+ 1. Where did it appear?
+        │
+        ├─ Vite overlay "Failed to parse" / "Unexpected token"
+        │     → COMPILE error. Go to file:line:column shown.
+        │     → Check: two roots? unclosed tag? if in { }? .js extension?
+        │
+        ├─ Red error in console, part of screen blank
+        │     → RUNTIME error. Read the message:
+        │        "Objects are not valid..."      → rendering an object
+        │        "Functions are not valid..."    → {Comp} instead of &lt;Comp /&gt;
+        │        "reading 'map'"                 → array is undefined
+        │        "Too many re-renders"           → setState called during render
+        │
+        └─ Warning text, app still works
+              → DEV WARNING. Fix before shipping:
+                 "unique key"     → add key
+                 "Invalid DOM property `class`" → className
+                 "tag &lt;cart&gt; is unrecognized" → Capitalise
+        │
+ 2. Fix → save → Vite hot-reloads (HMR) → check console again
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Weather app</b>: API returns <code>{ temp, city }</code>; rendering <code>{data}</code> crashes. Render <code>{data.temp}</code>.</li>
+<li><b>Shop product page</b>: products load after a fetch; <code>products.map</code> on <code>undefined</code> crashes until you default to <code>[]</code>.</li>
+<li><b>Chat app</b>: unread badge <code>{unread &amp;&amp; &lt;Badge /&gt;}</code> shows a stray <code>0</code>; use <code>unread &gt; 0 &amp;&amp;</code>.</li>
+<li><b>Food delivery cart</b>: <code>onClick={addItem(dish)}</code> adds on every render → "Too many re-renders".</li>
+<li><b>Migrating an old CRA project to Vite</b>: <code>.js</code> files with JSX must become <code>.jsx</code>.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Error 1: Objects are not valid as a React child</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const order = { dish: 'Biryani', qty: 2 };
+return &lt;p&gt;Order: {order}&lt;/p&gt;;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>return &lt;p&gt;Order: {order.dish} × {order.qty}&lt;/p&gt;;
+// Debug view: {JSON.stringify(order)}</code></pre></div>
+</div>
+<h3>Error 2: Too many re-renders</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const [qty, setQty] = useState(1);
+return (
+  &lt;button onClick={setQty(qty + 1)}&gt;
+    +1
+  &lt;/button&gt;
+);
+// setQty runs DURING render →
+// render again → setQty → ... loop
+// "Too many re-renders. React limits the
+//  number of renders to prevent an
+//  infinite loop."</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const [qty, setQty] = useState(1);
+return (
+  &lt;button onClick={() =&gt; setQty(qty + 1)}&gt;
+    +1
+  &lt;/button&gt;
+);
+// Arrow function runs only on click</code></pre></div>
+</div>
+<h3>Error 3: Cannot read properties of undefined (reading 'map')</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const [items, setItems] = useState();
+// first render: items === undefined
+return &lt;ul&gt;{items.map((i) =&gt; (
+  &lt;li key={i.id}&gt;{i.name}&lt;/li&gt;
+))}&lt;/ul&gt;;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const [items, setItems] = useState([]);
+return &lt;ul&gt;{items.map((i) =&gt; (
+  &lt;li key={i.id}&gt;{i.name}&lt;/li&gt;
+))}&lt;/ul&gt;;
+// Or guard: items?.map(...)</code></pre></div>
+</div>
+<h3>Error 4: Functions are not valid as a React child</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Footer() { return &lt;p&gt;© Shop&lt;/p&gt;; }
+return &lt;div&gt;{Footer}&lt;/div&gt;;
+// Dev warning: Functions are not valid
+// as a React child. This may happen if
+// you return Footer instead of &lt;Footer /&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Footer() { return &lt;p&gt;© Shop&lt;/p&gt;; }
+return &lt;div&gt;&lt;Footer /&gt;&lt;/div&gt;;</code></pre></div>
+</div>
+<h3>Error 5: Lowercase component</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function cartBadge() { return &lt;b&gt;3&lt;/b&gt;; }
+return &lt;cartBadge /&gt;;
+// Warning: The tag &lt;cartBadge&gt; is
+// unrecognized in this browser. If you
+// meant to render a React component,
+// start its name with an uppercase letter.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function CartBadge() { return &lt;b&gt;3&lt;/b&gt;; }
+return &lt;CartBadge /&gt;;</code></pre></div>
+</div>
+<h3>Silent bug: stray 0</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{cart.length &amp;&amp; &lt;CartIcon /&gt;}
+// empty cart → screen shows "0"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{cart.length &gt; 0 &amp;&amp; &lt;CartIcon /&gt;}</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Fix: <code>return &lt;h2&gt;Today&lt;/h2&gt;&lt;p&gt;Sunny&lt;/p&gt;</code></p>
+<details><summary>Show solution</summary>
+<pre><code>return (
+  &lt;&gt;
+    &lt;h2&gt;Today&lt;/h2&gt;
+    &lt;p&gt;Sunny&lt;/p&gt;
+  &lt;/&gt;
+);</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>The app crashes with "Objects are not valid as a React child". Fix it.</p>
+<pre><code>const weather = { city: 'Mumbai', temp: 29 };
+return &lt;p&gt;{weather}&lt;/p&gt;;</code></pre>
+<details><summary>Show solution</summary>
+<pre><code>return &lt;p&gt;{weather.city}: {weather.temp}°C&lt;/p&gt;;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>This counter freezes the page. Why, and how do you fix it?</p>
+<pre><code>function Likes() {
+  const [likes, setLikes] = useState(0);
+  return &lt;button onClick={setLikes(likes + 1)}&gt;♥ {likes}&lt;/button&gt;;
+}</code></pre>
+<details><summary>Show solution</summary>
+<pre><code>// setLikes is CALLED during render → re-render → called again → loop.
+// React stops it: "Too many re-renders".
+function Likes() {
+  const [likes, setLikes] = useState(0);
+  return (
+    &lt;button onClick={() =&gt; setLikes(likes + 1)}&gt;♥ {likes}&lt;/button&gt;
+  );
+}</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>The notifications list shows nothing and there is no error. Find the bug.</p>
+<pre><code>{notes.map((n) =&gt; {
+  &lt;li key={n.id}&gt;{n.text}&lt;/li&gt;
+})}</code></pre>
+<details><summary>Show solution</summary>
+<pre><code>// Curly-brace arrow body without return → returns undefined.
+{notes.map((n) =&gt; (
+  &lt;li key={n.id}&gt;{n.text}&lt;/li&gt;
+))}</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>This food-order component has at least 8 bugs (compile, runtime and warnings). Fix them all.</p>
+<pre><code>// file: Order.js
+function orderSummary({ items }) {
+  return (
+    &lt;h2 class="title"&gt;Your order&lt;/h2&gt;
+    &lt;ul&gt;
+      {items.map((i) =&gt; &lt;li&gt;{i}&lt;/li&gt;)}
+    &lt;/ul&gt;
+    {items.length &amp;&amp; &lt;p style="color:green"&gt;Ready to pay&lt;/p&gt;}
+    &lt;img src="/bag.png"&gt;
+  );
+}</code></pre>
+<details><summary>Show solution</summary>
+<pre><code>// file: Order.jsx                         (1) .jsx extension in Vite
+function OrderSummary({ items = [] }) {   // (2) Capital name, (3) default []
+  return (
+    &lt;&gt;                                     {/* (4) single root */}
+      &lt;h2 className="title"&gt;Your order&lt;/h2&gt;  {/* (5) className */}
+      &lt;ul&gt;
+        {items.map((i) =&gt; (
+          &lt;li key={i.id}&gt;{i.name} × {i.qty}&lt;/li&gt;  /* (6) key + fields, not object */
+        ))}
+      &lt;/ul&gt;
+      {items.length &gt; 0 &amp;&amp; (                 /* (7) no stray 0 */
+        &lt;p style={{ color: 'green' }}&gt;Ready to pay&lt;/p&gt;  /* style object */
+      )}
+      &lt;img src="/bag.png" alt="Order bag" /&gt;   {/* (8) closed tag */}
+    &lt;/&gt;
+  );
+}
+export default OrderSummary;</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Three kinds: compile errors (overlay), runtime errors (console + blank), warnings (dev only).</li>
+<li>Read the first line + file:line. The message usually names the fix.</li>
+<li>Object as child → render a field. Function as child → <code>&lt;Comp /&gt;</code>.</li>
+<li><code>undefined.map</code> → default state to <code>[]</code>.</li>
+<li>"Too many re-renders" → <code>onClick={() =&gt; fn(x)}</code>, not <code>onClick={fn(x)}</code>.</li>
+<li>Vite: JSX only in <code>.jsx</code>/<code>.tsx</code> files.</li>
+<li>Silent bugs: stray <code>0</code> from <code>&amp;&amp;</code>; missing <code>return</code> in <code>map</code>.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>What does "Objects are not valid as a React child" mean?</summary>
+<p>You placed a plain object (or a Promise, or a Date) inside JSX braces. React can render strings, numbers, elements, arrays of these, and nothing for booleans/null/undefined. Render a field, map the data, or stringify it.</p>
+</details>
+<details><summary>Why does <code>onClick={handleClick()}</code> cause problems?</summary>
+<p>The parentheses call the function during render and pass its return value as the handler. If it sets state, each render triggers another render → "Too many re-renders". Pass the function itself or wrap in an arrow.</p>
+</details>
+<details><summary>Do you still need <code>import React from 'react'</code> in every JSX file?</summary>
+<p>No. With the automatic JSX runtime (default in Vite and React 17+), the compiler imports <code>jsx</code> from <code>react/jsx-runtime</code> for you. "React is not defined" only appears with the old classic runtime setting.</p>
+</details>
+<details><summary>Why are some messages visible in development but not production?</summary>
+<p>React's development build includes extra checks and readable warnings. The production build removes them for size and speed, and shows short error codes with a link to the full message.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-015.html">JSX-015 · JSX restrictions</a>
+<a href="JSX-014.html">JSX-014 · Rendering lists</a>
+<a href="JSX-007.html">JSX-007 · JSX expressions</a>
+<a href="JSX-004.html">JSX-004 · JSX transformation</a>
+<a href="JSX-012.html">JSX-012 · JSX fragments</a>
+<a href="JSX-016.html#rev">JSX-016-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<ul>
+<li>JSX problems come in three kinds: <b>compile errors</b> (bad syntax, Vite overlay), <b>runtime errors</b> (bad values, console + blank screen), <b>warnings</b> (dev only).</li>
+<li>Read the first line and the file:line. Most messages name the fix.</li>
+<li>Top culprits: two roots, unclosed tags, objects/functions as children, <code>undefined.map</code>, <code>onClick={fn()}</code>.</li>
+</ul>
+<div class="callout">Memory hook: <b>Syntax → overlay. Data → console. Habit → warning.</b></div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>return &lt;&gt;...&lt;/&gt;;                 // two roots → Fragment
+&lt;img /&gt;  &lt;br /&gt;                  // close void tags
+{ok ? &lt;A /&gt; : &lt;B /&gt;}             // no if in braces
+{user.name}                      // not {user}
+&lt;Header /&gt;                       // not {Header}
+useState([])                     // not useState() before .map
+onClick={() =&gt; add(item)}        // not onClick={add(item)}
+style={{ color: 'red' }}         // not style="color:red"
+{list.length &gt; 0 &amp;&amp; &lt;List /&gt;}    // not {list.length &amp;&amp; ...}</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Compile errors stop the whole file; fix them first.</li>
+<li>Vite only transforms JSX in <code>.jsx</code>/<code>.tsx</code> files by default.</li>
+<li>React renders: strings, numbers, elements, arrays; ignores <code>true/false/null/undefined</code>.</li>
+<li>Objects, Promises, Dates as children → runtime error.</li>
+<li>A component function placed as a child → "Functions are not valid as a React child" warning; nothing renders.</li>
+<li>Calling a state setter during render → infinite loop → "Too many re-renders".</li>
+<li>Default arrays to <code>[]</code> before <code>.map</code>.</li>
+<li><code>0 &amp;&amp; x</code> renders <code>0</code>; <code>'' &amp;&amp; x</code> renders nothing.</li>
+<li>Warnings are dev-only; production shows minified error codes.</li>
+<li>In dev with <code>&lt;StrictMode&gt;</code>, components render twice, so console logs from render can appear twice.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What is the difference between a compile error and a runtime error in React?</summary><p>Compile errors are invalid syntax caught when Vite transforms the file (nothing runs). Runtime errors happen while rendering, usually from wrong data types or undefined values.</p></details>
+<details><summary>How do you fix "Adjacent JSX elements must be wrapped in an enclosing tag"?</summary><p>Wrap the siblings in a parent element or a Fragment <code>&lt;&gt;...&lt;/&gt;</code>.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why does an empty list show "0"?</summary><p><code>{list.length &amp;&amp; &lt;List /&gt;}</code> evaluates to <code>0</code> when empty, and React renders numbers. Use <code>list.length &gt; 0 &amp;&amp;</code> or a ternary.</p></details>
+<details><summary>What causes "Cannot read properties of undefined (reading 'map')"?</summary><p>Calling <code>.map</code> on a value that is <code>undefined</code>: state with no initial value, data not loaded yet, or a wrong property name from an API. Default to <code>[]</code> or guard with optional chaining.</p></details>
+<h3>Advanced</h3>
+<details><summary>How do you stop one runtime error from blanking the whole app?</summary><p>Wrap sections in an <b>error boundary</b>. React 19 has no function-component error boundary API built in; you use a class component with <code>getDerivedStateFromError</code>, or a library such as <code>react-error-boundary</code>. Note error boundaries do not catch errors in event handlers or async code.</p></details>
+<details><summary>Why might a Vite project show "Failed to parse source for import analysis"?</summary><p>The file contains JSX but has a <code>.js</code> extension (or has a genuine syntax error). Vite's message suggests naming the file <code>.jsx</code>/<code>.tsx</code>.</p></details>
+<h3>Tricky</h3>
+<details><summary>Does a missing <code>return</code> inside <code>map</code> throw an error?</summary><p>No. The callback returns <code>undefined</code> for every item, which React renders as nothing. It is a silent bug.</p></details>
+<details><summary>Does <code>{Header}</code> throw?</summary><p>No error is thrown; React logs a dev warning ("Functions are not valid as a React child") and renders nothing for it.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<p><b>Q1. What appears on screen when <code>count = 0</code>?</b></p>
+<pre><code>&lt;p&gt;{count &amp;&amp; 'New messages'}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary><p><code>0</code>.</p></details>
+<p><b>Q2. What appears?</b></p>
+<pre><code>const tags = ['veg', 'spicy'];
+return &lt;p&gt;{tags}&lt;/p&gt;;</code></pre>
+<details><summary>Show answer</summary><p><code>vegspicy</code>. An array of strings renders each string with no separator. Use <code>tags.join(', ')</code> for "veg, spicy".</p></details>
+<p><b>Q3. What happens?</b></p>
+<pre><code>return &lt;p&gt;Ordered on {new Date()}&lt;/p&gt;;</code></pre>
+<details><summary>Show answer</summary><p>Runtime error: "Objects are not valid as a React child". A Date is an object. Use <code>{new Date().toLocaleDateString()}</code>.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<p><b>Q1. Vite overlay: "Unexpected token".</b></p>
+<pre><code>&lt;ul&gt;
+  {for (const d of dishes) { &lt;li&gt;{d}&lt;/li&gt; }}
+&lt;/ul&gt;</code></pre>
+<details><summary>Show answer</summary><p><code>for</code> is a statement. Use <code>{dishes.map((d) =&gt; &lt;li key={d}&gt;{d}&lt;/li&gt;)}</code>.</p></details>
+<p><b>Q2. Button runs <code>placeOrder</code> as soon as the page loads.</b></p>
+<pre><code>&lt;button onClick={placeOrder(cart)}&gt;Pay&lt;/button&gt;</code></pre>
+<details><summary>Show answer</summary><p>It is called during render. Use <code>onClick={() =&gt; placeOrder(cart)}</code>.</p></details>
+<p><b>Q3. Weather card crashes only the first time.</b></p>
+<pre><code>const [data, setData] = useState(null);
+// ...fetch sets data later
+return &lt;p&gt;{data.temp}°C&lt;/p&gt;;</code></pre>
+<details><summary>Show answer</summary><p>First render: <code>data</code> is <code>null</code> → "Cannot read properties of null (reading 'temp')". Guard: <code>{data ? data.temp + '°C' : 'Loading...'}</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>You moved a project from Create React App (deprecated) to Vite and every file fails to parse.</summary><p>CRA allowed JSX in <code>.js</code> files. Rename JSX-containing files to <code>.jsx</code> (and update imports if they include extensions).</p></details>
+<details><summary>A teammate says "it works on my machine but production shows Minified React error #31".</summary><p>Production replaces messages with codes. Open the linked page (react.dev/errors/31) to read the full text: it is the "Objects are not valid as a React child" error. Reproduce in dev for the full stack trace.</p></details>
+<details><summary>Your chat list shows a "0" under the header when there are no unread messages.</summary><p><code>{unread &amp;&amp; &lt;Badge /&gt;}</code> with <code>unread = 0</code>. Change to <code>{unread &gt; 0 &amp;&amp; &lt;Badge count={unread} /&gt;}</code>.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<h3>1. Safe product list</h3>
+<p>Write a component that renders products from a prop that may be <code>undefined</code>, <code>[]</code>, or an array.</p>
+<details><summary>Solution</summary>
+<pre><code>function ProductList({ products = [] }) {
+  if (products.length === 0) return &lt;p&gt;No products yet.&lt;/p&gt;;
+  return (
+    &lt;ul&gt;
+      {products.map((p) =&gt; (
+        &lt;li key={p.id}&gt;{p.name} - ₹{p.price}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}
+// Default parameter only replaces undefined, not null.
+// For null too: const list = products ?? [];</code></pre></details>
+<h3>2. Debug a cart counter</h3>
+<p>Fix every bug.</p>
+<pre><code>function cart() {
+  const [n, setN] = useState();
+  return &lt;div&gt;
+    &lt;span&gt;{n &amp;&amp; 'Items: ' + n}&lt;/span&gt;
+    &lt;button onClick={setN(n + 1)}&gt;Add&lt;/button&gt;
+  &lt;/div&gt;
+}</code></pre>
+<details><summary>Solution</summary>
+<pre><code>import { useState } from 'react';
+
+function Cart() {                                   // capital name
+  const [n, setN] = useState(0);                    // number, not undefined
+  return (
+    &lt;div&gt;
+      &lt;span&gt;{n &gt; 0 ? 'Items: ' + n : 'Cart empty'}&lt;/span&gt;  {/* no stray 0 */}
+      &lt;button onClick={() =&gt; setN(n + 1)}&gt;Add&lt;/button&gt;   {/* function */}
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td>Compile error vs runtime error</td><td>Syntax caught before running vs bad value while rendering</td></tr>
+<tr><td>Error vs warning</td><td>Error breaks rendering; warning (dev only) just logs</td></tr>
+<tr><td><code>onClick={fn}</code> vs <code>onClick={fn()}</code></td><td>Pass the function vs call it now and pass its result</td></tr>
+<tr><td><code>{Comp}</code> vs <code>&lt;Comp /&gt;</code></td><td>A function value (renders nothing, warns) vs a rendered component</td></tr>
+<tr><td><code>useState()</code> vs <code>useState([])</code></td><td><code>undefined</code> (crashes on <code>.map</code>) vs empty array (safe)</td></tr>
+<tr><td><code>0 &amp;&amp; x</code> vs <code>0 &gt; 0 &amp;&amp; x</code></td><td>Renders "0" vs renders nothing</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Message / symptom</th><th>Cause</th><th>Fix</th></tr>
+<tr><td>Adjacent JSX elements must be wrapped</td><td>Two roots</td><td><code>&lt;&gt;...&lt;/&gt;</code></td></tr>
+<tr><td>Expected corresponding JSX closing tag</td><td>Unclosed / mismatched tag</td><td>Close it, <code>&lt;img /&gt;</code></td></tr>
+<tr><td>Unexpected token</td><td><code>if</code>/<code>for</code> in braces</td><td>Ternary, <code>&amp;&amp;</code>, <code>map</code></td></tr>
+<tr><td>Failed to parse source ... name the file .jsx</td><td>JSX in <code>.js</code> (Vite)</td><td>Rename to <code>.jsx</code></td></tr>
+<tr><td>Objects are not valid as a React child</td><td>Object/Date in braces</td><td>Render a field</td></tr>
+<tr><td>Functions are not valid as a React child</td><td><code>{Comp}</code></td><td><code>&lt;Comp /&gt;</code></td></tr>
+<tr><td>reading 'map' of undefined</td><td>No initial array</td><td><code>useState([])</code></td></tr>
+<tr><td>Too many re-renders</td><td><code>onClick={set(x)}</code></td><td><code>onClick={() =&gt; set(x)}</code></td></tr>
+<tr><td>style prop expects a mapping</td><td>Style string</td><td><code>style={{...}}</code></td></tr>
+<tr><td>Tag &lt;x&gt; is unrecognized</td><td>Lowercase component</td><td>Capitalise</td></tr>
+<tr><td>Stray "0" on screen</td><td><code>length &amp;&amp;</code></td><td><code>length &gt; 0 &amp;&amp;</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

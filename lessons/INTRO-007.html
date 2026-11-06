@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-007 · Features of React</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-007</span><span>Module 2: React Introduction</span><span>Lesson 7</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-006</b></span></div>
+<h1>Features of React</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-007-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<p>A todo app is built like a LEGO set: small blocks, snapped together, with data flowing down.</p>
+<pre class="diagram">
+              +-------------------------+
+              |  App   (holds state)    |   hooks: useState
+              |  todos = [...]          |
+              +-----------+-------------+
+                          | props (one-way, downward)
+          +---------------+----------------+
+          v                                v
+ +------------------+            +-------------------+
+ | AddTodo          |            | TodoList          |
+ | onAdd(text) -----+--&gt; up via  |  todos            |
+ +------------------+   callback +---------+---------+
+                                           | props
+                                           v
+                                 +-------------------+
+                                 | TodoItem  x N     |  written in JSX
+                                 +-------------------+
+
+ state changes -&gt; new element tree (virtual DOM) -&gt; diff -&gt; minimal real DOM update
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Plain DOM code mixes data, markup and updates in one long script.</li>
+<li>React’s features split the UI into reusable pieces and keep data predictable.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Vanilla: one big script
+const ul = document.querySelector('#list');
+todos.forEach((t) =&gt; {
+  const li = document.createElement('li');
+  li.textContent = t.text;
+  ul.appendChild(li);
+});
+// adding one todo? rebuild or patch by hand</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// React: reusable component, data in, UI out
+function TodoList({ todos }) {
+  return (
+    &lt;ul&gt;
+      {todos.map((t) =&gt; &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;)}
+    &lt;/ul&gt;
+  );
+}</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Components</b> (components): reusable UI pieces written as functions that return markup.</li>
+<li><b>JSX</b> (JSX): HTML-like syntax inside JavaScript; compiled to <code>jsx()</code> calls from <code>react/jsx-runtime</code> automatically.</li>
+<li><b>One-way data flow</b> (unidirectional data flow): data goes parent → child through props; children ask parents to change data through callback props.</li>
+<li><b>Virtual DOM</b> (virtual DOM): React keeps a lightweight in-memory tree of elements, compares old and new trees (reconciliation), and changes only what differs in the real DOM.</li>
+<li><b>Hooks</b> (hooks): functions like <code>useState</code> and <code>useEffect</code> that give function components state and side effects.</li>
+<li><b>Also in React 19</b>: Actions (<code>useActionState</code>, <code>useOptimistic</code>), <code>use()</code>, <code>ref</code> as a normal prop. Server Components are framework-only (need Next.js or similar).</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// Component + JSX
+function Greeting({ name }) {          // props in
+  return &lt;h2&gt;Hi, {name}!&lt;/h2&gt;;          // JSX out
+}
+
+// Hook
+const [count, setCount] = useState(0);
+
+// One-way data flow
+&lt;Greeting name="Asha" /&gt;                 // parent passes data down
+&lt;AddTodo onAdd={handleAdd} /&gt;           // child calls back up
+
+// What JSX compiles to (automatic runtime, done by Vite for you)
+import { jsxs as _jsxs } from 'react/jsx-runtime';
+_jsxs('h2', { children: ['Hi, ', name, '!'] });
+// (jsxs = jsx for static multiple children)</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A todo app that uses all five features. Paste into <code>src/App.jsx</code> of a Vite React app.</p>
+<pre><code>import { useState, useEffect } from 'react';
+
+// Component: one todo row (receives data via props)
+function TodoItem({ todo, onToggle }) {
+  return (
+    &lt;li&gt;
+      &lt;label&gt;
+        &lt;input
+          type="checkbox"
+          checked={todo.done}
+          onChange={() =&gt; onToggle(todo.id)}
+        /&gt;
+        {todo.done ? &lt;s&gt;{todo.text}&lt;/s&gt; : todo.text}
+      &lt;/label&gt;
+    &lt;/li&gt;
+  );
+}
+
+// Component: input box, sends new text UP via a callback
+function AddTodo({ onAdd }) {
+  const [text, setText] = useState('');
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    onAdd(text.trim());
+    setText('');
+  }
+
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      &lt;input
+        value={text}
+        onChange={(e) =&gt; setText(e.target.value)}
+        placeholder="e.g. Buy milk"
+      /&gt;
+      &lt;button type="submit"&gt;Add&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}
+
+// Root component: owns the state (single source of truth)
+export default function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Order groceries', done: true },
+    { id: 2, text: 'Book movie tickets', done: false },
+  ]);
+
+  const pending = todos.filter((t) =&gt; !t.done).length;
+
+  // Hook for a side effect: keep the tab title in sync
+  useEffect(() =&gt; {
+    document.title = `${pending} pending`;
+  }, [pending]);
+
+  function addTodo(text) {
+    setTodos([...todos, { id: Date.now(), text, done: false }]);
+  }
+
+  function toggleTodo(id) {
+    setTodos(
+      todos.map((t) =&gt; (t.id === id ? { ...t, done: !t.done } : t))
+    );
+  }
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;My Todos ({pending} pending)&lt;/h1&gt;
+      &lt;AddTodo onAdd={addTodo} /&gt;
+      &lt;ul&gt;
+        {todos.map((t) =&gt; (
+          &lt;TodoItem key={t.id} todo={t} onToggle={toggleTodo} /&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<p>After typing “Pay electricity bill” and clicking Add:</p>
+<div class="ui">
+<h3>My Todos (2 pending)</h3>
+<p><input type="text" placeholder="e.g. Buy milk" aria-label="New todo"> <button type="button">Add</button></p>
+<ul>
+<li><label><input type="checkbox" checked disabled> <s>Order groceries</s></label></li>
+<li><label><input type="checkbox" disabled> Book movie tickets</label></li>
+<li><label><input type="checkbox" disabled> Pay electricity bill</label></li>
+</ul>
+</div>
+<p>Browser tab title: <code>2 pending</code></p>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. User types in AddTodo  -&gt; setText (local state)  -&gt; AddTodo re-renders
+ 2. User clicks Add        -&gt; handleSubmit -&gt; onAdd("Pay electricity bill")
+                                               |  (callback goes UP)
+ 3. App.addTodo            -&gt; setTodos([...todos, newTodo])
+ 4. React re-runs App()    -&gt; new JSX tree (virtual DOM)
+ 5. React compares old tree vs new tree (reconciliation)
+       - h1 text changed   "1 pending" -&gt; "2 pending"
+       - one new &lt;li&gt; with key = new id
+       - other &lt;li&gt;s same key, same props -&gt; DOM left alone
+ 6. Commit: React updates h1 text, inserts 1 &lt;li&gt;
+ 7. useEffect runs (pending changed) -&gt; document.title = "2 pending"
+</pre>
+
+<h2>8. Real-World Application</h2>
+<div class="tablewrap"><table>
+<tr><th>Feature</th><th>Everyday app example</th></tr>
+<tr><td>Components</td><td>One <code>&lt;MovieCard /&gt;</code> reused 50 times on a streaming home page</td></tr>
+<tr><td>JSX</td><td>Food-delivery menu markup next to its price logic</td></tr>
+<tr><td>One-way data flow</td><td>Cart total in the parent, shown in header and checkout children</td></tr>
+<tr><td>Virtual DOM</td><td>Chat app adds one new message without redrawing the whole list</td></tr>
+<tr><td>Hooks</td><td><code>useEffect</code> fetches weather when the city changes</td></tr>
+</table></div>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Changing props in a child</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function TodoItem({ todo }) {
+  return (
+    &lt;input type="checkbox"
+      onChange={() =&gt; { todo.done = !todo.done; }} /&gt;
+  ); // breaks one-way flow, no re-render
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function TodoItem({ todo, onToggle }) {
+  return (
+    &lt;input type="checkbox" checked={todo.done}
+      onChange={() =&gt; onToggle(todo.id)} /&gt;
+  ); // ask the parent to change state
+}</code></pre></div>
+</div>
+<h3>Mistake 2: Missing key in lists</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{todos.map((t) =&gt; &lt;TodoItem todo={t} /&gt;)}
+// Warning: Each child in a list should
+// have a unique "key" prop.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{todos.map((t) =&gt; &lt;TodoItem key={t.id} todo={t} /&gt;)}</code></pre></div>
+</div>
+<h3>Mistake 3: Calling a hook inside a condition</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>if (todos.length &gt; 0) {
+  useEffect(() =&gt; { document.title = 'Todos'; });
+} // breaks the Rules of Hooks</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>useEffect(() =&gt; {
+  if (todos.length &gt; 0) document.title = 'Todos';
+}, [todos.length]);</code></pre></div>
+</div>
+<h3>Mistake 4: Lowercase component name</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function todoItem() { return &lt;li&gt;Hi&lt;/li&gt;; }
+&lt;todoItem /&gt; // treated as an unknown HTML tag</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function TodoItem() { return &lt;li&gt;Hi&lt;/li&gt;; }
+&lt;TodoItem /&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Write a <code>Dish</code> component that shows a dish name and price from props.</p>
+<details><summary>Solution</summary><pre><code>function Dish({ name, price }) {
+  return &lt;p&gt;{name}: ₹{price}&lt;/p&gt;;
+}
+// &lt;Dish name="Paneer Tikka" price={220} /&gt;</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Match each feature to its one-line meaning: components, JSX, one-way data flow, virtual DOM, hooks.</p>
+<details><summary>Solution</summary><ul><li>Components: reusable UI functions</li><li>JSX: HTML-like syntax in JS</li><li>One-way data flow: parent → child via props</li><li>Virtual DOM: in-memory tree React diffs</li><li>Hooks: state/effects in function components</li></ul></details>
+<h3>Intermediate 1</h3>
+<p>Add a “Clear done” button to the example that removes completed todos.</p>
+<details><summary>Solution</summary><pre><code>function clearDone() {
+  setTodos(todos.filter((t) =&gt; !t.done));
+}
+// in JSX:
+&lt;button onClick={clearDone}&gt;Clear done&lt;/button&gt;</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Show a <code>Header</code> child that displays the pending count, without the child owning any state.</p>
+<details><summary>Solution</summary><pre><code>function Header({ pending }) {
+  return &lt;h1&gt;My Todos ({pending} pending)&lt;/h1&gt;;
+}
+// in App: &lt;Header pending={pending} /&gt;</code></pre></details>
+<h3>Challenge</h3>
+<p>Build a movie “watchlist” with a <code>MovieRow</code> child that has a Remove button. State lives only in <code>App</code>.</p>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+
+function MovieRow({ movie, onRemove }) {
+  return (
+    &lt;li&gt;
+      {movie.title} ({movie.year}){' '}
+      &lt;button onClick={() =&gt; onRemove(movie.id)}&gt;Remove&lt;/button&gt;
+    &lt;/li&gt;
+  );
+}
+
+export default function App() {
+  const [movies, setMovies] = useState([
+    { id: 1, title: 'Lagaan', year: 2001 },
+    { id: 2, title: 'Inception', year: 2010 },
+  ]);
+
+  return (
+    &lt;ul&gt;
+      {movies.map((m) =&gt; (
+        &lt;MovieRow
+          key={m.id}
+          movie={m}
+          onRemove={(id) =&gt; setMovies(movies.filter((x) =&gt; x.id !== id))}
+        /&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Components = reusable functions that return JSX; names start with a capital letter.</li>
+<li>JSX compiles to <code>jsx()</code> calls (automatic runtime); no <code>import React</code> needed.</li>
+<li>Data flows down via props; changes go up via callbacks.</li>
+<li>Virtual DOM + reconciliation = only changed DOM nodes are updated.</li>
+<li>Hooks give state and effects; call them at the top level only.</li>
+<li>Keys help React match list items between renders.</li>
+<li>Server Components exist but are framework-only.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What are the main features of React?</summary><p>Components, JSX, one-way data flow, virtual DOM with reconciliation, and hooks. React 19 adds Actions, <code>use()</code> and ref-as-prop.</p></details>
+<details><summary>Q2. Why one-way data flow?</summary><p>Each piece of data has one owner, so you always know where a change came from. Debugging is easier than two-way binding.</p></details>
+<details><summary>Q3. Is the virtual DOM always faster than direct DOM edits?</summary><p>No. Hand-written targeted DOM edits can be faster. The virtual DOM gives “fast enough” updates while you write simpler declarative code.</p></details>
+<details><summary>Q4. Do I need <code>import React from 'react'</code> to use JSX?</summary><p>No. With the automatic JSX runtime (default in Vite), the compiler imports <code>jsx</code> from <code>react/jsx-runtime</code> for you.</p></details>
+<details><summary>Q5. What are the Rules of Hooks?</summary><p>Call hooks only at the top level of a component or custom hook, never in loops, conditions or nested functions, and only from React functions.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-006.html">INTRO-006 Library vs framework</a>
+<a href="INTRO-006.html#rev">INTRO-006 Revision</a>
+<a href="INTRO-008.html">INTRO-008 Declarative vs imperative</a>
+<a href="INTRO-005.html">INTRO-005 React vs Angular vs Vue</a>
+<a href="INTRO-007.html#rev">INTRO-007 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">React apps are trees of components written in JSX. Data flows one way, parent to child, through props. Hooks add state and effects. When state changes, React builds a new element tree (virtual DOM), diffs it, and updates only the changed real DOM.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>function Card({ title }) { return &lt;h3&gt;{title}&lt;/h3&gt;; }   // component + JSX
+&lt;Card title="Weather" /&gt;                                 // props down
+const [city, setCity] = useState('Pune');                // state hook
+useEffect(() =&gt; { /* fetch */ }, [city]);                // effect hook
+&lt;Search onSearch={setCity} /&gt;                            // callback up
+{items.map((i) =&gt; &lt;Row key={i.id} item={i} /&gt;)}          // list + key</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Component names start with a capital letter.</li>
+<li>Components must be pure during render: same props/state → same JSX.</li>
+<li>Props are read-only.</li>
+<li>JSX expressions go in single braces <code>{ }</code>.</li>
+<li>JSX uses <code>className</code> and camelCase events (<code>onClick</code>).</li>
+<li>Keys must be stable and unique among siblings.</li>
+<li>Hooks only at the top level.</li>
+<li>Reconciliation compares element type and key to decide reuse vs replace.</li>
+<li>Strict Mode double-calls components in development only, to surface impure code.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What is JSX?</summary><p>A syntax extension that looks like HTML and compiles to JavaScript function calls creating React elements.</p></details>
+<h3>Intermediate</h3>
+<details><summary>How does a child update the parent’s state?</summary><p>The parent passes a function as a prop; the child calls it with new data; the parent sets its own state.</p></details>
+<h3>Advanced</h3>
+<details><summary>What does React compare during reconciliation?</summary><p>Element type and key at each position. Same type + key → update props on the existing node. Different → unmount old, mount new.</p></details>
+<h3>Tricky</h3>
+<details><summary>Why is using the array index as a key risky?</summary><p>If items are inserted, removed or reordered, indexes shift and React may reuse the wrong component, keeping stale input text or state.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary><code>function Hi() { return &lt;p&gt;{2 + 3}&lt;/p&gt;; }</code></summary><pre class="output">5</pre></details>
+<details><summary><code>&lt;p&gt;{true}{null}{undefined}Hello&lt;/p&gt;</code></summary><pre class="output">Hello</pre><p>Booleans, null and undefined render nothing.</p></details>
+<details><summary><code>&lt;p&gt;{['a', 'b']}&lt;/p&gt;</code></summary><pre class="output">ab</pre></details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>Checkbox toggles visually but count never changes. Child does <code>todo.done = !todo.done</code>.</summary><p>Mutating props. Pass <code>onToggle</code> from the parent and update state there immutably.</p></details>
+<details><summary>Error: “Rendered more hooks than during the previous render.”</summary><p>A hook is inside a condition or after an early return. Move it to the top level.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>Both the header badge and the checkout page need the cart count. Where should state live?</summary><p>In their closest common parent; pass it down as props (lifting state up).</p></details>
+<details><summary>A chat list of 1,000 messages re-renders when one arrives. Is the DOM rebuilt?</summary><p>No. With stable keys, React inserts only the new <code>&lt;li&gt;</code>; existing nodes are reused.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<details><summary>Write a <code>Counter</code> component with + and − buttons that never goes below 0.</summary><pre><code>import { useState } from 'react';
+export default function Counter() {
+  const [n, setN] = useState(0);
+  return (
+    &lt;div&gt;
+      &lt;button onClick={() =&gt; setN(Math.max(0, n - 1))}&gt;−&lt;/button&gt;
+      &lt;span&gt; {n} &lt;/span&gt;
+      &lt;button onClick={() =&gt; setN(n + 1)}&gt;+&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+<details><summary>Render a list of restaurants, highlighting those with rating ≥ 4.5.</summary><pre><code>function Restaurants({ list }) {
+  return (
+    &lt;ul&gt;
+      {list.map((r) =&gt; (
+        &lt;li key={r.id}&gt;{r.rating &gt;= 4.5 ? &lt;b&gt;{r.name}&lt;/b&gt; : r.name}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Pair</th><th>Difference</th></tr>
+<tr><td>Props vs state</td><td>Props come from parent (read-only); state is owned and changed by the component</td></tr>
+<tr><td>One-way vs two-way binding</td><td>React: data down, events up. Two-way: view and model update each other automatically</td></tr>
+<tr><td>Virtual DOM vs real DOM</td><td>Virtual: cheap JS objects; real: browser nodes, costly to change</td></tr>
+<tr><td>Class vs function components</td><td>Function + hooks is the modern standard; classes are legacy</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Feature</th><th>Key idea</th><th>Code hint</th></tr>
+<tr><td>Components</td><td>Reusable UI function</td><td><code>function Card() {}</code></td></tr>
+<tr><td>JSX</td><td>Markup in JS</td><td><code>&lt;h1&gt;{x}&lt;/h1&gt;</code></td></tr>
+<tr><td>One-way flow</td><td>Props down, callbacks up</td><td><code>&lt;A onX={fn} /&gt;</code></td></tr>
+<tr><td>Virtual DOM</td><td>Diff then patch</td><td><code>key={id}</code></td></tr>
+<tr><td>Hooks</td><td>State + effects</td><td><code>useState</code>, <code>useEffect</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-001 · What is React?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-001</span><span>Module 2: React Introduction</span><span>Lesson 1</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>WEB module (JavaScript basics)</b></span></div>
+<h1>What is React?</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-001-REV</button></div>
+
+<main id="det">
+<h2>1 · Visual Introduction</h2>
+<p>Think of a page like a <b>LEGO model</b>. Instead of carving the whole thing from one block, you snap small, reusable bricks together. In React each brick is a <b>component</b> (a JavaScript function that returns UI).</p>
+<pre class="diagram">
+   Food delivery app screen               React components
+ +--------------------------------+
+ | [Logo]  Search...   Cart (2)   |  ---&gt; &lt;Header /&gt;
+ +--------------------------------+
+ | Pizza Palace   4.5 *   30 min  |  ---&gt; &lt;RestaurantCard /&gt;
+ | Burger Barn    4.2 *   20 min  |  ---&gt; &lt;RestaurantCard /&gt;  (same brick, new data)
+ | Sushi Stop     4.8 *   40 min  |  ---&gt; &lt;RestaurantCard /&gt;
+ +--------------------------------+
+ |  Home   Orders   Profile       |  ---&gt; &lt;BottomNav /&gt;
+ +--------------------------------+
+                 all inside  ---&gt; &lt;App /&gt;
+</pre>
+<div class="callout"><b>One line:</b> React is a JavaScript <b>library</b> (not a full framework) for building user interfaces out of components.</div>
+
+<h2>2 · Why Do We Need It?</h2>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>// Without React: build every card by hand
+const list = document.getElementById('list');
+list.innerHTML =
+  '&lt;div class="card"&gt;Pizza Palace 4.5&lt;/div&gt;' +
+  '&lt;div class="card"&gt;Burger Barn 4.2&lt;/div&gt;' +
+  '&lt;div class="card"&gt;Sushi Stop 4.8&lt;/div&gt;';
+// Change the card design? Edit every string.
+// Data changes? Rebuild by hand.</pre></div>
+<div><span class="good">Fixed</span><pre>// With React: one reusable brick
+function RestaurantCard({ name, rating }) {
+  return &lt;div className="card"&gt;{name} {rating}&lt;/div&gt;;
+}
+
+// Use it many times with different data
+&lt;RestaurantCard name="Pizza Palace" rating={4.5} /&gt;
+&lt;RestaurantCard name="Burger Barn" rating={4.2} /&gt;</pre></div>
+</div>
+
+<h2>3 · Core Concept</h2>
+<ul>
+<li><b>Library, not framework</b> — React only handles the view (what you see). Routing, data fetching, etc. come from other tools or a framework (e.g. Next.js, React Router in framework mode).</li>
+<li><b>Components</b> (building blocks) — plain JavaScript functions that return UI.</li>
+<li><b>JSX</b> (HTML-like syntax inside JavaScript) — describes what the UI should look like.</li>
+<li><b>Declarative</b> (describe the result, not the steps) — you say "show 3 cards", React works out the DOM changes.</li>
+<li><b>Props</b> (inputs to a component) — data passed from parent to child.</li>
+<li><b>State</b> (memory inside a component) — when it changes, React re-renders (redraws) that part.</li>
+<li><b>react</b> package = components and hooks; <b>react-dom</b> package = puts them on a web page.</li>
+</ul>
+
+<h2>4 · Syntax</h2>
+<pre><code>// 1. A component is a function whose name starts with a Capital letter
+function Greeting() {
+  return &lt;h1&gt;Hello, food lover!&lt;/h1&gt;;
+}
+
+// 2. Use it like an HTML tag
+&lt;Greeting /&gt;
+
+// 3. Mount the root component once (main.jsx)
+import { createRoot } from 'react-dom/client';
+createRoot(document.getElementById('root')).render(&lt;App /&gt;);</code></pre>
+<p>With the automatic JSX runtime (default in Vite) you do <b>not</b> need <code>import React from 'react'</code> just to write JSX.</p>
+
+<h2>5 · Practical Example</h2>
+<p>Create the app: <code>npm create vite@latest food-app -- --template react</code>, then <code>cd food-app</code>, <code>npm install</code>, <code>npm run dev</code>.</p>
+<h3>src/main.jsx</h3>
+<pre><code>import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+
+createRoot(document.getElementById('root')).render(
+  &lt;StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/StrictMode&gt;
+);</code></pre>
+<h3>src/App.jsx</h3>
+<pre><code>const restaurants = [
+  { id: 1, name: 'Pizza Palace', rating: 4.5, time: 30 },
+  { id: 2, name: 'Burger Barn', rating: 4.2, time: 20 },
+  { id: 3, name: 'Sushi Stop', rating: 4.8, time: 40 },
+];
+
+function Header() {
+  return (
+    &lt;header&gt;
+      &lt;h1&gt;QuickBite&lt;/h1&gt;
+      &lt;p&gt;Food in minutes&lt;/p&gt;
+    &lt;/header&gt;
+  );
+}
+
+function RestaurantCard({ name, rating, time }) {
+  return (
+    &lt;li&gt;
+      &lt;strong&gt;{name}&lt;/strong&gt; — {rating} stars — {time} min
+    &lt;/li&gt;
+  );
+}
+
+export default function App() {
+  return (
+    &lt;main&gt;
+      &lt;Header /&gt;
+      &lt;ul&gt;
+        {restaurants.map((r) =&gt; (
+          &lt;RestaurantCard key={r.id} name={r.name} rating={r.rating} time={r.time} /&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6 · Expected Output</h2>
+<div class="ui">
+<h1 style="margin:0">QuickBite</h1>
+<p style="margin:2px 0 10px">Food in minutes</p>
+<ul>
+<li><strong>Pizza Palace</strong> — 4.5 stars — 30 min</li>
+<li><strong>Burger Barn</strong> — 4.2 stars — 20 min</li>
+<li><strong>Sushi Stop</strong> — 4.8 stars — 40 min</li>
+</ul>
+</div>
+
+<h2>7 · Execution Flow</h2>
+<pre class="diagram">
+ 1. Browser loads index.html  (has an empty &lt;div id="root"&gt;)
+          |
+ 2. Vite serves src/main.jsx  (JSX compiled to jsx() calls from react/jsx-runtime)
+          |
+ 3. createRoot(#root).render(&lt;App /&gt;)
+          |
+ 4. React calls App()  --&gt; returns a tree description (React elements)
+          |            calls Header()           --&gt; &lt;header&gt;...
+          |            calls RestaurantCard() x3 --&gt; &lt;li&gt;...
+          |
+ 5. react-dom turns the description into real DOM nodes inside #root
+          |
+ 6. Screen shows header + 3 cards
+</pre>
+
+<h2>8 · Real-World Application</h2>
+<ul>
+<li><b>Shopping sites</b> — one <code>ProductCard</code> component reused for thousands of products.</li>
+<li><b>Chat apps</b> — <code>MessageBubble</code>, <code>ChatList</code>, <code>TypingIndicator</code> as separate pieces.</li>
+<li><b>Movie streaming</b> — rows of <code>MoviePoster</code> components filled from an API.</li>
+<li><b>Mobile apps</b> — the same component idea powers React Native (iOS/Android).</li>
+</ul>
+
+<h2>9 · Common Mistakes</h2>
+<h3>Mistake 1: lowercase component name</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>function card() {
+  return &lt;div&gt;Pizza&lt;/div&gt;;
+}
+// React treats &lt;card /&gt; as an unknown HTML tag
+export default function App() {
+  return &lt;card /&gt;;
+}</pre></div>
+<div><span class="good">Fixed</span><pre>function Card() {
+  return &lt;div&gt;Pizza&lt;/div&gt;;
+}
+
+export default function App() {
+  return &lt;Card /&gt;;
+}</pre></div>
+</div>
+<h3>Mistake 2: returning two siblings without a wrapper</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>function Header() {
+  return (
+    &lt;h1&gt;QuickBite&lt;/h1&gt;
+    &lt;p&gt;Food in minutes&lt;/p&gt;
+  ); // Syntax error: adjacent JSX elements
+}</pre></div>
+<div><span class="good">Fixed</span><pre>function Header() {
+  return (
+    &lt;&gt;
+      &lt;h1&gt;QuickBite&lt;/h1&gt;
+      &lt;p&gt;Food in minutes&lt;/p&gt;
+    &lt;/&gt;
+  ); // Fragment groups them, adds no extra DOM
+}</pre></div>
+</div>
+<h3>Mistake 3: using the old ReactDOM.render</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>import ReactDOM from 'react-dom';
+ReactDOM.render(&lt;App /&gt;, root);
+// Removed in React 19</pre></div>
+<div><span class="good">Fixed</span><pre>import { createRoot } from 'react-dom/client';
+createRoot(root).render(&lt;App /&gt;);</pre></div>
+</div>
+
+<h2>10 · Practice</h2>
+<h3>Beginner 1</h3>
+<p>Write a <code>Weather</code> component that shows "Delhi: 31°C, Sunny".</p>
+<details><summary>Solution</summary><pre><code>function Weather() {
+  return &lt;p&gt;Delhi: 31°C, Sunny&lt;/p&gt;;
+}</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Render <code>Weather</code> twice inside <code>App</code>.</p>
+<details><summary>Solution</summary><pre><code>export default function App() {
+  return (
+    &lt;div&gt;
+      &lt;Weather /&gt;
+      &lt;Weather /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+<h3>Intermediate 1</h3>
+<p>Make <code>Weather</code> accept <code>city</code> and <code>temp</code> props.</p>
+<details><summary>Solution</summary><pre><code>function Weather({ city, temp }) {
+  return &lt;p&gt;{city}: {temp}°C&lt;/p&gt;;
+}
+// &lt;Weather city="Mumbai" temp={29} /&gt;</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Render a list of 3 movies from an array using <code>map</code>.</p>
+<details><summary>Solution</summary><pre><code>const movies = ['Inception', 'Up', 'Dangal'];
+
+export default function App() {
+  return (
+    &lt;ul&gt;
+      {movies.map((m) =&gt; &lt;li key={m}&gt;{m}&lt;/li&gt;)}
+    &lt;/ul&gt;
+  );
+}</code></pre></details>
+<h3>Challenge</h3>
+<p>Split a todo screen into <code>TodoHeader</code>, <code>TodoItem</code> and <code>TodoFooter</code> (shows "3 items").</p>
+<details><summary>Solution</summary><pre><code>const todos = [
+  { id: 1, text: 'Buy milk' },
+  { id: 2, text: 'Call mom' },
+  { id: 3, text: 'Book movie' },
+];
+
+function TodoHeader() { return &lt;h2&gt;My Todos&lt;/h2&gt;; }
+function TodoItem({ text }) { return &lt;li&gt;{text}&lt;/li&gt;; }
+function TodoFooter({ count }) { return &lt;p&gt;{count} items&lt;/p&gt;; }
+
+export default function App() {
+  return (
+    &lt;section&gt;
+      &lt;TodoHeader /&gt;
+      &lt;ul&gt;
+        {todos.map((t) =&gt; &lt;TodoItem key={t.id} text={t.text} /&gt;)}
+      &lt;/ul&gt;
+      &lt;TodoFooter count={todos.length} /&gt;
+    &lt;/section&gt;
+  );
+}</code></pre></details>
+
+<h2>11 · Quick Revision</h2>
+<ul>
+<li>React = JavaScript library for UIs.</li>
+<li>UI is built from components (functions returning JSX).</li>
+<li>Component names start with a capital letter.</li>
+<li>Declarative: describe what, React handles how.</li>
+<li>Mount once with <code>createRoot(...).render(...)</code> from <code>react-dom/client</code>.</li>
+<li>Start new projects with Vite (or a framework), not Create React App (deprecated Feb 2025).</li>
+</ul>
+
+<h2>12 · Interview Corner</h2>
+<details><summary>Is React a library or a framework?</summary><p>A library. It focuses on the view layer. Frameworks such as Next.js or React Router (framework mode) add routing, data loading and server rendering on top.</p></details>
+<details><summary>What is a component?</summary><p>A reusable JavaScript function that returns a description of UI (JSX). It can take props and keep state.</p></details>
+<details><summary>What does "declarative" mean here?</summary><p>You describe what the screen should look like for the current data; React figures out the DOM operations needed to get there.</p></details>
+<details><summary>Difference between react and react-dom?</summary><p><code>react</code> has components, hooks and elements; <code>react-dom</code> renders them into a browser DOM (<code>createRoot</code> lives in <code>react-dom/client</code>).</p></details>
+
+<h2>13 · Related Lessons</h2>
+<div class="related"><a href="INTRO-002.html">INTRO-002 · Why React?</a><a href="INTRO-003.html">INTRO-003 · Problems with DOM manipulation</a><a href="INTRO-004.html">INTRO-004 · React vs Vanilla JS</a><a href="INTRO-001.html#rev">INTRO-001 · Revision</a></div>
+</main>
+
+<main id="rev" class="rev" hidden>
+<h2>A · Concept in 30 Seconds</h2>
+<div class="callout">React is a JavaScript library that builds screens from small reusable functions called components. You describe the UI for the current data, and React updates the real page for you.</div>
+
+<h2>B · Important Syntax</h2>
+<pre><code>function Card({ title }) { return &lt;h3&gt;{title}&lt;/h3&gt;; }     // component + props
+&lt;Card title="Pizza" /&gt;                                    // use it
+&lt;&gt;...&lt;/&gt;                                                  // Fragment
+import { createRoot } from 'react-dom/client';            // mount
+createRoot(document.getElementById('root')).render(&lt;App /&gt;);</code></pre>
+
+<h2>C · Must-Know Points</h2>
+<ul>
+<li>React is a library, focused on the view.</li>
+<li>Components are functions; names start with a capital letter.</li>
+<li>JSX compiles to <code>jsx()</code> calls (automatic runtime, from <code>react/jsx-runtime</code>).</li>
+<li>A component must return one root element (or a Fragment).</li>
+<li>Props flow down from parent to child (one-way data flow).</li>
+<li>State changes trigger a re-render of that component.</li>
+<li><code>ReactDOM.render</code> was removed in React 19; use <code>createRoot</code>.</li>
+<li>Create React App is deprecated; use Vite or a framework.</li>
+</ul>
+
+<h2>D · Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Who maintains React and what is it for?</summary><p>Meta and the open-source community. It is for building user interfaces from components.</p></details>
+<h3>Intermediate</h3>
+<details><summary>What is a React element vs a component?</summary><p>A component is the function (<code>Card</code>). An element is the plain object it produces when used (<code>&lt;Card /&gt;</code>) that describes what to render.</p></details>
+<h3>Advanced</h3>
+<details><summary>What does JSX turn into?</summary><p>With the automatic runtime, <code>&lt;h1&gt;Hi&lt;/h1&gt;</code> compiles to roughly <code>jsx('h1', { children: 'Hi' })</code>, imported automatically from <code>react/jsx-runtime</code>.</p></details>
+<h3>Tricky</h3>
+<details><summary>Can React be used without JSX?</summary><p>Yes. JSX is optional syntax sugar; you can call <code>createElement('h1', null, 'Hi')</code> directly. JSX is simply more readable.</p></details>
+
+<h2>E · Output-Based Questions</h2>
+<pre><code>function Hello({ name }) { return &lt;p&gt;Hi {name}&lt;/p&gt;; }
+export default function App() {
+  return &lt;&gt;&lt;Hello name="Asha" /&gt;&lt;Hello /&gt;&lt;/&gt;;
+}</code></pre>
+<details><summary>What shows?</summary><pre class="output">Hi Asha
+Hi </pre><p>The second has no <code>name</code>, so it is <code>undefined</code> and renders nothing.</p></details>
+
+<h2>F · Debugging Questions</h2>
+<pre><code>function menu() { return &lt;ul&gt;&lt;li&gt;Tea&lt;/li&gt;&lt;/ul&gt;; }
+export default function App() { return &lt;menu /&gt;; }</code></pre>
+<details><summary>Why is the list missing?</summary><p>Lowercase <code>menu</code> is treated as an HTML tag (<code>&lt;menu&gt;</code>), not your component. Rename to <code>Menu</code>.</p></details>
+
+<h2>G · Scenario-Based Questions</h2>
+<details><summary>A shop shows 500 product tiles that look the same. How would React help?</summary><p>Write one <code>ProductTile</code> component, keep products in an array, and <code>map</code> over it. Design changes happen in one place.</p></details>
+
+<h2>H · Coding Challenges</h2>
+<p>Build a <code>ChatMessage</code> component with <code>author</code> and <code>text</code>, and render 2 messages.</p>
+<details><summary>Solution</summary><pre><code>function ChatMessage({ author, text }) {
+  return &lt;p&gt;&lt;b&gt;{author}:&lt;/b&gt; {text}&lt;/p&gt;;
+}
+
+export default function App() {
+  return (
+    &lt;div&gt;
+      &lt;ChatMessage author="Riya" text="Lunch?" /&gt;
+      &lt;ChatMessage author="Sam" text="Yes, 1 pm!" /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>I · Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td>Library vs framework?</td><td>Library: you call it. Framework: it calls your code and decides structure.</td></tr>
+<tr><td>React vs React Native?</td><td>Same component model; React DOM targets browsers, React Native targets mobile.</td></tr>
+<tr><td>Vite vs Create React App?</td><td>Vite is fast and current; CRA is deprecated (Feb 2025).</td></tr>
+</table></div>
+
+<h2>J · Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Component</td><td>Function returning JSX</td></tr>
+<tr><td>JSX</td><td>HTML-like syntax in JS</td></tr>
+<tr><td>Props</td><td>Inputs from parent</td></tr>
+<tr><td>State</td><td>Component memory</td></tr>
+<tr><td>createRoot</td><td>Mounts the app (react-dom/client)</td></tr>
+<tr><td>Fragment</td><td><code>&lt;&gt;&lt;/&gt;</code>, groups without extra DOM</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

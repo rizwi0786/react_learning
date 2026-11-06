@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-005 · React vs Angular vs Vue</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-005</span><span>Module 2: React Introduction</span><span>Lesson 5</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-004</b></span></div>
+<h1>React vs Angular vs Vue</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-005-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<p>Think of building a food-delivery app like setting up a kitchen.</p>
+<ul>
+<li><b>React</b> = a top-quality cooking range. You buy the fridge, sink and cupboards separately (routing, forms, data fetching).</li>
+<li><b>Angular</b> = a fully fitted kitchen from one company. Everything is included and placed where the company decided.</li>
+<li><b>Vue</b> = a modular kitchen. Start with just the range, then add the official fridge and cupboards when you need them.</li>
+</ul>
+<pre class="diagram">
+  SCOPE (how much comes in the box)
+
+  small ------------------------------------------------ large
+  |                         |                              |
+  React                     Vue                         Angular
+  (UI library)              (progressive framework)     (full framework)
+  view layer only           core + official add-ons     router, forms, HTTP,
+  + pick your own tools     (Vue Router, Pinia)         DI, testing, CLI built in
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Teams waste weeks when they pick a tool by hype instead of fit.</li>
+<li>Knowing the trade-offs (scope, learning curve, ecosystem) lets you explain <i>why</i> React was chosen.</li>
+<li>Interviewers often ask “Why React and not Angular or Vue?”</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>Team decision log:
+"Everyone uses React, so we use React."
+- no reason recorded
+- nobody checked team skills
+- routing/forms tools chosen in a panic later</pre></div>
+<div><span class="good">Fixed</span><pre>Team decision log:
+"React: team knows JavaScript well,
+ huge hiring pool, React Router 7 for routes,
+ Vite 8 for tooling.
+ Angular rejected: steeper learning curve.
+ Vue rejected: smaller local hiring pool."</pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>React</b>: a UI library (library) from Meta. Components are JavaScript functions that return JSX. Everything else comes from the ecosystem.</li>
+<li><b>Angular</b>: a full framework (framework) from Google. TypeScript-first, built-in dependency injection (DI), router, forms, HTTP client and CLI.</li>
+<li><b>Vue</b>: a progressive framework (progressive framework) started by Evan You. HTML-like templates in single-file components (SFC, <code>.vue</code> files) with official router and store.</li>
+<li><b>Scope</b>: React smallest, Vue middle, Angular largest.</li>
+<li><b>Learning curve</b>: Vue usually gentlest, React moderate (needs solid JavaScript), Angular steepest (TypeScript, DI, decorators, RxJS).</li>
+<li><b>Ecosystem</b>: React has the largest third-party ecosystem and job market; Angular is strong in large enterprises; Vue is popular in Asia and with smaller teams.</li>
+<li>All three use components (component-based architecture) and can build the same apps.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<p>The same “show a value, handle a click” in all three.</p>
+<h3>React (JSX inside JavaScript)</h3>
+<pre><code>&lt;button onClick={() =&gt; setCount(count + 1)}&gt;
+  Cart items: {count}
+&lt;/button&gt;</code></pre>
+<h3>Vue (template with directives)</h3>
+<pre><code>&lt;button @click="count++"&gt;
+  Cart items: {{ count }}
+&lt;/button&gt;</code></pre>
+<h3>Angular (template with bindings)</h3>
+<pre><code>&lt;button (click)="add()"&gt;
+  Cart items: {{ count() }}
+&lt;/button&gt;</code></pre>
+<div class="callout">React puts markup <b>inside JavaScript</b> (JSX). Vue and Angular put JavaScript expressions <b>inside HTML templates</b>.</div>
+
+<h2>5. Practical Example</h2>
+<p>A tiny shop cart counter. React version is a complete Vite app file; Vue and Angular versions are shown for comparison only.</p>
+<h3>React: src/App.jsx (Vite React app)</h3>
+<pre><code>import { useState } from 'react';
+
+const products = [
+  { id: 1, name: 'Masala Chai', price: 40 },
+  { id: 2, name: 'Veg Sandwich', price: 90 },
+  { id: 3, name: 'Cold Coffee', price: 120 },
+];
+
+export default function App() {
+  const [cart, setCart] = useState([]);
+
+  function addToCart(product) {
+    setCart([...cart, product]);
+  }
+
+  const total = cart.reduce((sum, item) =&gt; sum + item.price, 0);
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Corner Cafe&lt;/h1&gt;
+      &lt;ul&gt;
+        {products.map((p) =&gt; (
+          &lt;li key={p.id}&gt;
+            {p.name} – ₹{p.price}{' '}
+            &lt;button onClick={() =&gt; addToCart(p)}&gt;Add&lt;/button&gt;
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+      &lt;p&gt;Cart items: {cart.length} | Total: ₹{total}&lt;/p&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<h3>Vue: Cart.vue (comparison)</h3>
+<pre><code>&lt;script setup&gt;
+import { ref, computed } from 'vue'
+
+const products = [
+  { id: 1, name: 'Masala Chai', price: 40 },
+  { id: 2, name: 'Veg Sandwich', price: 90 },
+  { id: 3, name: 'Cold Coffee', price: 120 },
+]
+const cart = ref([])
+const total = computed(() =&gt; cart.value.reduce((s, i) =&gt; s + i.price, 0))
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;h1&gt;Corner Cafe&lt;/h1&gt;
+  &lt;ul&gt;
+    &lt;li v-for="p in products" :key="p.id"&gt;
+      {{ p.name }} – ₹{{ p.price }}
+      &lt;button @click="cart.push(p)"&gt;Add&lt;/button&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;p&gt;Cart items: {{ cart.length }} | Total: ₹{{ total }}&lt;/p&gt;
+&lt;/template&gt;</code></pre>
+<h3>Angular: cart.component.ts (comparison, standalone component with signals)</h3>
+<pre><code>import { Component, computed, signal } from '@angular/core';
+
+@Component({
+  selector: 'app-cart',
+  template: `
+    &lt;h1&gt;Corner Cafe&lt;/h1&gt;
+    &lt;ul&gt;
+      @for (p of products; track p.id) {
+        &lt;li&gt;
+          {{ p.name }} – ₹{{ p.price }}
+          &lt;button (click)="add(p)"&gt;Add&lt;/button&gt;
+        &lt;/li&gt;
+      }
+    &lt;/ul&gt;
+    &lt;p&gt;Cart items: {{ cart().length }} | Total: ₹{{ total() }}&lt;/p&gt;
+  `,
+})
+export class CartComponent {
+  products = [
+    { id: 1, name: 'Masala Chai', price: 40 },
+    { id: 2, name: 'Veg Sandwich', price: 90 },
+    { id: 3, name: 'Cold Coffee', price: 120 },
+  ];
+  cart = signal&lt;{ id: number; name: string; price: number }[]&gt;([]);
+  total = computed(() =&gt; this.cart().reduce((s, i) =&gt; s + i.price, 0));
+  add(p: { id: number; name: string; price: number }) {
+    this.cart.update((c) =&gt; [...c, p]);
+  }
+}</code></pre>
+<div class="callout">Notice: React replaces the array (<code>[...cart, product]</code>); Vue lets you mutate (<code>cart.push</code>) because its reactivity tracks changes; Angular signals use <code>update()</code>.</div>
+
+<h2>6. Expected Output</h2>
+<p>After clicking “Add” on Masala Chai and Cold Coffee (identical in all three):</p>
+<div class="ui">
+<h3>Corner Cafe</h3>
+<ul>
+<li>Masala Chai – ₹40 <button type="button">Add</button></li>
+<li>Veg Sandwich – ₹90 <button type="button">Add</button></li>
+<li>Cold Coffee – ₹120 <button type="button">Add</button></li>
+</ul>
+<p>Cart items: 2 | Total: ₹160</p>
+</div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ User clicks "Add" on Cold Coffee
+            |
+   +--------+-------------------+------------------------+
+   |                            |                        |
+ REACT                        VUE                     ANGULAR
+ setCart(newArray)            cart.push(p)            cart.update(fn)
+   |                            |                        |
+ React re-runs App()          reactive proxy notices  signal notifies
+ to get new JSX               the change              dependent template
+   |                            |                        |
+ compares old vs new tree     patches only the         updates only the
+ (reconciliation)             affected DOM             bound DOM nodes
+   |                            |                        |
+   +-------------+--------------+------------------------+
+                 |
+        "Cart items: 2 | Total: ₹160" on screen
+</pre>
+
+<h2>8. Real-World Application</h2>
+<div class="tablewrap"><table>
+<tr><th>Situation</th><th>Common pick</th><th>Why</th></tr>
+<tr><td>Startup food-delivery app + mobile app</td><td>React</td><td>Share skills with React Native; huge hiring pool</td></tr>
+<tr><td>Large bank internal portal, 100+ devs</td><td>Angular</td><td>One official way to do routing, forms, DI; consistency</td></tr>
+<tr><td>Adding interactivity to an existing shop site page by page</td><td>Vue</td><td>Progressive adoption; gentle learning curve</td></tr>
+<tr><td>Content-heavy movie review site needing SEO</td><td>React + a framework (Next.js or React Router framework mode)</td><td>Server rendering comes from the framework, not React alone</td></tr>
+</table></div>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Using Vue/Angular template syntax in JSX</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;button @click={add}&gt;
+  Items: {{ count }}
+&lt;/button&gt;
+// {{ count }} is an object literal in JSX
+// -&gt; "Objects are not valid as a React child"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;button onClick={add}&gt;
+  Items: {count}
+&lt;/button&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Expecting React to include a router</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>import { Router } from 'react';
+// No such export. React has no router.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// npm install react-router
+import { BrowserRouter, Routes, Route } from 'react-router';</code></pre></div>
+</div>
+<h3>Mistake 3: Starting a new React project with Create React App</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>npx create-react-app my-shop
+# deprecated since Feb 2025</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>npm create vite@latest my-shop -- --template react
+cd my-shop &amp;&amp; npm install &amp;&amp; npm run dev</code></pre></div>
+</div>
+<h3>Mistake 4: Mutating state like in Vue</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>cart.push(product);
+setCart(cart); // same array -&gt; React may skip re-render</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>setCart([...cart, product]); // new array</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Write the React JSX to show <code>Hello, {name}</code> where <code>name</code> is a variable. Then write the Vue template version.</p>
+<details><summary>Solution</summary><pre><code>// React
+&lt;p&gt;Hello, {name}&lt;/p&gt;
+
+// Vue
+&lt;p&gt;Hello, {{ name }}&lt;/p&gt;</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Classify each as library or framework: React, Angular, Vue.</p>
+<details><summary>Solution</summary><ul><li>React: library (UI only)</li><li>Angular: full framework</li><li>Vue: progressive framework (small core, official add-ons)</li></ul></details>
+<h3>Intermediate 1</h3>
+<p>Convert this Vue list to React: <code>&lt;li v-for="m in movies" :key="m.id"&gt;{{ m.title }}&lt;/li&gt;</code></p>
+<details><summary>Solution</summary><pre><code>{movies.map((m) =&gt; (
+  &lt;li key={m.id}&gt;{m.title}&lt;/li&gt;
+))}</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Convert Vue’s <code>v-if="isOpen"</code> on a <code>&lt;p&gt;Shop is open&lt;/p&gt;</code> to React.</p>
+<details><summary>Solution</summary><pre><code>{isOpen &amp;&amp; &lt;p&gt;Shop is open&lt;/p&gt;}
+// or
+{isOpen ? &lt;p&gt;Shop is open&lt;/p&gt; : &lt;p&gt;Closed&lt;/p&gt;}</code></pre></details>
+<h3>Challenge</h3>
+<p>Build a React weather toggle: a button switches between °C and °F for a fixed 30 °C reading. Note which Vue feature you would have used instead.</p>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+
+export default function App() {
+  const [unit, setUnit] = useState('C');
+  const celsius = 30;
+  const shown = unit === 'C' ? celsius : celsius * 9 / 5 + 32;
+
+  return (
+    &lt;div&gt;
+      &lt;p&gt;Delhi: {shown}°{unit}&lt;/p&gt;
+      &lt;button onClick={() =&gt; setUnit(unit === 'C' ? 'F' : 'C')}&gt;
+        Switch to °{unit === 'C' ? 'F' : 'C'}
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+}
+// Vue: ref() for unit and computed() for "shown".</code></pre></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>React = UI library; Angular = full framework; Vue = progressive framework.</li>
+<li>React uses JSX (markup in JS); Vue and Angular use HTML templates.</li>
+<li>Learning curve: Vue gentlest, React moderate, Angular steepest.</li>
+<li>React needs extra libraries for routing (React Router 7) and server rendering (a framework).</li>
+<li>React updates via new state values; Vue/Angular track changes reactively (proxies / signals).</li>
+<li>Start React projects with Vite, never Create React App.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. Why would you pick React over Angular?</summary><p>Smaller scope so you choose your own tools, very large ecosystem and hiring pool, plain JavaScript functions as components, and skills carry over to React Native.</p></details>
+<details><summary>Q2. Is Vue a library or a framework?</summary><p>Vue calls itself a progressive framework (progressive framework): a small core you can adopt gradually, plus official router (Vue Router) and store (Pinia).</p></details>
+<details><summary>Q3. What does Angular give you out of the box that React does not?</summary><p>Router, forms, HTTP client, dependency injection (DI), testing setup and a CLI, all official and versioned together.</p></details>
+<details><summary>Q4. How does change detection differ?</summary><p>React re-runs the component function when state is set, then compares trees (reconciliation). Vue uses reactive proxies; Angular now uses signals (and historically zone-based change detection) to update bound DOM.</p></details>
+<details><summary>Q5. Which has the steepest learning curve and why?</summary><p>Angular: TypeScript, decorators, DI, modules/standalone components and RxJS are all part of the standard toolkit.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-004.html">INTRO-004</a>
+<a href="INTRO-004.html#rev">INTRO-004 Revision</a>
+<a href="INTRO-006.html">INTRO-006 Library vs framework</a>
+<a href="INTRO-007.html">INTRO-007 Features of React</a>
+<a href="INTRO-005.html#rev">INTRO-005 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">React is a UI library (view layer only, JSX, pick-your-own tools). Angular is a complete TypeScript framework (everything official, steeper curve). Vue is a progressive framework (templates, gentle curve, official add-ons). All are component-based and can build the same apps.</div>
+
+<h2>B. Important Syntax</h2>
+<div class="tablewrap"><table>
+<tr><th>Task</th><th>React</th><th>Vue</th><th>Angular</th></tr>
+<tr><td>Show value</td><td><code>{x}</code></td><td><code>{{ x }}</code></td><td><code>{{ x }}</code></td></tr>
+<tr><td>Click</td><td><code>onClick={fn}</code></td><td><code>@click="fn"</code></td><td><code>(click)="fn()"</code></td></tr>
+<tr><td>Loop</td><td><code>items.map(...)</code></td><td><code>v-for</code></td><td><code>@for</code></td></tr>
+<tr><td>Condition</td><td><code>a &amp;&amp; &lt;X/&gt;</code></td><td><code>v-if</code></td><td><code>@if</code></td></tr>
+<tr><td>State</td><td><code>useState</code></td><td><code>ref</code></td><td><code>signal</code></td></tr>
+</table></div>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>React is maintained by Meta; Angular by Google; Vue by an independent community team led by Evan You.</li>
+<li>React = library; Angular = framework; Vue = progressive framework.</li>
+<li>React components are plain functions returning JSX.</li>
+<li>Angular is TypeScript-first; React and Vue support TypeScript optionally.</li>
+<li>React has no built-in router, form or HTTP solution.</li>
+<li>Server rendering in React comes from frameworks (Next.js, React Router framework mode).</li>
+<li>React state must be replaced, not mutated.</li>
+<li>Vite (created by Evan You) is the standard build tool for React and Vue today.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Name one key difference between React and Angular.</summary><p>React only handles the UI layer; Angular is a full framework with router, forms, HTTP and DI built in.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why can Vue mutate arrays directly but React cannot?</summary><p>Vue wraps state in reactive proxies that detect mutations. React compares state values with <code>Object.is</code>; mutating keeps the same reference so React may skip the update.</p></details>
+<h3>Advanced</h3>
+<details><summary>How would you justify React for a 5-year product?</summary><p>Stable core API, huge ecosystem, strong hiring market, framework options for SSR, React Native for mobile, and gradual upgrades (React 19.2 is current stable).</p></details>
+<h3>Tricky</h3>
+<details><summary>“React is a framework.” True or false?</summary><p>Officially false: React describes itself as a library for web and native user interfaces. Frameworks such as Next.js are built on top of it. (Lesson INTRO-006 goes deeper.)</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary>What happens? <code>&lt;p&gt;{{ count }}&lt;/p&gt;</code> in React with <code>count = 3</code></summary><pre class="output">Error: Objects are not valid as a React child (found: object with keys {count}).</pre><p>Inner braces create the object <code>{ count: 3 }</code>.</p></details>
+<details><summary>What renders? <code>{cart.length &gt; 0 &amp;&amp; &lt;p&gt;Has items&lt;/p&gt;}</code> with empty cart</summary><pre class="output">(nothing)</pre></details>
+<details><summary>What renders? <code>{cart.length &amp;&amp; &lt;p&gt;Has items&lt;/p&gt;}</code> with empty cart</summary><pre class="output">0</pre><p>React renders the number 0. Vue’s <code>v-if</code> does not have this trap.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>Clicking Add does nothing on screen. Code: <code>cart.push(p); setCart(cart);</code></summary><p>Same array reference, so React bails out. Fix: <code>setCart([...cart, p])</code>.</p></details>
+<details><summary>Console: “Unknown event handler property `@click`”.</summary><p>Vue syntax used in JSX. Use <code>onClick</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>Your team of 4 knows only HTML and a little JS and must ship a shop widget in 2 weeks. Pick one.</summary><p>Vue is a reasonable pick for its gentle curve; React is also fine if long-term hiring matters. Angular is the least suited for the timeline.</p></details>
+<details><summary>A company has 200 developers across 10 teams and wants one standard way to do forms and HTTP.</summary><p>Angular fits: official, consistent tooling. React would need agreed library choices.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<details><summary>Convert to React: Vue <code>&lt;li v-for="d in dishes" :key="d.id" v-if="d.veg"&gt;{{ d.name }}&lt;/li&gt;</code></summary><pre><code>{dishes
+  .filter((d) =&gt; d.veg)
+  .map((d) =&gt; &lt;li key={d.id}&gt;{d.name}&lt;/li&gt;)}</code></pre></details>
+<details><summary>Write a React chat “unread” badge that shows only when <code>unread &gt; 0</code>.</summary><pre><code>function Badge({ unread }) {
+  return unread &gt; 0 ? &lt;span&gt;{unread} new&lt;/span&gt; : null;
+}</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Aspect</th><th>React</th><th>Angular</th><th>Vue</th></tr>
+<tr><td>Type</td><td>Library</td><td>Framework</td><td>Progressive framework</td></tr>
+<tr><td>Language</td><td>JS/TS + JSX</td><td>TypeScript</td><td>JS/TS + templates</td></tr>
+<tr><td>Learning curve</td><td>Moderate</td><td>Steep</td><td>Gentle</td></tr>
+<tr><td>Routing</td><td>React Router (3rd party)</td><td>Built in</td><td>Vue Router (official)</td></tr>
+<tr><td>Reactivity</td><td>Re-run component on setState</td><td>Signals / change detection</td><td>Reactive proxies</td></tr>
+<tr><td>Meta-framework</td><td>Next.js, React Router</td><td>Angular SSR</td><td>Nuxt</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Remember</th><th>One line</th></tr>
+<tr><td>Scope</td><td>React &lt; Vue &lt; Angular</td></tr>
+<tr><td>Curve</td><td>Vue easiest, Angular hardest</td></tr>
+<tr><td>Ecosystem</td><td>React largest</td></tr>
+<tr><td>JSX braces</td><td>Single <code>{ }</code>, never <code>{{ }}</code></td></tr>
+<tr><td>New project</td><td><code>npm create vite@latest</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-002 · Why JSX?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-002</span><span>Module 4: JSX Fundamentals</span><span>Lesson 2</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-001</b></span></div>
+<h1>Why JSX?</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-002-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of ordering food. You can say <b>"one margherita pizza, large, extra cheese"</b> (JSX) — or fill a form with fields <code>item</code>, <code>size</code>, <code>toppings</code> (a function call).</li>
+<li>Both reach the same kitchen. One is just much easier for humans to read and write.</li>
+<li>JSX is the "say it naturally" version. <code>React.createElement</code> (create element function) is the "fill the form" version.</li>
+</ul>
+<pre class="diagram">
+  What YOU write (JSX)                 What the browser runs (plain JS)
+ ┌────────────────────────────┐       ┌──────────────────────────────────────┐
+ │ &lt;h1 className="title"&gt;     │       │ createElement(                       │
+ │   Today's Menu             │ ────► │   "h1",                              │
+ │ &lt;/h1&gt;                      │ build │   { className: "title" },            │
+ └────────────────────────────┘ tool  │   "Today's Menu"                     │
+                                      │ )                                    │
+                                      └──────────────────────────────────────┘
+                    Same result: a React element (a plain JS object)
+</pre>
+<div class="callout">Browsers do <b>not</b> understand JSX. A build tool (compiler) turns it into normal JavaScript function calls before it runs.</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>UI is a <b>tree</b> (nested boxes). Writing trees as nested function calls gets messy fast.</li>
+<li>JSX looks like the HTML you already know, so the shape of the UI is visible at a glance.</li>
+<li>JSX is optional — but almost every React codebase uses it.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Without JSX</span><pre><code>import { createElement as h } from 'react';
+
+const card = h(
+  'div',
+  { className: 'card' },
+  h('h2', null, 'Paneer Tikka'),
+  h('p', null, 'Price: ₹249'),
+  h(
+    'button',
+    { onClick: () =&gt; alert('Added!') },
+    'Add to cart'
+  )
+);</code></pre></div>
+<div><span class="good">With JSX</span><pre><code>const card = (
+  &lt;div className="card"&gt;
+    &lt;h2&gt;Paneer Tikka&lt;/h2&gt;
+    &lt;p&gt;Price: ₹249&lt;/p&gt;
+    &lt;button onClick={() =&gt; alert('Added!')}&gt;
+      Add to cart
+    &lt;/button&gt;
+  &lt;/div&gt;
+);</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>JSX</b> (JavaScript XML) = HTML-like syntax inside JavaScript.</li>
+<li>Every JSX tag becomes a <b>function call</b> that returns a <b>React element</b> (a plain object describing UI).</li>
+<li>Old way: <code>React.createElement(type, props, ...children)</code>.</li>
+<li>Modern way (React 17+): the compiler calls <code>jsx()</code> from <code>react/jsx-runtime</code> (automatic runtime) — covered in JSX-004.</li>
+<li>JSX is <b>just JavaScript</b>: you can store it in variables, return it, pass it as props, and put <code>{expressions}</code> inside.</li>
+<li>Benefits: readable nesting, familiar look, compile-time errors for typos like unclosed tags, better editor support.</li>
+<li><code>createElement</code> still exists and is fully supported — JSX is sugar (syntactic sugar) on top.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// createElement signature
+React.createElement(type, props, ...children)
+//   type     → 'div' (HTML tag as string) or MyComponent (a function)
+//   props    → object of attributes, or null
+//   children → text, numbers, elements, arrays...
+
+// The same thing in JSX
+&lt;type {...props}&gt;children&lt;/type&gt;
+
+// Examples side by side
+React.createElement('p', null, 'Hi')          // &lt;p&gt;Hi&lt;/p&gt;
+React.createElement('img', { src: 'a.png', alt: 'Pizza' }) // &lt;img src="a.png" alt="Pizza" /&gt;
+React.createElement(MovieCard, { title: 'Dune' })         // &lt;MovieCard title="Dune" /&gt;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A small weather widget written <b>both ways</b> in one Vite React app. Create the app with <code>npm create vite@latest weather -- --template react</code>, then replace <code>src/App.jsx</code>.</p>
+<pre><code>// src/App.jsx
+import { createElement } from 'react';
+import { useState } from 'react';
+
+// Version A — plain createElement calls
+function WeatherNoJsx({ city, temp }) {
+  return createElement(
+    'section',
+    { className: 'weather' },
+    createElement('h2', null, 'Weather in ', city),
+    createElement('p', null, temp, '°C'),
+    createElement('small', null, temp &gt; 30 ? 'Hot day ☀️' : 'Pleasant 🌤️')
+  );
+}
+
+// Version B — the same component in JSX
+function WeatherJsx({ city, temp }) {
+  return (
+    &lt;section className="weather"&gt;
+      &lt;h2&gt;Weather in {city}&lt;/h2&gt;
+      &lt;p&gt;{temp}°C&lt;/p&gt;
+      &lt;small&gt;{temp &gt; 30 ? 'Hot day ☀️' : 'Pleasant 🌤️'}&lt;/small&gt;
+    &lt;/section&gt;
+  );
+}
+
+export default function App() {
+  const [temp, setTemp] = useState(28);
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;JSX vs createElement&lt;/h1&gt;
+      &lt;button onClick={() =&gt; setTemp(temp + 3)}&gt;+3°C&lt;/button&gt;
+      {/* Both render the SAME DOM */}
+      &lt;WeatherNoJsx city="Delhi" temp={temp} /&gt;
+      &lt;WeatherJsx city="Delhi" temp={temp} /&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<div class="callout">You can mix both styles in one app. React only sees the resulting element objects — it cannot tell which syntax made them.</div>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3 style="margin-top:0">JSX vs createElement</h3>
+<button type="button">+3°C</button>
+<div style="border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin:10px 0"><b>Weather in Delhi</b><br>28°C<br><small>Pleasant 🌤️</small></div>
+<div style="border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin:10px 0"><b>Weather in Delhi</b><br>28°C<br><small>Pleasant 🌤️</small></div>
+</div>
+<ul>
+<li>Two identical cards. Click <b>+3°C</b> once → both show <code>31°C</code> and <code>Hot day ☀️</code>.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. You write JSX in App.jsx
+        │
+        ▼
+ 2. Vite's compiler turns each tag into a function call
+    &lt;h2&gt;Weather in {city}&lt;/h2&gt;  ──►  jsxs("h2", { children: ["Weather in ", city] })
+        │
+        ▼
+ 3. Browser runs plain JS → each call returns an object
+    { type: "h2", props: { children: ["Weather in ", "Delhi"] }, key: null, ... }
+        │
+        ▼
+ 4. React compares the element tree with the last one (reconciliation)
+        │
+        ▼
+ 5. react-dom updates only the changed DOM nodes (the temperature text)
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Food delivery apps</b>: restaurant cards, menus and cart rows are deeply nested — JSX keeps them readable.</li>
+<li><b>Code review</b>: teammates can "see" the layout in JSX without running it.</li>
+<li><b>When createElement still appears</b>: small libraries that avoid a build step, generated code, or dynamic tag choice like <code>createElement(level, null, text)</code> (though JSX can do this too with a capitalised variable).</li>
+<li>Reading compiled output in DevTools / bundle analysis — knowing the function-call form helps you debug.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Running JSX directly in the browser</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;!-- index.html, no build tool --&gt;
+&lt;script&gt;
+  const el = &lt;h1&gt;Hello&lt;/h1&gt;;
+  // SyntaxError: Unexpected token '&lt;'
+&lt;/script&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// Use a Vite React project:
+// npm create vite@latest shop -- --template react
+// src/App.jsx is compiled before the browser sees it
+export default function App() {
+  return &lt;h1&gt;Hello&lt;/h1&gt;;
+}</code></pre></div>
+</div>
+<h3>Mistake 2: Passing children inside props wrongly with createElement</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Children passed as one array → React warns:
+// "Each child in a list should have a unique key"
+createElement('ul', null, [
+  createElement('li', null, 'Milk'),
+  createElement('li', null, 'Bread'),
+]);</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// Pass static children as separate arguments
+createElement(
+  'ul',
+  null,
+  createElement('li', null, 'Milk'),
+  createElement('li', null, 'Bread')
+);</code></pre></div>
+</div>
+<h3>Mistake 3: Thinking JSX is HTML (it is JavaScript)</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// "It's HTML, so if/else goes inside"
+return (
+  &lt;p&gt;
+    if (isOpen) { 'Open now' }
+  &lt;/p&gt;
+); // renders the text literally</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// JSX children take EXPRESSIONS in { }
+return (
+  &lt;p&gt;{isOpen ? 'Open now' : 'Closed'}&lt;/p&gt;
+);</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Convert to JSX: <code>createElement('h1', { className: 'brand' }, 'QuickCart')</code></p>
+<details><summary>Show solution</summary><pre><code>&lt;h1 className="brand"&gt;QuickCart&lt;/h1&gt;</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Convert to <code>createElement</code>: <code>&lt;img src="/burger.png" alt="Burger" /&gt;</code></p>
+<details><summary>Show solution</summary><pre><code>createElement('img', { src: '/burger.png', alt: 'Burger' })</code></pre></details>
+<h3>Intermediate 1</h3>
+<p>Convert this chat bubble to <code>createElement</code>:</p>
+<pre><code>&lt;div className="msg"&gt;
+  &lt;b&gt;{user}&lt;/b&gt;: {text}
+&lt;/div&gt;</code></pre>
+<details><summary>Show solution</summary><pre><code>createElement(
+  'div',
+  { className: 'msg' },
+  createElement('b', null, user),
+  ': ',
+  text
+)</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Write a <code>MovieBadge</code> component using only <code>createElement</code> that shows <code>title</code> and a "⭐ Top pick" span when <code>rating &gt;= 8</code>.</p>
+<details><summary>Show solution</summary><pre><code>import { createElement as h } from 'react';
+
+export function MovieBadge({ title, rating }) {
+  return h(
+    'div',
+    { className: 'badge' },
+    h('span', null, title),
+    rating &gt;= 8 ? h('span', null, ' ⭐ Top pick') : null
+  );
+}</code></pre></details>
+<h3>Challenge</h3>
+<p>Render a menu list: given <code>const dishes = ['Dosa', 'Idli', 'Vada']</code>, render a <code>&lt;ul&gt;</code> twice — once with <code>createElement</code> + <code>map</code>, once with JSX. Both need keys.</p>
+<details><summary>Show solution</summary><pre><code>import { createElement as h } from 'react';
+
+const dishes = ['Dosa', 'Idli', 'Vada'];
+
+export function MenuNoJsx() {
+  return h(
+    'ul',
+    null,
+    dishes.map((d) =&gt; h('li', { key: d }, d)) // array → needs keys
+  );
+}
+
+export function MenuJsx() {
+  return (
+    &lt;ul&gt;
+      {dishes.map((d) =&gt; &lt;li key={d}&gt;{d}&lt;/li&gt;)}
+    &lt;/ul&gt;
+  );
+}</code></pre></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>JSX = HTML-like syntax that compiles to JavaScript function calls.</li>
+<li>Browsers can't run JSX; Vite compiles it for you.</li>
+<li><code>createElement(type, props, ...children)</code> is the long-hand form.</li>
+<li>Both produce the same React element objects.</li>
+<li>JSX wins on readability for nested UI; it's optional, not required.</li>
+<li>Inside JSX, <code>{ }</code> holds any JavaScript <b>expression</b> (not statements).</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Is JSX required to write React?</summary><p>No. You can call <code>createElement</code> directly. JSX is a convenient syntax that a compiler turns into function calls.</p></details>
+<details><summary>What does a JSX expression evaluate to?</summary><p>A React element — a plain, immutable JavaScript object describing what to render (type, props, key). It is not a DOM node.</p></details>
+<details><summary>Why can't the browser read JSX?</summary><p>JSX is not part of the JavaScript standard (ECMAScript). Browsers' JS engines throw a <code>SyntaxError</code> on <code>&lt;</code> in that position, so a compiler must transform it first.</p></details>
+<details><summary>Name two advantages of JSX over createElement.</summary><p>Readable nested structure that mirrors the UI, and compile-time checks (e.g. unclosed tags are a syntax error) plus richer editor tooling.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-001.html">JSX-001 · What is JSX?</a>
+<a href="JSX-003.html">JSX-003 · JSX vs HTML</a>
+<a href="JSX-004.html">JSX-004 · JSX transformation</a>
+<a href="JSX-005.html">JSX-005 · Babel &amp; compilers</a>
+<a href="INTRO-004.html">INTRO-004 · React vs Vanilla JS</a>
+<a href="INTRO-008.html">INTRO-008 · Declarative vs imperative</a>
+<a href="JSX-002.html#rev">JSX-002 · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">JSX is a friendly way to write <code>createElement</code> calls. <code>&lt;p className="x"&gt;Hi&lt;/p&gt;</code> becomes a function call that returns a plain object. Same result, far easier to read when UI is nested.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>import { createElement } from 'react';
+
+createElement('button', { onClick: buy, disabled: !inStock }, 'Buy');
+// ≡
+&lt;button onClick={buy} disabled={!inStock}&gt;Buy&lt;/button&gt;
+
+createElement(CartItem, { name: 'Tea', qty: 2 });
+// ≡
+&lt;CartItem name="Tea" qty={2} /&gt;</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>JSX is syntax sugar, not a template language or HTML.</li>
+<li>Each tag → one function call → one React element (object).</li>
+<li>Lowercase tag → string type (<code>'div'</code>); Capitalised tag → component reference.</li>
+<li><code>createElement</code> takes children as extra arguments.</li>
+<li>A <code>null</code> props argument means "no props".</li>
+<li>JSX needs a compiler (Vite does it automatically).</li>
+<li><code>{ }</code> accepts expressions only — use ternary / <code>&amp;&amp;</code>, not <code>if</code>.</li>
+<li>Elements are immutable descriptions; React decides how to update the DOM.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What is JSX short for?</summary><p>JavaScript XML — an XML-like syntax extension for JavaScript.</p></details>
+<details><summary>What are the three main arguments of createElement?</summary><p><code>type</code>, <code>props</code>, and any number of <code>children</code>.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Is a React element the same as a DOM element?</summary><p>No. A React element is a lightweight JS object. react-dom later creates or updates real DOM nodes to match it.</p></details>
+<details><summary>Why does <code>&lt;myCard /&gt;</code> not render your component?</summary><p>Lowercase tags compile to strings (<code>'myCard'</code>), so React treats it as an unknown HTML tag. Components must start with a capital letter.</p></details>
+<h3>Advanced</h3>
+<details><summary>Is <code>createElement</code> deprecated in React 19?</summary><p>No, it is still supported. But compilers no longer emit it by default — the automatic runtime uses <code>jsx()</code> from <code>react/jsx-runtime</code>.</p></details>
+<h3>Tricky</h3>
+<details><summary>Can JSX be used without React?</summary><p>Yes. JSX is just syntax; compilers can target other libraries (e.g. Preact, Solid) by changing the import source. The meaning comes from whichever function it compiles to.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<p>What does this log (simplified)?</p>
+<pre><code>const el = &lt;h1 id="t"&gt;Pizza&lt;/h1&gt;;
+console.log(el.type, el.props);</code></pre>
+<details><summary>Answer</summary><pre class="output">h1 { id: 't', children: 'Pizza' }</pre><p><code>children</code> lives inside <code>props</code>.</p></details>
+<p>What renders?</p>
+<pre><code>createElement('p', null, 'Total: ', 2 + 3, ' items')</code></pre>
+<details><summary>Answer</summary><pre class="output">Total: 5 items</pre></details>
+
+<h2>F. Debugging Questions</h2>
+<p>Why does this throw "Unexpected token"?</p>
+<pre><code>// utils.js (plain .js file loaded by a script tag, no build step)
+export const Tag = () =&gt; &lt;span&gt;New&lt;/span&gt;;</code></pre>
+<details><summary>Answer</summary><p>JSX was never compiled. Import it from a file processed by Vite (a <code>.jsx</code> file inside <code>src/</code>), or use <code>createElement</code>.</p></details>
+<p>Why is the button text missing?</p>
+<pre><code>createElement('button', 'Order now');</code></pre>
+<details><summary>Answer</summary><p>The second argument is <code>props</code>. The text was treated as props, not a child. Fix: <code>createElement('button', null, 'Order now')</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A teammate wants to drop JSX "to avoid a build step". Is that realistic?</summary><p>Possible for a tiny widget, but nested UI becomes unreadable. A real app still needs bundling, imports and minification — Vite gives that plus JSX for free.</p></details>
+<details><summary>You must render a heading level from data (<code>h1</code>–<code>h3</code>). How?</summary><p>Store the tag in a capitalised variable: <code>const Tag = `h${level}`; return &lt;Tag&gt;{text}&lt;/Tag&gt;;</code> — or <code>createElement(`h${level}`, null, text)</code>.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Rewrite with <code>createElement</code>:</p>
+<pre><code>&lt;li className="todo"&gt;
+  &lt;input type="checkbox" checked={done} readOnly /&gt;
+  {title}
+&lt;/li&gt;</code></pre>
+<details><summary>Solution</summary><pre><code>createElement(
+  'li',
+  { className: 'todo' },
+  createElement('input', { type: 'checkbox', checked: done, readOnly: true }),
+  title
+)</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Aspect</th><th>JSX</th><th>createElement</th></tr>
+<tr><td>Readability</td><td>High, looks like markup</td><td>Low when nested</td></tr>
+<tr><td>Build step</td><td>Required</td><td>Not required</td></tr>
+<tr><td>Output</td><td>React element</td><td>React element</td></tr>
+<tr><td>Modern compiler output</td><td><code>jsx()</code> / <code>jsxs()</code></td><td>—</td></tr>
+<tr><td>Typical use</td><td>All app code</td><td>Libraries, generated code</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>JSX</th><th>createElement</th></tr>
+<tr><td><code>&lt;p&gt;Hi&lt;/p&gt;</code></td><td><code>createElement('p', null, 'Hi')</code></td></tr>
+<tr><td><code>&lt;a href={url}&gt;Go&lt;/a&gt;</code></td><td><code>createElement('a', { href: url }, 'Go')</code></td></tr>
+<tr><td><code>&lt;Cart items={3} /&gt;</code></td><td><code>createElement(Cart, { items: 3 })</code></td></tr>
+<tr><td><code>&lt;ul&gt;&lt;li&gt;A&lt;/li&gt;&lt;li&gt;B&lt;/li&gt;&lt;/ul&gt;</code></td><td><code>createElement('ul', null, li1, li2)</code></td></tr>
+<tr><td><code>{cond &amp;&amp; &lt;b&gt;!&lt;/b&gt;}</code></td><td><code>cond &amp;&amp; createElement('b', null, '!')</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

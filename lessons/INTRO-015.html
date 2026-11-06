@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-015 · Understanding React architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-015</span><span>Module 2: React Introduction</span><span>Lesson 15</span><span>Level: <b>Intermediate</b></span><span>Time: <b>45 min</b></span><span>Prerequisites: <b>INTRO-014</b></span></div>
+<h1>Understanding React architecture</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-015-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<p>Think of a restaurant:</p>
+<ul>
+<li><b>Components</b> (components) = recipes. They describe the dish; they don’t cook it.</li>
+<li><b><code>react</code> package</b> = the recipe language: how to write recipes (elements, hooks).</li>
+<li><b>Reconciler</b> (reconciler) = the head chef. Compares today’s order with what is already on the table and decides what to change.</li>
+<li><b><code>react-dom</code></b> (renderer) = the waiter who actually puts plates on the table (the browser DOM).</li>
+<li>Swap the waiter and the same recipes can be served elsewhere: <b>React Native</b> puts them on a phone screen.</li>
+</ul>
+<pre class="diagram">
+  YOUR CODE          function App() { return &lt;Cart /&gt; }
+     │  components return elements (plain objects)
+     ▼
+ ┌──────────────────────────────────────────────┐
+ │ react          createElement / jsx, hooks,  │  ← renderer-agnostic
+ │                Component types, memo, lazy   │
+ └──────────────────────┬───────────────────────┘
+                        │ hooks are forwarded to the active renderer
+ ┌──────────────────────┴───────────────────────┐
+ │ react-dom  (a renderer)                      │
+ │  ┌────────────────────────────────────────┐  │
+ │  │ RECONCILER (Fiber)                     │  │
+ │  │  render phase: call components, diff   │  │
+ │  │  commit phase: apply changes           │  │
+ │  └────────────────────────────────────────┘  │
+ │  + scheduler (priorities: click &gt; fetch)     │
+ │  + DOM host config (createElement, append…)  │
+ └──────────────────────┬───────────────────────┘
+                        ▼
+                  BROWSER DOM  →  pixels on screen
+
+ other renderers: react-native (phone), react-three-fiber (3D)
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Knowing the layers explains confusing errors: “Invalid hook call”, double logs in Strict Mode, stale DOM.</li>
+<li>It explains why components must be <b>pure</b> (pure functions) — React may call them more than once before committing.</li>
+<li>It explains why <code>react</code> and <code>react-dom</code> versions must match.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Mental model: "my component edits the page"
+function Counter() {
+  const [n, setN] = useState(0);
+  // touching the DOM during render
+  document.title = 'Count ' + n;
+  return &lt;button onClick={() =&gt; setN(n + 1)}&gt;{n}&lt;/button&gt;;
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// Correct model: render describes, commit applies,
+// effects run after commit
+function Counter() {
+  const [n, setN] = useState(0);
+  useEffect(() =&gt; {
+    document.title = 'Count ' + n;
+  }, [n]);
+  return &lt;button onClick={() =&gt; setN(n + 1)}&gt;{n}&lt;/button&gt;;
+}</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Component</b> (function component): a function that returns elements. No DOM work inside.</li>
+<li><b>Element</b> (React element): a small, immutable object like <code>{ type: 'h1', props: { children: 'Hi' } }</code>. Cheap to create.</li>
+<li><b><code>react</code></b>: defines elements, hooks (<code>useState</code>, <code>useEffect</code>…), <code>memo</code>, <code>lazy</code>, <code>Suspense</code>. Knows nothing about the DOM.</li>
+<li><b><code>react-dom</code></b>: the DOM renderer. Entry points: <code>react-dom/client</code> (<code>createRoot</code>, <code>hydrateRoot</code>), <code>react-dom/server</code>, <code>react-dom/static</code>.</li>
+<li><b>Reconciler</b> (reconciliation): compares the new element tree to the previous one and works out the minimum changes. Lives inside each renderer.</li>
+<li><b>Fiber</b> (Fiber tree): React’s internal tree — one “fiber” node per component/element, holding state, hooks, and pending work.</li>
+<li><b>Render phase</b>: React calls your components and diffs. Can be paused, restarted or thrown away. Must be pure.</li>
+<li><b>Commit phase</b>: React applies DOM changes in one go, then runs <code>useLayoutEffect</code>, then (after paint, usually) <code>useEffect</code>.</li>
+<li><b>Scheduler</b> (scheduling): gives urgent updates (typing, clicks) priority over slower ones (transitions).</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>The two packages you always install</h3>
+<pre><code>npm install react@19.2 react-dom@19.2   # versions must match</code></pre>
+<h3>What each import comes from</h3>
+<pre><code>// react — renderer-agnostic
+import { useState, useEffect, useLayoutEffect, memo, Suspense } from 'react';
+
+// react-dom/client — browser entry point
+import { createRoot, hydrateRoot } from 'react-dom/client';
+
+// react-dom/server, react-dom/static — HTML generation (Node / edge)
+import { renderToPipeableStream } from 'react-dom/server';
+import { prerender } from 'react-dom/static';
+
+// react/jsx-runtime — what JSX compiles to (added by the build tool)
+import { jsx } from 'react/jsx-runtime';</code></pre>
+<h3>Starting the renderer</h3>
+<pre><code>const root = createRoot(document.getElementById('root'));
+root.render(&lt;App /&gt;);   // start reconciling App into #root
+// root.unmount();       // tear the tree down</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A weather card that logs every architectural step, so you can watch render → commit → effects in the console.</p>
+<h3>src/App.jsx</h3>
+<pre><code>import { useState, useEffect, useLayoutEffect } from 'react';
+
+function TempLabel({ city, celsius }) {
+  console.log(`  render TempLabel (${city})`);
+  return (
+    &lt;p&gt;
+      {city}: {celsius}°C
+    &lt;/p&gt;
+  );
+}
+
+export default function App() {
+  const [celsius, setCelsius] = useState(24);
+  console.log(`render App (celsius=${celsius})`);
+
+  // 1) element = plain object describing UI
+  const element = &lt;TempLabel city="Pune" celsius={celsius} /&gt;;
+  console.log('  element.type is TempLabel?', element.type === TempLabel);
+  console.log('  element.props', element.props);
+
+  // 2) runs after DOM is updated, before the browser paints
+  useLayoutEffect(() =&gt; {
+    console.log(`layout effect: DOM shows ${celsius}°C`);
+  }, [celsius]);
+
+  // 3) runs after commit (usually after paint)
+  useEffect(() =&gt; {
+    console.log(`effect: celsius=${celsius}`);
+  }, [celsius]);
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Weather&lt;/h1&gt;
+      {element}
+      &lt;button onClick={() =&gt; setCelsius((c) =&gt; c + 1)}&gt;Warmer +1°&lt;/button&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<h3>src/main.jsx</h3>
+<pre><code>import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+
+// StrictMode removed on purpose so the log is not doubled.
+// Put it back afterwards — see the note in Expected Output.
+createRoot(document.getElementById('root')).render(&lt;App /&gt;);</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3>Weather</h3>
+<p>Pune: 24°C</p>
+<button type="button">Warmer +1°</button>
+</div>
+<p>Console on first load (without Strict Mode):</p>
+<pre class="output">render App (celsius=24)
+  element.type is TempLabel? true
+  element.props {city: 'Pune', celsius: 24}
+  render TempLabel (Pune)
+layout effect: DOM shows 24°C
+effect: celsius=24</pre>
+<p>After one click:</p>
+<pre class="output">render App (celsius=25)
+  element.type is TempLabel? true
+  element.props {city: 'Pune', celsius: 25}
+  render TempLabel (Pune)
+layout effect: DOM shows 25°C
+effect: celsius=25</pre>
+<div class="callout"><b>Strict Mode (development only):</b> with <code>&lt;StrictMode&gt;</code> React renders each component twice on mount (the second set of logs is dimmed in the console in React 19) and runs effects mount → cleanup → mount once more, so you will also see the layout effect and effect lines twice on first load. Production builds do neither.</div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ createRoot(#root).render(&lt;App/&gt;)
+        │
+ ── RENDER PHASE (pure, may be interrupted) ──────────────
+        │
+ reconciler creates fiber for App → calls App()
+        │   useState → 24  (hook state stored on App's fiber)
+        │   returns elements: main &gt; h1, TempLabel, button
+        │
+ reconciler visits TempLabel fiber → calls TempLabel()
+        │   returns: p "Pune: 24°C"
+        │
+ builds list of changes ("effects list"):
+   create main, h1, p, button; set text; attach onClick
+        │
+ ── COMMIT PHASE (synchronous, cannot be interrupted) ────
+        │
+ react-dom host config → document.createElement(...),
+   appendChild(...) into #root
+        │
+ run useLayoutEffect callbacks   → "layout effect: 24°C"
+        │
+ browser paints pixels
+        │
+ run useEffect callbacks         → "effect: celsius=24"
+
+ ── CLICK "Warmer" ───────────────────────────────────────
+ setCelsius(c =&gt; c + 1)  → scheduler queues a high-priority update
+        │
+ RENDER: App() again → new elements; TempLabel() again
+ DIFF:   h1 same → skip; p text "24" → "25"; button same → skip
+        │
+ COMMIT: update ONE text node; run layout effect; paint; effect
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Same components, different screens</b>: a food-delivery company shares hooks and logic between a web app (<code>react-dom</code>) and a phone app (React Native renderer).</li>
+<li><b>Snappy search box</b>: typing in a movie search is urgent; filtering 5,000 movies is wrapped in <code>startTransition</code> so the scheduler can interrupt it.</li>
+<li><b>Measuring layout</b>: a chat app scrolls to the newest message in <code>useLayoutEffect</code> (DOM is updated but not yet painted → no flicker).</li>
+<li><b>Server rendering</b>: the same reconciler logic produces HTML strings via <code>react-dom/server</code> for SSR/SSG.</li>
+<li><b>Custom renderers</b>: libraries build on the <code>react-reconciler</code> package to render React to canvas, 3D scenes (react-three-fiber), terminals (Ink) or PDFs.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Side effects in the render phase</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function OrderBadge({ count }) {
+  // render may run more than once (Strict Mode,
+  // interrupted renders) → duplicate sends
+  fetch('/api/log?count=' + count);
+  return &lt;span&gt;{count}&lt;/span&gt;;
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function OrderBadge({ count }) {
+  useEffect(() =&gt; {
+    fetch('/api/log?count=' + count);
+  }, [count]);
+  return &lt;span&gt;{count}&lt;/span&gt;;
+}</code></pre></div>
+</div>
+<h3>Mistake 2: Mismatched or duplicate React copies</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// package.json
+"react": "^18.3.1",
+"react-dom": "^19.2.0"
+// → errors / "Invalid hook call":
+// hooks from one copy of react, renderer
+// expects another</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// package.json — same version, one copy
+"react": "^19.2.0",
+"react-dom": "^19.2.0"
+
+// check for duplicates:
+// npm ls react</code></pre></div>
+</div>
+<h3>Mistake 3: Using the removed legacy render API</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>import ReactDOM from 'react-dom';
+// removed in React 19
+ReactDOM.render(&lt;App /&gt;, document.getElementById('root'));</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { createRoot } from 'react-dom/client';
+createRoot(document.getElementById('root')).render(&lt;App /&gt;);</code></pre></div>
+</div>
+<h3>Mistake 4: Calling a component like a normal function</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// TempLabel gets no fiber of its own;
+// its hooks attach to the PARENT → breaks
+// when called conditionally
+return &lt;main&gt;{TempLabel({ city: 'Pune', celsius })}&lt;/main&gt;;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// let React call it → own fiber, own state
+return &lt;main&gt;&lt;TempLabel city="Pune" celsius={celsius} /&gt;&lt;/main&gt;;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Which package does each come from: <code>useState</code>, <code>createRoot</code>, <code>hydrateRoot</code>, <code>Suspense</code>?</p>
+<details><summary>Solution</summary><p><code>useState</code>, <code>Suspense</code> → <code>react</code>. <code>createRoot</code>, <code>hydrateRoot</code> → <code>react-dom/client</code>.</p></details>
+<h3>Beginner 2</h3>
+<p>Put in order: browser paints, <code>useEffect</code> runs, component function runs, DOM is updated, <code>useLayoutEffect</code> runs.</p>
+<details><summary>Solution</summary><ol><li>Component function runs (render)</li><li>DOM is updated (commit)</li><li><code>useLayoutEffect</code> runs</li><li>Browser paints</li><li><code>useEffect</code> runs</li></ol><p>(<code>useEffect</code> usually runs after paint; for updates caused by a click React may flush it earlier, but always after commit.)</p></details>
+<h3>Intermediate 1</h3>
+<p>Log a JSX element and describe its shape: <code>console.log(&lt;li key="1" className="dish"&gt;Dosa&lt;/li&gt;)</code>.</p>
+<details><summary>Solution</summary>
+<pre class="output">{ $$typeof: Symbol(react.transitional.element),
+  type: 'li',
+  key: '1',
+  props: { className: 'dish', children: 'Dosa' },
+  ... (dev-only fields such as _owner, _store) }</pre>
+<p><code>key</code> is kept outside <code>props</code>. It is just data — nothing on screen yet.</p>
+</details>
+<h3>Intermediate 2</h3>
+<p>In the example, click “Warmer” 3 times. How many DOM nodes does React change per click?</p>
+<details><summary>Solution</summary><p>One: the text inside <code>&lt;p&gt;</code>. The <code>h1</code>, <code>button</code> and <code>main</code> elements are equal to last time, so the reconciler skips them (though the component functions still run).</p></details>
+<h3>Challenge</h3>
+<p>Prove render and commit are separate: show that a component can render without its effect running yet. Hint: log inside the body and inside <code>useEffect</code>, and use <code>startTransition</code> with a slow list.</p>
+<details><summary>Solution</summary>
+<pre><code>import { useState, useEffect, startTransition } from 'react';
+
+function SlowList({ query }) {
+  console.log('render SlowList', query);
+  const start = performance.now();
+  while (performance.now() - start &lt; 200) {} // fake slow render
+  useEffect(() =&gt; console.log('commit+effect SlowList', query));
+  return &lt;p&gt;Results for "{query}"&lt;/p&gt;;
+}
+
+export default function App() {
+  const [text, setText] = useState('');
+  const [query, setQuery] = useState('');
+  return (
+    &lt;&gt;
+      &lt;input
+        value={text}
+        onChange={(e) =&gt; {
+          setText(e.target.value);
+          startTransition(() =&gt; setQuery(e.target.value));
+        }}
+      /&gt;
+      &lt;SlowList query={query} /&gt;
+    &lt;/&gt;
+  );
+}
+// Type fast: you may see "render SlowList" for a value
+// whose "commit+effect" line never appears — React threw that
+// render away because a newer one arrived. Exact logs vary.</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Components return <b>elements</b> (plain objects), never touch the DOM directly.</li>
+<li><code>react</code> = elements + hooks (no DOM). <code>react-dom</code> = DOM renderer.</li>
+<li>The <b>reconciler</b> (Fiber) diffs old vs new trees and finds minimal changes.</li>
+<li><b>Render phase</b> is pure and may repeat; <b>commit phase</b> applies changes once.</li>
+<li>Order: render → DOM commit → <code>useLayoutEffect</code> → paint → <code>useEffect</code>.</li>
+<li><code>react</code> and <code>react-dom</code> versions must match; one copy only.</li>
+<li>Strict Mode double-renders and re-runs effects in development only.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. Why are react and react-dom separate packages?</summary><p><code>react</code> defines what UI is (elements, hooks) independent of platform. <code>react-dom</code> is one renderer for the browser; React Native is another. Splitting lets the same components target multiple platforms.</p></details>
+<details><summary>Q2. What is reconciliation?</summary><p>The process of comparing the new element tree with the previous one (using element type and <code>key</code>) to decide which host nodes to create, update or delete.</p></details>
+<details><summary>Q3. What is Fiber?</summary><p>React’s internal data structure and algorithm (since React 16). Each fiber is a unit of work for one component/element; work can be split, prioritised, paused and resumed.</p></details>
+<details><summary>Q4. Why must components be pure?</summary><p>The render phase can be repeated or discarded (Strict Mode, transitions, Suspense). Side effects there would run an unpredictable number of times.</p></details>
+<details><summary>Q5. useEffect vs useLayoutEffect timing?</summary><p>Both run after commit. <code>useLayoutEffect</code> runs synchronously before the browser paints; <code>useEffect</code> usually runs after paint. Prefer <code>useEffect</code> unless you must measure or adjust layout before paint.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-014.html">INTRO-014 · React ecosystem overview</a>
+<a href="INTRO-014.html#rev">INTRO-014 · Revision</a>
+<a href="INTRO-013.html">INTRO-013 · Static site generation</a>
+<a href="INTRO-008.html">INTRO-008 · Declarative vs imperative</a>
+<a href="JSX-001.html">JSX-001 · What is JSX?</a>
+<a href="INTRO-015.html#rev">INTRO-015 · Revision tab</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">Your <b>components</b> return <b>elements</b> (plain objects). The <b><code>react</code></b> package defines elements and hooks. A <b>renderer</b> such as <b><code>react-dom</code></b> contains the <b>reconciler</b> (Fiber), which diffs the new tree against the old in the <b>render phase</b>, then applies the minimum DOM changes in the <b>commit phase</b>, then runs effects.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>import { useState, useEffect, useLayoutEffect } from 'react';   // core
+import { createRoot, hydrateRoot } from 'react-dom/client';       // browser
+import { renderToPipeableStream } from 'react-dom/server';       // SSR
+import { prerender } from 'react-dom/static';                    // SSG
+
+const root = createRoot(document.getElementById('root'));
+root.render(&lt;App /&gt;);
+root.unmount();
+
+// JSX → element object
+const el = &lt;h1 className="t"&gt;Hi&lt;/h1&gt;;
+el.type;   // 'h1'
+el.props;  // { className: 't', children: 'Hi' }</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li><code>react</code> has no DOM code.</li>
+<li><code>react-dom</code> is a renderer; React Native is another.</li>
+<li>Reconciler lives inside the renderer; <code>react-reconciler</code> lets you build custom renderers.</li>
+<li>Elements are immutable descriptions; fibers are mutable internal work nodes.</li>
+<li>Render phase: call components + diff (pure, interruptible).</li>
+<li>Commit phase: mutate DOM, run layout effects (synchronous).</li>
+<li><code>useEffect</code> runs after commit, usually after paint.</li>
+<li>Diffing uses element <code>type</code> and <code>key</code>.</li>
+<li><code>ReactDOM.render</code> was removed in React 19 — use <code>createRoot</code>.</li>
+<li>Matching versions of <code>react</code> and <code>react-dom</code>; one copy.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What does a component return?</summary><p>React elements (or strings, numbers, null, arrays of these).</p></details>
+<details><summary>Where does <code>createRoot</code> come from?</summary><p><code>react-dom/client</code>.</p></details>
+<h3>Intermediate</h3>
+<details><summary>What happens if element <code>type</code> changes between renders (e.g. <code>&lt;div&gt;</code> → <code>&lt;section&gt;</code>)?</summary><p>React destroys the old subtree (including its state) and builds a new one.</p></details>
+<details><summary>Why does a hook “know” which component it belongs to?</summary><p>While rendering a component, the renderer sets the current fiber; hook calls read/write the hook list on that fiber in call order.</p></details>
+<h3>Advanced</h3>
+<details><summary>What makes the render phase interruptible?</summary><p>Fiber splits work into units; with concurrent features (transitions, Suspense) the scheduler can yield to the browser between units and discard stale work.</p></details>
+<details><summary>What is the “host config” in a renderer?</summary><p>The platform-specific functions the reconciler calls — e.g. create instance, append child, commit update. For react-dom they wrap DOM APIs.</p></details>
+<h3>Tricky</h3>
+<details><summary>Does a re-render always change the DOM?</summary><p>No. If the diff finds no changes, the commit makes no DOM mutations.</p></details>
+<details><summary>Is the virtual DOM what makes React fast?</summary><p>Not by itself — diffing has a cost. Its benefit is a declarative model with batched, minimal updates; speed also comes from scheduling and avoiding unnecessary work (memoization, React Compiler).</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>function App() {
+  console.log('A render');
+  useLayoutEffect(() =&gt; console.log('B layout'));
+  useEffect(() =&gt; console.log('C effect'));
+  return &lt;Child /&gt;;
+}
+function Child() {
+  console.log('D render');
+  useEffect(() =&gt; console.log('E effect'));
+  return null;
+}
+// production build, first mount</code></pre>
+<details><summary>Answer</summary><pre class="output">A render
+D render
+B layout
+E effect
+C effect</pre><p>Parents render first; effects run child-first. Layout effects all run before passive effects. In development with Strict Mode you’ll see extra repeats.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>“Invalid hook call. Hooks can only be called inside of the body of a function component.” — but the code looks fine.</summary><p>Likely two copies of React (e.g. a linked local library with its own <code>react</code>) or mismatched <code>react</code>/<code>react-dom</code> versions. Run <code>npm ls react</code> and dedupe.</p></details>
+<details><summary>“TypeError: ReactDOM.render is not a function” after upgrading.</summary><p>Removed in React 19. Use <code>createRoot(container).render(&lt;App /&gt;)</code>.</p></details>
+<details><summary>Analytics event fires twice in dev only.</summary><p>Strict Mode re-runs effects once on mount in development. Make the effect idempotent or add cleanup; production fires once.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A tooltip flickers in the wrong position before jumping into place.</summary><p>Measure and position it in <code>useLayoutEffect</code> so the change is applied before paint.</p></details>
+<details><summary>Your team wants the same cart logic on web and mobile.</summary><p>Put the logic in custom hooks (they only use <code>react</code>), then render with <code>react-dom</code> on web and React Native on mobile.</p></details>
+<details><summary>Typing in a movie search lags because the result list is heavy.</summary><p>Mark the list update as a transition (<code>startTransition</code> or <code>useDeferredValue</code>) so the scheduler keeps the input responsive.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write the same UI without JSX, using <code>createElement</code>: a <code>&lt;ul&gt;</code> with two <code>&lt;li&gt;</code> todos.</p>
+<details><summary>Solution</summary>
+<pre><code>import { createElement as h } from 'react';
+
+export default function Todos() {
+  return h('ul', null,
+    h('li', { key: 'a' }, 'Buy milk'),
+    h('li', { key: 'b' }, 'Book movie tickets')
+  );
+}</code></pre>
+</details>
+<p>Mount two independent React roots on one page (header cart badge and main menu).</p>
+<details><summary>Solution</summary>
+<pre><code>import { createRoot } from 'react-dom/client';
+import CartBadge from './CartBadge.jsx';
+import Menu from './Menu.jsx';
+
+createRoot(document.getElementById('cart-root')).render(&lt;CartBadge /&gt;);
+createRoot(document.getElementById('menu-root')).render(&lt;Menu /&gt;);
+// Separate trees: they don't share state or context.</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Thing</th><th>What it is</th><th>Who creates it</th></tr>
+<tr><td>Component</td><td>Function returning elements</td><td>You</td></tr>
+<tr><td>Element</td><td>Immutable object describing UI</td><td>JSX / <code>jsx()</code></td></tr>
+<tr><td>Fiber</td><td>Internal mutable work node with state/hooks</td><td>Reconciler</td></tr>
+<tr><td>DOM node</td><td>Real browser object</td><td>react-dom in commit</td></tr>
+</table></div>
+<div class="tablewrap"><table>
+<tr><th></th><th>Render phase</th><th>Commit phase</th></tr>
+<tr><td>Does</td><td>Calls components, diffs</td><td>Mutates DOM, runs layout effects</td></tr>
+<tr><td>Interruptible?</td><td>Yes (concurrent)</td><td>No</td></tr>
+<tr><td>Side effects allowed?</td><td>No</td><td>Yes (in effects)</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Remember</th><th>One line</th></tr>
+<tr><td><code>react</code></td><td>Elements, hooks, no DOM</td></tr>
+<tr><td><code>react-dom/client</code></td><td><code>createRoot</code>, <code>hydrateRoot</code></td></tr>
+<tr><td>Reconciler</td><td>Diffs trees by type + key</td></tr>
+<tr><td>Fiber</td><td>One work node per element; stores hooks</td></tr>
+<tr><td>Order</td><td>render → commit → layout effect → paint → effect</td></tr>
+<tr><td>Purity</td><td>Render may repeat; no side effects there</td></tr>
+<tr><td>Strict Mode</td><td>Dev only: double render + effect re-run</td></tr>
+<tr><td>Versions</td><td>Same <code>react</code> &amp; <code>react-dom</code>, one copy</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

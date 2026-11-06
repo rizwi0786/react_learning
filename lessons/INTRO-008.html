@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-008 · Declarative vs imperative programming</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-008</span><span>Module 2: React Introduction</span><span>Lesson 8</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-007</b></span></div>
+<h1>Declarative vs imperative programming</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-008-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li><b>Imperative</b> = giving a taxi driver every turn: “Left, 200 m straight, right at the signal…”</li>
+<li><b>Declarative</b> = telling the driver the destination: “Take me to the railway station.” The driver works out the turns.</li>
+</ul>
+<pre class="diagram">
+ IMPERATIVE (how)                      DECLARATIVE (what)
+
+ event happens                         event happens
+     |                                     |
+ find element                          change the data (state)
+ change its text                           |
+ show/hide badge                       UI = f(state)
+ add/remove class                          |
+ append/remove nodes                   React works out the DOM steps
+     |                                     |
+ hope you did not forget a step        screen always matches state
+</pre>
+<div class="callout"><b>UI = f(state)</b> — the screen is the result of a function (your component) applied to the current data (state).</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>With imperative code, every new feature adds more “if this changed, also update that” steps.</li>
+<li>Forget one step → the screen shows old data (stale UI).</li>
+<li>Declarative code describes the final look once; it cannot drift out of sync.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Imperative: 3 places to update by hand
+function markRead() {
+  unread = 0;
+  badge.textContent = '0';
+  badge.style.display = 'none';
+  // forgot: title still says "(3) Chat"
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// Declarative: change data, UI follows
+function markRead() {
+  setUnread(0);
+}
+// badge and title are both derived from unread</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Imperative</b> (imperative programming): you write step-by-step instructions to change the DOM.</li>
+<li><b>Declarative</b> (declarative programming): you describe what the UI should look like for a given state.</li>
+<li><b>State</b> (state): the data that can change over time (unread count, cart items).</li>
+<li><b>UI as a function of state</b>: same state → same UI, every time.</li>
+<li><b>React does the imperative part</b> for you: it compares the new description with the old (reconciliation) and runs the DOM steps (commit).</li>
+<li><b>Escape hatches</b>: refs and effects let you write imperative code when needed (focus an input, play a video).</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>Imperative (vanilla DOM)</h3>
+<pre><code>const el = document.querySelector('#status');
+if (isOnline) {
+  el.textContent = 'Online';
+  el.classList.add('green');
+} else {
+  el.textContent = 'Offline';
+  el.classList.remove('green');
+}</code></pre>
+<h3>Declarative (React JSX)</h3>
+<pre><code>&lt;span className={isOnline ? 'green' : ''}&gt;
+  {isOnline ? 'Online' : 'Offline'}
+&lt;/span&gt;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A chat inbox with an unread badge and a “Mark all read” button, written both ways.</p>
+<h3>Imperative: index.html + vanilla JS</h3>
+<pre><code>&lt;h1 id="heading"&gt;&lt;/h1&gt;
+&lt;ul id="list"&gt;&lt;/ul&gt;
+&lt;button id="readAll"&gt;Mark all read&lt;/button&gt;
+
+&lt;script&gt;
+  const messages = [
+    { id: 1, from: 'Riya', text: 'Lunch at 1?', read: false },
+    { id: 2, from: 'Kabir', text: 'Movie tonight!', read: false },
+    { id: 3, from: 'Mom', text: 'Call me', read: true },
+  ];
+
+  const heading = document.getElementById('heading');
+  const list = document.getElementById('list');
+
+  // Step 1: build list by hand
+  messages.forEach((m) =&gt; {
+    const li = document.createElement('li');
+    li.id = 'msg-' + m.id;
+    li.textContent = m.from + ': ' + m.text;
+    if (!m.read) li.style.fontWeight = 'bold';
+    list.appendChild(li);
+  });
+
+  // Step 2: set heading by hand
+  let unread = messages.filter((m) =&gt; !m.read).length;
+  heading.textContent = 'Inbox (' + unread + ' unread)';
+
+  // Step 3: on click, update EVERY affected piece by hand
+  document.getElementById('readAll').addEventListener('click', () =&gt; {
+    messages.forEach((m) =&gt; {
+      m.read = true;
+      document.getElementById('msg-' + m.id).style.fontWeight = 'normal';
+    });
+    unread = 0;
+    heading.textContent = 'Inbox (0 unread)';
+    document.getElementById('readAll').disabled = true;
+  });
+&lt;/script&gt;</code></pre>
+<h3>Declarative: src/App.jsx (Vite React app)</h3>
+<pre><code>import { useState } from 'react';
+
+const initialMessages = [
+  { id: 1, from: 'Riya', text: 'Lunch at 1?', read: false },
+  { id: 2, from: 'Kabir', text: 'Movie tonight!', read: false },
+  { id: 3, from: 'Mom', text: 'Call me', read: true },
+];
+
+export default function App() {
+  const [messages, setMessages] = useState(initialMessages);
+
+  // Derived from state — never stored separately
+  const unread = messages.filter((m) =&gt; !m.read).length;
+
+  function markAllRead() {
+    setMessages(messages.map((m) =&gt; ({ ...m, read: true })));
+  }
+
+  // Describe WHAT the UI looks like for this state
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Inbox ({unread} unread)&lt;/h1&gt;
+      &lt;ul&gt;
+        {messages.map((m) =&gt; (
+          &lt;li key={m.id} style={{ fontWeight: m.read ? 'normal' : 'bold' }}&gt;
+            {m.from}: {m.text}
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+      &lt;button onClick={markAllRead} disabled={unread === 0}&gt;
+        Mark all read
+      &lt;/button&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<div class="callout">Imperative version: 3 separate DOM-update steps you must keep in sync. React version: one description; React figures out which nodes changed.</div>
+
+<h2>6. Expected Output</h2>
+<p>Before clicking (both versions):</p>
+<div class="ui">
+<h3>Inbox (2 unread)</h3>
+<ul>
+<li><b>Riya: Lunch at 1?</b></li>
+<li><b>Kabir: Movie tonight!</b></li>
+<li>Mom: Call me</li>
+</ul>
+<button type="button">Mark all read</button>
+</div>
+<p>After clicking “Mark all read”:</p>
+<div class="ui">
+<h3>Inbox (0 unread)</h3>
+<ul>
+<li>Riya: Lunch at 1?</li>
+<li>Kabir: Movie tonight!</li>
+<li>Mom: Call me</li>
+</ul>
+<button type="button" disabled>Mark all read</button>
+</div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ IMPERATIVE                              DECLARATIVE (React)
+ ----------                              -------------------
+ click                                   click
+   |                                       |
+ loop messages, set read=true            markAllRead()
+   |                                       |
+ for each li: find by id,                setMessages(newArray)
+   set fontWeight                          |
+   |                                     React calls App() again
+ set unread = 0                            |
+   |                                     App returns new JSX:
+ set heading text                          h1 "0 unread", 3 normal li,
+   |                                       button disabled
+ disable button                            |
+   |                                     React diffs old vs new
+ (miss a step = stale UI)                  |
+                                         React applies only changes:
+                                           - h1 text
+                                           - 2 li styles
+                                           - button disabled attr
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Food-delivery tracker</b>: status “Preparing → On the way → Delivered” is one state value; the progress bar, map pin and ETA text all derive from it.</li>
+<li><b>Shop filters</b>: the product grid is <code>products.filter(...)</code> of the selected filters — no manual show/hide.</li>
+<li><b>Weather app</b>: icon, background and text are all chosen from <code>weather.condition</code>.</li>
+<li><b>Imperative still needed</b>: focusing a search box, scrolling a chat to the bottom, playing a video — use refs/effects.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Reaching into the DOM from React</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function markAllRead() {
+  document.querySelector('h1').textContent =
+    'Inbox (0 unread)';
+} // next render overwrites it</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function markAllRead() {
+  setMessages(messages.map((m) =&gt; ({ ...m, read: true })));
+} // h1 is derived from messages</code></pre></div>
+</div>
+<h3>Mistake 2: Storing derived data as extra state</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const [messages, setMessages] = useState(initial);
+const [unread, setUnread] = useState(2);
+// must remember to update both = imperative thinking</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const [messages, setMessages] = useState(initial);
+const unread = messages.filter((m) =&gt; !m.read).length;</code></pre></div>
+</div>
+<h3>Mistake 3: Toggling visibility by hand</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>useEffect(() =&gt; {
+  document.getElementById('badge').style.display =
+    unread ? 'inline' : 'none';
+}, [unread]);</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{unread &gt; 0 &amp;&amp; &lt;span id="badge"&gt;{unread}&lt;/span&gt;}</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Label each as imperative or declarative: (a) <code>el.classList.add('open')</code> (b) <code>&lt;div className={open ? 'open' : ''}&gt;</code></p>
+<details><summary>Solution</summary><p>(a) imperative, (b) declarative.</p></details>
+<h3>Beginner 2</h3>
+<p>Write JSX that shows “Shop open” or “Shop closed” based on <code>isOpen</code>.</p>
+<details><summary>Solution</summary><pre><code>&lt;p&gt;{isOpen ? 'Shop open' : 'Shop closed'}&lt;/p&gt;</code></pre></details>
+<h3>Intermediate 1</h3>
+<p>Convert to React: <code>if (items.length === 0) { msg.textContent = 'Cart is empty'; } else { msg.textContent = items.length + ' items'; }</code></p>
+<details><summary>Solution</summary><pre><code>&lt;p&gt;{items.length === 0 ? 'Cart is empty' : `${items.length} items`}&lt;/p&gt;</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>A weather card stores <code>temp</code> and also <code>isHot</code> (temp &gt; 35) in state. Remove the redundant state.</p>
+<details><summary>Solution</summary><pre><code>const [temp, setTemp] = useState(38);
+const isHot = temp &gt; 35; // derived, not state
+return &lt;p&gt;{temp}°C {isHot &amp;&amp; '- Stay indoors'}&lt;/p&gt;;</code></pre></details>
+<h3>Challenge</h3>
+<p>Build a food-order status tracker in React with a “Next step” button cycling through Placed → Preparing → On the way → Delivered. The button disappears at Delivered.</p>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+
+const STEPS = ['Placed', 'Preparing', 'On the way', 'Delivered'];
+
+export default function App() {
+  const [step, setStep] = useState(0);
+  const done = step === STEPS.length - 1;
+
+  return (
+    &lt;div&gt;
+      &lt;h2&gt;Order status: {STEPS[step]}&lt;/h2&gt;
+      &lt;ol&gt;
+        {STEPS.map((s, i) =&gt; (
+          &lt;li key={s} style={{ fontWeight: i === step ? 'bold' : 'normal' }}&gt;
+            {i &lt;= step ? '✔ ' : ''}{s}
+          &lt;/li&gt;
+        ))}
+      &lt;/ol&gt;
+      {!done &amp;&amp; &lt;button onClick={() =&gt; setStep(step + 1)}&gt;Next step&lt;/button&gt;}
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Imperative = how (step-by-step DOM edits).</li>
+<li>Declarative = what (describe UI for the current state).</li>
+<li>React: UI = f(state); change state, not the DOM.</li>
+<li>Derive values from state instead of storing copies.</li>
+<li>React performs the imperative DOM work after diffing.</li>
+<li>Use refs/effects only for true imperative needs (focus, scroll, media).</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What does “React is declarative” mean?</summary><p>You describe what the UI should look like for each state; React decides how to update the DOM to match.</p></details>
+<details><summary>Q2. Give an example of imperative code React hides from you.</summary><p><code>createElement</code>, <code>appendChild</code>, <code>removeChild</code>, setting <code>textContent</code> and attributes — React does these during the commit phase.</p></details>
+<details><summary>Q3. Is declarative always better?</summary><p>For UI state, usually yes. But some browser actions are inherently imperative (focus, scroll, animations); React provides refs and effects for them.</p></details>
+<details><summary>Q4. What is “derived state” and why avoid storing it?</summary><p>A value computable from existing state/props (e.g., unread count). Storing it separately means two sources of truth that can disagree.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-007.html">INTRO-007 Features of React</a>
+<a href="INTRO-007.html#rev">INTRO-007 Revision</a>
+<a href="INTRO-006.html">INTRO-006 Library vs framework</a>
+<a href="INTRO-005.html">INTRO-005 React vs Angular vs Vue</a>
+<a href="INTRO-008.html#rev">INTRO-008 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">Imperative code says <i>how</i>: find this element, change that text. Declarative code says <i>what</i>: for this state, the UI looks like this. In React, UI = f(state). You update state; React computes and applies the DOM changes.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>// conditional text
+&lt;p&gt;{online ? 'Online' : 'Offline'}&lt;/p&gt;
+// conditional element
+{unread &gt; 0 &amp;&amp; &lt;span&gt;{unread}&lt;/span&gt;}
+// conditional class
+&lt;li className={done ? 'done' : ''}&gt;{text}&lt;/li&gt;
+// list from data
+{items.map((i) =&gt; &lt;li key={i.id}&gt;{i.name}&lt;/li&gt;)}
+// derived value
+const total = cart.reduce((s, i) =&gt; s + i.price, 0);</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Imperative = step-by-step instructions.</li>
+<li>Declarative = describe the desired result.</li>
+<li>React components are declarative descriptions.</li>
+<li>Same state + props → same JSX (pure render).</li>
+<li>Never edit React-managed DOM directly.</li>
+<li>Compute derived values during render.</li>
+<li>React runs the imperative DOM operations in the commit phase.</li>
+<li>Refs and effects are escape hatches for imperative tasks.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Define declarative programming in one line.</summary><p>Describing what the result should be, not the steps to get there.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why does declarative UI reduce bugs?</summary><p>There is one description per state, so the screen cannot drift; no forgotten manual update steps.</p></details>
+<h3>Advanced</h3>
+<details><summary>How does React turn a declarative description into DOM changes?</summary><p>Render phase: call components to get a new element tree. Reconciliation: diff with the previous tree. Commit phase: apply the minimal DOM mutations.</p></details>
+<h3>Tricky</h3>
+<details><summary>Is <code>useEffect</code> declarative or imperative?</summary><p>You declare <i>when</i> it should run (dependencies), but the code inside is usually imperative (it syncs with something outside React).</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary><code>const unread = 0;</code> → <code>&lt;p&gt;Inbox {unread &amp;&amp; &lt;b&gt;{unread}&lt;/b&gt;}&lt;/p&gt;</code></summary><pre class="output">Inbox 0</pre><p><code>0 &amp;&amp; …</code> returns 0, which React renders. Use <code>unread &gt; 0 &amp;&amp;</code>.</p></details>
+<details><summary><code>const temp = 40;</code> → <code>&lt;p&gt;{temp &gt; 35 ? 'Hot' : 'Pleasant'}&lt;/p&gt;</code></summary><pre class="output">Hot</pre></details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>You set <code>h1.textContent</code> in a click handler; it reverts after the next click.</summary><p>React re-rendered from state and overwrote it. Change state instead.</p></details>
+<details><summary>Cart badge shows 3 but list shows 2 items.</summary><p>Count stored as separate state and not updated. Derive it: <code>cart.length</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A chat should scroll to the newest message. Declarative or imperative?</summary><p>Imperative: use a ref to the list and call <code>scrollIntoView()</code> in an effect after messages change.</p></details>
+<details><summary>A shop page shows/hides a “Free delivery” banner when the cart passes ₹500.</summary><p>Declarative: <code>{total &gt; 500 &amp;&amp; &lt;Banner /&gt;}</code>.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<details><summary>Rewrite declaratively: <code>btn.disabled = cart.length === 0;</code></summary><pre><code>&lt;button disabled={cart.length === 0}&gt;Checkout&lt;/button&gt;</code></pre></details>
+<details><summary>Focus a search input on mount (imperative escape hatch).</summary><pre><code>import { useEffect, useRef } from 'react';
+
+export default function Search() {
+  const inputRef = useRef(null);
+  useEffect(() =&gt; {
+    inputRef.current.focus(); // imperative, inside an effect
+  }, []);
+  return &lt;input ref={inputRef} placeholder="Search movies" /&gt;;
+}</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Aspect</th><th>Imperative</th><th>Declarative</th></tr>
+<tr><td>You write</td><td>Steps (how)</td><td>Result (what)</td></tr>
+<tr><td>DOM edits</td><td>By you</td><td>By React</td></tr>
+<tr><td>Sync risk</td><td>High (forgotten steps)</td><td>Low (one source of truth)</td></tr>
+<tr><td>Example</td><td><code>el.textContent = x</code></td><td><code>&lt;p&gt;{x}&lt;/p&gt;</code></td></tr>
+<tr><td>Everyday analogy</td><td>Turn-by-turn directions</td><td>Destination address</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Remember</th><th>One line</th></tr>
+<tr><td>Formula</td><td>UI = f(state)</td></tr>
+<tr><td>Change</td><td>Update state, not DOM</td></tr>
+<tr><td>Derived</td><td>Compute in render, don’t store</td></tr>
+<tr><td>0 trap</td><td>Use <code>n &gt; 0 &amp;&amp;</code>, not <code>n &amp;&amp;</code></td></tr>
+<tr><td>Escape hatch</td><td><code>useRef</code> + <code>useEffect</code> for focus/scroll</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

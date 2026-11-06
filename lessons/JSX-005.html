@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-005 · Babel and modern compilation concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-005</span><span>Module 4: JSX Fundamentals</span><span>Lesson 5</span><span>Level: <b>Intermediate</b></span><span>Time: <b>45 min</b></span><span>Prerequisites: <b>JSX-004</b></span></div>
+<h1>Babel and modern compilation concepts</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-005-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a <b>cloud kitchen</b>. Raw orders (your source code) go through stations: <b>read the order</b> (parse), <b>prepare</b> (transform), <b>pack the bag</b> (bundle), <b>squeeze out air</b> (minify).</li>
+<li>Babel, esbuild, SWC and Oxc are <b>different chefs</b> who can work at the prepare station. Some can also pack and squeeze.</li>
+<li>Vite is the <b>kitchen manager</b> (build tool) who decides which chef does what.</li>
+</ul>
+<pre class="diagram">
+ src/App.jsx, *.ts, *.css
+        │
+        ▼
+ ┌─────────────┐   ┌──────────────────┐   ┌──────────────┐   ┌───────────┐
+ │ 1. PARSE    │──►│ 2. TRANSFORM     │──►│ 3. BUNDLE    │──►│ 4. MINIFY │──► dist/
+ │ text → AST  │   │ JSX → jsx()      │   │ join imports │   │ shrink    │
+ │ (syntax     │   │ strip TS types   │   │ tree-shake   │   │ rename    │
+ │  tree)      │   │ newer → older JS │   │ split chunks │   │ vars      │
+ └─────────────┘   └──────────────────┘   └──────────────┘   └───────────┘
+   Babel · esbuild · SWC · Oxc          Rolldown (Vite 8)    Oxc (Vite 8)
+   (any of them can parse + transform)  esbuild · webpack    esbuild · Terser
+</pre>
+<div class="callout"><b>Speed story</b>: Babel is written in JavaScript. esbuild (Go), SWC and Oxc (Rust) are native code and typically many times faster on big projects.</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Browsers can't run JSX or TypeScript.</li>
+<li>Hundreds of small files = slow page loads; bundling joins them.</li>
+<li>Shipping comments and long variable names wastes bandwidth; minifying removes them.</li>
+<li>Doing all this by hand is impossible — a compiler toolchain does it in milliseconds.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">No compiler</span><pre><code>&lt;!-- index.html --&gt;
+&lt;script type="module" src="/src/App.jsx"&gt;&lt;/script&gt;
+&lt;!-- Browser: SyntaxError: Unexpected token '&lt;' --&gt;
+
+// src/cart.ts
+const total: number = 10;
+// Browser: SyntaxError: Unexpected token ':'</code></pre></div>
+<div><span class="good">With Vite (compiler built in)</span><pre><code>npm create vite@latest shop -- --template react
+cd shop
+npm install
+npm run dev     # transforms JSX/TS on request
+npm run build   # bundles + minifies into dist/</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Transpiler</b> (source-to-source compiler): turns one kind of JS into another — e.g. JSX → <code>jsx()</code> calls, TypeScript → plain JS.</li>
+<li><b>Bundler</b>: follows <code>import</code>s and joins files into a few optimised chunks.</li>
+<li><b>Minifier</b>: makes code tiny without changing behaviour.</li>
+<li><b>AST</b> (abstract syntax tree): the tree-shaped data structure every tool builds from your code before changing it.</li>
+<li><b>Babel</b> — the classic, JavaScript-written transpiler. Huge plugin ecosystem. Still used for custom transforms, e.g. the React Compiler is shipped as a Babel plugin (<code>babel-plugin-react-compiler</code>).</li>
+<li><b>esbuild</b> — Go-based transpiler + bundler + minifier. Very fast. Vite 7 and earlier used it for dev transforms and dependency pre-bundling.</li>
+<li><b>SWC</b> (Speedy Web Compiler) — Rust-based transpiler/minifier. Used by Next.js; Vite has <code>@vitejs/plugin-react-swc</code>.</li>
+<li><b>Oxc</b> (JavaScript Oxidation Compiler) — Rust toolset: parser, transformer, minifier, linter (<code>oxlint</code>). Vite 8 uses Oxc (through the Rolldown bundler) for JS/TS/JSX transforms and minification.</li>
+<li>You rarely configure these directly — <code>@vitejs/plugin-react</code> wires the JSX transform and Fast Refresh (hot reload that keeps state) for you.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// vite.config.js — the standard Vite React setup
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+});
+
+// Alternative: SWC-powered React plugin
+// npm i -D @vitejs/plugin-react-swc
+import reactSwc from '@vitejs/plugin-react-swc';
+// plugins: [reactSwc()]
+
+// Babel config (only for projects that run Babel themselves, e.g. Jest setups)
+// babel.config.json
+{
+  "presets": [["@babel/preset-react", { "runtime": "automatic" }]]
+}
+
+// TypeScript: tsconfig.json
+{ "compilerOptions": { "jsx": "react-jsx" } }   // automatic runtime</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>Compile the <b>same JSX with two different tools</b> and compare. Inside your Vite React project:</p>
+<pre><code>npm i -D @babel/core @babel/preset-react esbuild</code></pre>
+<pre><code>// compile-demo.mjs  (run with: node compile-demo.mjs)
+import { transformSync as babelTransform } from '@babel/core';
+import { transformSync as esbuildTransform } from 'esbuild';
+
+const source = `
+const Greeting = ({ name }) =&gt; &lt;h1 className="title"&gt;Hello {name}&lt;/h1&gt;;
+`;
+
+// 1) Babel (JavaScript-written)
+const t1 = performance.now();
+const babelOut = babelTransform(source, {
+  presets: [['@babel/preset-react', { runtime: 'automatic' }]],
+  configFile: false,
+}).code;
+const t2 = performance.now();
+
+// 2) esbuild (Go-written)
+const esbuildOut = esbuildTransform(source, {
+  loader: 'jsx',
+  jsx: 'automatic',
+}).code;
+const t3 = performance.now();
+
+console.log('--- Babel ---\n' + babelOut);
+console.log('--- esbuild ---\n' + esbuildOut);
+console.log(`Babel: ${(t2 - t1).toFixed(1)} ms, esbuild: ${(t3 - t2).toFixed(1)} ms`);</code></pre>
+<p>And the app you are compiling for real:</p>
+<pre><code>// src/App.jsx
+import { useState } from 'react';
+
+export default function App() {
+  const [name, setName] = useState('Asha');
+
+  return (
+    &lt;main&gt;
+      &lt;h1 className="title"&gt;Hello {name}&lt;/h1&gt;
+      &lt;input value={name} onChange={(e) =&gt; setName(e.target.value)} /&gt;
+      &lt;p&gt;Edit this file and save — Fast Refresh keeps the typed name.&lt;/p&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<p>Console from <code>node compile-demo.mjs</code> (formatting and timings vary by version and machine):</p>
+<pre class="output">--- Babel ---
+import { jsxs as _jsxs } from "react/jsx-runtime";
+const Greeting = ({
+  name
+}) =&gt; /*#__PURE__*/_jsxs("h1", {
+  className: "title",
+  children: ["Hello ", name]
+});
+--- esbuild ---
+import { jsxs } from "react/jsx-runtime";
+const Greeting = ({ name }) =&gt; /* @__PURE__ */ jsxs("h1", { className: "title", children: ["Hello ", name] });
+
+Babel: 45.3 ms, esbuild: 2.1 ms</pre>
+<ul>
+<li>Different formatting and variable names, <b>same meaning</b>.</li>
+<li>Babel's first call includes warm-up time, so a single tiny file exaggerates the gap; on large projects native tools are still much faster.</li>
+</ul>
+<p>The app (<code>npm run dev</code>):</p>
+<div class="ui">
+<h3 style="margin-top:0">Hello Asha</h3>
+<input value="Asha" readonly aria-label="Name sample">
+<p>Edit this file and save — Fast Refresh keeps the typed name.</p>
+</div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ DEV  (npm run dev)                         BUILD  (npm run build)
+ ─────────────────                          ──────────────────────
+ Browser asks for /src/App.jsx              Rolldown starts at index.html
+        │                                          │
+        ▼                                          ▼
+ Vite transforms ONLY that file             Follows every import
+ (Oxc: JSX → jsxDEV, TS stripped,                  │
+  Fast Refresh code added)                         ▼
+        │                                   Transform each file (Oxc)
+        ▼                                   JSX → jsx(), TS stripped
+ Sends native ES module back                       │
+        │                                          ▼
+        ▼                                   Tree-shake + split chunks
+ npm deps (react, react-dom) were                  │
+ pre-bundled once and cached                       ▼
+        │                                   Minify (Oxc) → dist/assets/*.js
+        ▼                                          │
+ You save → only that module re-runs               ▼
+ (state kept by Fast Refresh)               npm run preview to test it
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Choosing a React plugin</b>: default <code>@vitejs/plugin-react</code> for most apps; <code>@vitejs/plugin-react-swc</code> if you want SWC-based plugins.</li>
+<li><b>React Compiler</b> (auto-memoisation): a Babel plugin, so a project adding it runs a Babel step for components. Check the <code>@vitejs/plugin-react</code> README for the current Vite 8 setup.</li>
+<li><b>Frameworks</b>: Next.js compiles with SWC; React Router 7 framework mode builds on Vite.</li>
+<li><b>Linting fast</b>: Oxc's <code>oxlint</code> lints big repos in seconds, often alongside ESLint.</li>
+<li><b>Debugging a food-delivery app crash</b>: source maps (maps from compiled code back to your file) let DevTools show <code>App.jsx</code> line numbers instead of minified code.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Using Create React App for a new project</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>npx create-react-app food-app
+# CRA was deprecated in Feb 2025:
+# old webpack + Babel setup, no longer maintained</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>npm create vite@latest food-app -- --template react
+# or a framework, e.g. React Router 7 framework mode / Next.js</code></pre></div>
+</div>
+<h3>Mistake 2: Thinking the transpiler checks TypeScript types</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// cart.tsx
+const qty: number = 'two'; // type error
+// "npm run dev works, so types are fine!"
+// Oxc/esbuild/SWC only STRIP types — they never check them</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// package.json (Vite react-ts template does this)
+"scripts": {
+  "build": "tsc -b &amp;&amp; vite build"
+}
+// tsc does the type check; Vite does the fast transform</code></pre></div>
+</div>
+<h3>Mistake 3: Adding a heavy Babel config "just because"</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// .babelrc copied from a 2018 tutorial
+{
+  "presets": ["@babel/preset-env", "@babel/preset-react"],
+  "plugins": ["@babel/plugin-proposal-class-properties"]
+}
+// Vite ignores it, or you wire it in and slow every build</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// vite.config.js — nothing else needed for JSX
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+export default defineConfig({ plugins: [react()] });
+// Add Babel plugins only for a real need (e.g. React Compiler)</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Match the tool to its language: Babel, esbuild, SWC, Oxc → JavaScript / Go / Rust.</p>
+<details><summary>Show solution</summary><p>Babel → JavaScript; esbuild → Go; SWC → Rust; Oxc → Rust.</p></details>
+<h3>Beginner 2</h3>
+<p>Put the stages in order: minify, parse, bundle, transform.</p>
+<details><summary>Show solution</summary><p>parse → transform → bundle → minify.</p></details>
+<h3>Intermediate 1</h3>
+<p>Run <code>npm run build</code> on a new Vite React app and open <code>dist/assets/index-*.js</code>. Find your heading text. What happened to the variable names and <code>jsx</code> calls?</p>
+<details><summary>Show solution</summary><p>The text "Hello" is still there as a string, but variable and function names are shortened (e.g. single letters), whitespace and comments are gone, and the <code>jsx</code> import is bundled in from React's code. That is bundling + minifying.</p></details>
+<h3>Intermediate 2</h3>
+<p>Edit <code>compile-demo.mjs</code> so esbuild uses the <b>classic</b> runtime. What changes in the output?</p>
+<details><summary>Show solution</summary><pre><code>const esbuildOut = esbuildTransform(source, {
+  loader: 'jsx',
+  jsx: 'transform',          // classic
+}).code;
+// Output now uses React.createElement("h1", { className: "title" }, "Hello ", name)
+// and there is no import line — React must be in scope.</code></pre></details>
+<h3>Challenge</h3>
+<p>Add SWC to the demo and print its output too.</p>
+<details><summary>Show solution</summary><pre><code>// npm i -D @swc/core
+import { transformSync as swcTransform } from '@swc/core';
+
+const swcOut = swcTransform(source, {
+  jsc: {
+    parser: { syntax: 'ecmascript', jsx: true },
+    transform: { react: { runtime: 'automatic' } },
+  },
+}).code;
+
+console.log('--- SWC ---\n' + swcOut);
+// Also imports jsxs from "react/jsx-runtime" — same meaning, different formatting.</code></pre></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Pipeline: parse → transform → bundle → minify.</li>
+<li>Babel = JS-based, most plugins, slower; still hosts the React Compiler plugin.</li>
+<li>esbuild = Go; SWC and Oxc = Rust; all much faster than Babel.</li>
+<li>Vite 8 uses Rolldown (bundler) + Oxc (transform, minify).</li>
+<li>Transpilers strip TypeScript types; <code>tsc</code> checks them.</li>
+<li>Use Vite (or a framework) — never Create React App (deprecated).</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>What is Babel?</summary><p>A JavaScript-written transpiler that parses code into an AST, runs plugins over it (e.g. JSX → function calls), and prints new code.</p></details>
+<details><summary>Why are esbuild, SWC and Oxc faster than Babel?</summary><p>They're written in compiled, native languages (Go, Rust), use parallelism, and do fewer passes over the AST. Babel runs in JavaScript with a flexible but heavier plugin model.</p></details>
+<details><summary>What does Vite use to compile JSX in Vite 8?</summary><p>Oxc, via the Rolldown-based pipeline, configured by <code>@vitejs/plugin-react</code>. (Vite 7 and earlier used esbuild for dev transforms and Rollup for production bundling.)</p></details>
+<details><summary>Transpiler vs bundler?</summary><p>A transpiler changes the code inside a file. A bundler combines many files (following imports) into fewer output files and removes unused code.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-004.html">JSX-004 · JSX transformation</a>
+<a href="JSX-003.html">JSX-003 · JSX vs HTML</a>
+<a href="JSX-002.html">JSX-002 · Why JSX?</a>
+<a href="INTRO-014.html">INTRO-014 · React ecosystem</a>
+<a href="INTRO-011.html">INTRO-011 · Client-side rendering</a>
+<a href="JSX-005.html#rev">JSX-005 · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">Your JSX/TS must be compiled. <b>Transpilers</b> (Babel, esbuild, SWC, Oxc) rewrite code; <b>bundlers</b> (Rolldown in Vite 8) join files; <b>minifiers</b> shrink them. Babel is flexible but slow; the others are native and fast. Vite picks them for you.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>// Vite
+import react from '@vitejs/plugin-react';       // default
+import reactSwc from '@vitejs/plugin-react-swc'; // SWC variant
+
+// Babel API
+babel.transformSync(code, {
+  presets: [['@babel/preset-react', { runtime: 'automatic' }]],
+});
+
+// esbuild API
+esbuild.transformSync(code, { loader: 'jsx', jsx: 'automatic' });
+
+// TypeScript
+"jsx": "react-jsx"</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Browsers don't run JSX or TypeScript.</li>
+<li>Stages: parse → transform → bundle → minify.</li>
+<li>AST = tree form of code that tools edit.</li>
+<li>Babel: JavaScript, plugin ecosystem, React Compiler plugin.</li>
+<li>esbuild: Go; bundler + transpiler + minifier.</li>
+<li>SWC: Rust; Next.js and <code>plugin-react-swc</code>.</li>
+<li>Oxc: Rust; parser, transformer, minifier, oxlint.</li>
+<li>Vite 8 = Rolldown + Oxc (replacing the esbuild + Rollup combo).</li>
+<li>Fast transpilers strip types; run <code>tsc</code> for type checking.</li>
+<li>CRA is deprecated — start with Vite or a framework.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Why do React apps need a build step?</summary><p>To turn JSX/TS into plain JS, bundle many modules, and minify for fast loading.</p></details>
+<details><summary>Name four JS compilers.</summary><p>Babel, esbuild, SWC, Oxc.</p></details>
+<h3>Intermediate</h3>
+<details><summary>What is an AST and why does every tool build one?</summary><p>An abstract syntax tree — a structured representation of code. Tools can safely find and rewrite nodes (e.g. a JSXElement) instead of doing fragile text replacements.</p></details>
+<details><summary>What is Fast Refresh?</summary><p>React's hot-reload: when you save a component file, only that module re-runs and component state is kept where possible. The Vite React plugin injects the code for it in dev only.</p></details>
+<h3>Advanced</h3>
+<details><summary>Why might a project still use Babel in 2026?</summary><p>For Babel-only plugins — most notably the React Compiler — or older tooling (some Jest setups). Many projects run Babel only for those steps and let native tools do the rest.</p></details>
+<h3>Tricky</h3>
+<details><summary>Your dev server runs a .tsx file with a type error. Bug in Vite?</summary><p>No. Vite's transform strips types without checking. Type checking is <code>tsc</code>'s job (editor, CI, or the build script).</p></details>
+<details><summary>Is minified code slower because it's "compressed"?</summary><p>No. Minifying only shortens names and removes whitespace; it's normal JavaScript. Network compression (gzip/brotli) is a separate server step.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<p>What does esbuild print for this?</p>
+<pre><code>esbuild.transformSync('&lt;b&gt;Hot&lt;/b&gt;', { loader: 'jsx', jsx: 'automatic' }).code</code></pre>
+<details><summary>Answer</summary><pre class="output">import { jsx } from "react/jsx-runtime";
+/* @__PURE__ */ jsx("b", { children: "Hot" });</pre><p>Exact spacing can vary by version.</p></details>
+<p>With <code>jsx: 'transform'</code> instead?</p>
+<details><summary>Answer</summary><pre class="output">/* @__PURE__ */ React.createElement("b", null, "Hot");</pre><p>Classic runtime: no import added.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<p>After adding a <code>.babelrc</code>, JSX output didn't change at all. Why?</p>
+<details><summary>Answer</summary><p>A standard Vite 8 React project doesn't run your Babel config for JSX; Oxc does the transform. Babel runs only if a plugin explicitly invokes it. Configure through <code>vite.config.js</code>.</p></details>
+<p>Production error points to <code>index-a1b2.js:1:20381</code>. How do you find the real line?</p>
+<details><summary>Answer</summary><p>Generate source maps (<code>build: { sourcemap: true }</code> in <code>vite.config.js</code>) so DevTools maps the minified position back to your source file.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A team's CI build takes 6 minutes on an old webpack + Babel setup. What do you suggest?</summary><p>Migrate to Vite (Rolldown + Oxc). Native tools typically cut transform and bundle time sharply. Keep Babel only for plugins with no native alternative.</p></details>
+<details><summary>You want automatic memoisation for a slow movie-list page.</summary><p>Add the React Compiler (a Babel plugin) following the current <code>@vitejs/plugin-react</code> instructions, then measure. It memoises components and values automatically.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write a Node script that compiles <code>src/App.jsx</code> with Babel (automatic runtime) and writes the result to <code>out/App.js</code>.</p>
+<details><summary>Solution</summary><pre><code>// build-one.mjs
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { transformSync } from '@babel/core';
+
+const code = readFileSync('src/App.jsx', 'utf8');
+const result = transformSync(code, {
+  filename: 'App.jsx',
+  configFile: false,
+  presets: [['@babel/preset-react', { runtime: 'automatic' }]],
+});
+
+mkdirSync('out', { recursive: true });
+writeFileSync('out/App.js', result.code);
+console.log('Wrote out/App.js');</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Tool</th><th>Written in</th><th>Does</th><th>Seen in</th></tr>
+<tr><td>Babel</td><td>JavaScript</td><td>Transpile (plugins)</td><td>React Compiler, older setups</td></tr>
+<tr><td>esbuild</td><td>Go</td><td>Transpile, bundle, minify</td><td>Vite ≤ 7, many CLIs</td></tr>
+<tr><td>SWC</td><td>Rust</td><td>Transpile, minify</td><td>Next.js, plugin-react-swc</td></tr>
+<tr><td>Oxc</td><td>Rust</td><td>Parse, transform, minify, lint</td><td>Vite 8 (via Rolldown), oxlint</td></tr>
+<tr><td>Rolldown</td><td>Rust</td><td>Bundle</td><td>Vite 8</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Term</th><th>Plain meaning</th></tr>
+<tr><td>Transpile</td><td>Rewrite code into another form (JSX → JS)</td></tr>
+<tr><td>Bundle</td><td>Join many files into a few</td></tr>
+<tr><td>Minify</td><td>Shrink code, same behaviour</td></tr>
+<tr><td>AST</td><td>Code as a tree for tools to edit</td></tr>
+<tr><td>Tree-shaking</td><td>Drop unused exports</td></tr>
+<tr><td>Source map</td><td>Map compiled code back to source lines</td></tr>
+<tr><td>Fast Refresh</td><td>Hot reload that keeps component state</td></tr>
+<tr><td>Vite 8 stack</td><td>Rolldown + Oxc, via <code>@vitejs/plugin-react</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

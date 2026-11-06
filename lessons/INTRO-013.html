@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-013 · Static site generation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-013</span><span>Module 2: React Introduction</span><span>Lesson 13</span><span>Level: <b>Intermediate</b></span><span>Time: <b>45 min</b></span><span>Prerequisites: <b>INTRO-012</b></span></div>
+<h1>Static site generation</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-013-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li><b>SSR</b> (server-side rendering) = a restaurant that cooks each plate when you order it. Fresh, but every order costs kitchen time.</li>
+<li><b>SSG</b> (static site generation) = a bakery that bakes all the bread at 5 a.m. Customers just pick it up — instant, cheap, but it is “this morning’s” bread.</li>
+<li>The “5 a.m. bake” is your <b>build step</b> (<code>npm run build</code>).</li>
+</ul>
+<pre class="diagram">
+ SSR (every request)                 SSG (once, at build time)
+
+ user ──► server                     npm run build
+           │ fetch data                 │ fetch data
+           │ render React → HTML        │ render React → HTML (every page)
+           ▼                            ▼
+ user ◄── fresh HTML                 dist/index.html, dist/movies/1.html ...
+                                        │ upload to CDN
+ cost: server work per visit            ▼
+                                     user ──► CDN ──► ready-made HTML file
+                                     cost: ~zero per visit
+</pre>
+<div class="callout"><b>Key idea:</b> SSG moves the rendering work from “every visit” to “once per build”.</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>A plain Vite React app (client-side rendering, CSR) ships an almost empty <code>&lt;div id="root"&gt;</code>. The page is blank until JavaScript downloads and runs.</li>
+<li>Search engines and link previews (WhatsApp, Slack) see less content.</li>
+<li>SSR fixes that, but needs a running server for every visit.</li>
+<li>For pages that rarely change (menus, blogs, docs, product catalogues), SSG gives full HTML with no server at all.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;!-- CSR: what the browser first receives --&gt;
+&lt;body&gt;
+  &lt;div id="root"&gt;&lt;/div&gt;
+  &lt;script type="module" src="/assets/index-a1b2.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;!-- blank until JS runs; crawler sees nothing --&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;!-- SSG: HTML already built at deploy time --&gt;
+&lt;body&gt;
+  &lt;div id="root"&gt;
+    &lt;h1&gt;Now Showing&lt;/h1&gt;
+    &lt;ul&gt;&lt;li&gt;Inception (2010)&lt;/li&gt;...&lt;/ul&gt;
+  &lt;/div&gt;
+  &lt;script type="module" src="/assets/index-a1b2.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;!-- content visible at once; JS adds interactivity --&gt;</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Build-time rendering</b> (static site generation, SSG): React runs on your machine or CI during the build, not in the browser and not per request.</li>
+<li><b>Output</b>: plain <code>.html</code> files + JS/CSS assets. Any static host or CDN (content delivery network) can serve them.</li>
+<li><b>Hydration</b> (hydration): the browser loads React, which attaches event handlers to the existing HTML using <code>hydrateRoot</code>.</li>
+<li><b>Staleness</b>: data is frozen at build time. New data → rebuild and redeploy.</li>
+<li><b>Dynamic routes</b>: you must list every path to pre-build (e.g. <code>/movies/1</code>, <code>/movies/2</code>).</li>
+<li><b>React’s own API</b>: <code>prerender</code> / <code>prerenderToNodeStream</code> from <code>react-dom/static</code> (React 19+) render a tree to HTML and wait for data.</li>
+<li><b>Frameworks do the plumbing</b> (framework-only): React Router 7 framework mode (<code>prerender</code> config), Next.js (<code>generateStaticParams</code>, <code>output: 'export'</code>), Astro.</li>
+</ul>
+<div class="tablewrap"><table>
+<tr><th>Strategy</th><th>HTML made when?</th><th>Needs server?</th><th>Freshness</th></tr>
+<tr><td>CSR (client-side rendering)</td><td>In the browser</td><td>No</td><td>Live</td></tr>
+<tr><td>SSR (server-side rendering)</td><td>Every request</td><td>Yes</td><td>Live</td></tr>
+<tr><td>SSG (static site generation)</td><td>At build</td><td>No</td><td>As of last build</td></tr>
+</table></div>
+
+<h2>4. Syntax</h2>
+<h3>React’s low-level API (react-dom/static, Node)</h3>
+<pre><code>import { prerenderToNodeStream } from 'react-dom/static';
+
+const { prelude } = await prerenderToNodeStream(&lt;App /&gt;);
+// prelude = Node Readable stream of finished HTML
+// waits for Suspense data before resolving</code></pre>
+<h3>Hydrate the pre-built HTML (client)</h3>
+<pre><code>import { hydrateRoot } from 'react-dom/client';
+import App from './App.jsx';
+
+hydrateRoot(document.getElementById('root'), &lt;App /&gt;);</code></pre>
+<h3>React Router 7 framework mode (framework-only)</h3>
+<pre><code>// react-router.config.ts
+import type { Config } from '@react-router/dev/config';
+
+export default {
+  ssr: false,                 // no runtime server
+  async prerender() {
+    return ['/', '/menu', '/about'];   // paths built to HTML
+  },
+} satisfies Config;</code></pre>
+<h3>Next.js App Router (framework-only)</h3>
+<pre><code>// app/movies/[id]/page.jsx
+export async function generateStaticParams() {
+  return [{ id: '1' }, { id: '2' }];   // build /movies/1 and /movies/2
+}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A movie listing page. We build the HTML ourselves with a tiny Node script, so you can see exactly what SSG does — no framework magic.</p>
+<h3>Setup</h3>
+<pre><code>npm create vite@latest movie-ssg -- --template react
+cd movie-ssg
+npm install</code></pre>
+<h3>src/movies.js — the “database” read at build time</h3>
+<pre><code>export const movies = [
+  { id: 1, title: 'Inception', year: 2010, rating: 8.8 },
+  { id: 2, title: 'Spirited Away', year: 2001, rating: 8.6 },
+  { id: 3, title: 'Dangal', year: 2016, rating: 8.3 },
+];</code></pre>
+<h3>src/App.jsx</h3>
+<pre><code>import { useState } from 'react';
+
+export default function App({ movies, builtAt }) {
+  const [liked, setLiked] = useState([]);
+
+  function toggle(id) {
+    setLiked((prev) =&gt;
+      prev.includes(id) ? prev.filter((x) =&gt; x !== id) : [...prev, id]
+    );
+  }
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Now Showing&lt;/h1&gt;
+      &lt;p&gt;Listing built at: {builtAt}&lt;/p&gt;
+      &lt;ul&gt;
+        {movies.map((m) =&gt; (
+          &lt;li key={m.id}&gt;
+            {m.title} ({m.year}) – ⭐ {m.rating}{' '}
+            &lt;button onClick={() =&gt; toggle(m.id)}&gt;
+              {liked.includes(m.id) ? '♥ Liked' : '♡ Like'}
+            &lt;/button&gt;
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+      &lt;p&gt;You liked {liked.length} movie(s).&lt;/p&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<h3>src/main.jsx — hydrate instead of createRoot</h3>
+<pre><code>import { StrictMode } from 'react';
+import { hydrateRoot } from 'react-dom/client';
+import App from './App.jsx';
+import { movies } from './movies.js';
+
+// Must pass the SAME props used at build time
+const builtAt = document.getElementById('root').dataset.builtAt;
+
+hydrateRoot(
+  document.getElementById('root'),
+  &lt;StrictMode&gt;
+    &lt;App movies={movies} builtAt={builtAt} /&gt;
+  &lt;/StrictMode&gt;
+);</code></pre>
+<h3>prerender.mjs — runs once after <code>vite build</code></h3>
+<pre><code>// Run with Vite's SSR loader so JSX works in Node
+import fs from 'node:fs/promises';
+import { createServer } from 'vite';
+
+const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+const { prerenderToNodeStream } = await import('react-dom/static');
+const { createElement } = await import('react');
+const { default: App } = await vite.ssrLoadModule('/src/App.jsx');
+const { movies } = await vite.ssrLoadModule('/src/movies.js');
+
+const builtAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
+const { prelude } = await prerenderToNodeStream(
+  createElement(App, { movies, builtAt })
+);
+
+let html = '';
+for await (const chunk of prelude) html += chunk;
+
+const template = await fs.readFile('dist/index.html', 'utf8');
+const page = template.replace(
+  '&lt;div id="root"&gt;&lt;/div&gt;',
+  `&lt;div id="root" data-built-at="${builtAt}"&gt;${html}&lt;/div&gt;`
+);
+await fs.writeFile('dist/index.html', page);
+await vite.close();
+console.log('Pre-rendered dist/index.html at', builtAt);</code></pre>
+<h3>package.json scripts</h3>
+<pre><code>"scripts": {
+  "dev": "vite",
+  "build": "vite build &amp;&amp; node prerender.mjs",
+  "preview": "vite preview"
+}</code></pre>
+<div class="callout">Note: the script is plain JavaScript (<code>.mjs</code>) with no JSX — it uses <code>createElement</code>. The JSX inside <code>App.jsx</code> is compiled by <code>vite.ssrLoadModule</code>. In real projects a framework does all of this for you.</div>
+
+<h2>6. Expected Output</h2>
+<p>Terminal after <code>npm run build</code>:</p>
+<pre class="output">vite v8.x.x building for production...  (exact wording varies)
+✓ built in 420ms
+Pre-rendered dist/index.html at 2026-11-05 09:30</pre>
+<p>View source of <code>dist/index.html</code> (served with <code>npm run preview</code>) — the list is already in the HTML:</p>
+<pre class="output">&lt;div id="root" data-built-at="2026-11-05 09:30"&gt;&lt;main&gt;&lt;h1&gt;Now Showing&lt;/h1&gt;
+&lt;p&gt;Listing built at: 2026-11-05 09:30&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Inception (2010) – ⭐ 8.8 ...</pre>
+<p>In the browser (after clicking Like on Dangal):</p>
+<div class="ui">
+<h3>Now Showing</h3>
+<p>Listing built at: 2026-11-05 09:30</p>
+<ul>
+<li>Inception (2010) – ⭐ 8.8 <button type="button">♡ Like</button></li>
+<li>Spirited Away (2001) – ⭐ 8.6 <button type="button">♡ Like</button></li>
+<li>Dangal (2016) – ⭐ 8.3 <button type="button">♥ Liked</button></li>
+</ul>
+<p>You liked 1 movie(s).</p>
+</div>
+<div class="callout">The timestamp never changes on refresh — it is “baked in” at build time. That is SSG’s trade-off made visible.</div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ BUILD TIME (your laptop / CI)            RUN TIME (user's browser)
+ ─────────────────────────────            ─────────────────────────
+ 1. vite build                            5. GET /  ──► CDN
+    → dist/index.html (empty root)           returns dist/index.html
+    → dist/assets/index-xyz.js                 │
+         │                                     ▼
+ 2. node prerender.mjs                    6. Browser paints HTML
+    loads App + movies data                  (movies visible, buttons
+         │                                    not clickable yet)
+ 3. prerenderToNodeStream(&lt;App/&gt;)             │
+    → "&lt;main&gt;&lt;h1&gt;Now Showing..."         7. index-xyz.js downloads
+         │                                     │
+ 4. inject HTML into root,                8. hydrateRoot(root, &lt;App/&gt;)
+    write dist/index.html                    React renders in memory,
+         │                                    matches existing DOM,
+    deploy dist/ to static host               attaches onClick handlers
+                                               │
+                                          9. Click "Like" → setLiked
+                                             → normal client re-render
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Restaurant menu site</b>: menu changes weekly → rebuild weekly. Pages load instantly from a CDN.</li>
+<li><b>Recipe or food blog</b>: thousands of posts, each pre-built; great for search ranking.</li>
+<li><b>Product docs / help centre</b>: content in Markdown, rebuilt on every edit.</li>
+<li><b>Shop marketing pages</b>: home, “About”, category landing pages as SSG; the cart and checkout stay client-side or SSR.</li>
+<li><b>When SSR wins instead</b>: per-user pages (order history), live data (stock prices, delivery tracking), or millions of pages that are too slow to pre-build.</li>
+<li><b>Hybrid</b> (framework-only): Next.js incremental static regeneration (ISR) rebuilds a single page in the background after a timeout — a middle ground.</li>
+</ul>
+<div class="tablewrap"><table>
+<tr><th>Question</th><th>If yes →</th></tr>
+<tr><td>Same HTML for every visitor?</td><td>SSG candidate</td></tr>
+<tr><td>Data changes less often than you can rebuild?</td><td>SSG</td></tr>
+<tr><td>Depends on cookies / logged-in user?</td><td>SSR or CSR</td></tr>
+<tr><td>Must be up-to-the-second?</td><td>SSR or CSR fetch</td></tr>
+</table></div>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Using browser-only values during build-time render</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>export default function App() {
+  // Crashes at build: window is not defined in Node
+  const width = window.innerWidth;
+  return &lt;p&gt;Screen: {width}px&lt;/p&gt;;
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { useEffect, useState } from 'react';
+
+export default function App() {
+  const [width, setWidth] = useState(null);
+  useEffect(() =&gt; {
+    // runs only in the browser, after hydration
+    setWidth(window.innerWidth);
+  }, []);
+  return &lt;p&gt;Screen: {width ?? '…'}px&lt;/p&gt;;
+}</code></pre></div>
+</div>
+<h3>Mistake 2: Hydration mismatch (different output on build vs browser)</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>export default function App() {
+  // build-time time ≠ browser time → mismatch error
+  return &lt;p&gt;Now: {new Date().toLocaleTimeString()}&lt;/p&gt;;
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>export default function App({ builtAt }) {
+  // same value passed on build AND hydrate
+  return &lt;p&gt;Built: {builtAt}&lt;/p&gt;;
+}</code></pre></div>
+</div>
+<h3>Mistake 3: Calling createRoot on pre-rendered HTML</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>import { createRoot } from 'react-dom/client';
+// throws away the static HTML and re-creates it
+createRoot(root).render(&lt;App /&gt;);</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { hydrateRoot } from 'react-dom/client';
+// reuses the existing HTML, attaches events
+hydrateRoot(root, &lt;App /&gt;);</code></pre></div>
+</div>
+<h3>Mistake 4: Expecting new data without a rebuild</h3>
+<ul>
+<li>Adding a movie to the database does nothing for an SSG page until you run the build again (or use a framework feature like ISR, or fetch fresh data on the client).</li>
+</ul>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>For each page, pick CSR, SSR or SSG: (a) a pizza shop “Our Story” page, (b) a user’s order history, (c) a weather page updated every minute.</p>
+<details><summary>Solution</summary>
+<ul><li>(a) SSG — same for everyone, rarely changes.</li><li>(b) SSR or CSR — per-user, needs login.</li><li>(c) SSR or CSR with client fetching — changes too often to rebuild.</li></ul>
+</details>
+<h3>Beginner 2</h3>
+<p>Which function should <code>main.jsx</code> call when the HTML was pre-built: <code>createRoot</code> or <code>hydrateRoot</code>? Why?</p>
+<details><summary>Solution</summary>
+<p><code>hydrateRoot</code> from <code>react-dom/client</code>. It keeps the existing HTML and attaches event handlers. <code>createRoot(...).render()</code> would replace the static markup.</p>
+</details>
+<h3>Intermediate 1</h3>
+<p>Extend <code>prerender.mjs</code> to write one file per movie: <code>dist/movies/1.html</code>, <code>2.html</code>… using a <code>MovieDetail</code> component.</p>
+<details><summary>Solution</summary>
+<pre><code>// after loading movies and the template:
+const { default: MovieDetail } = await vite.ssrLoadModule('/src/MovieDetail.jsx');
+await fs.mkdir('dist/movies', { recursive: true });
+
+for (const movie of movies) {
+  const { prelude } = await prerenderToNodeStream(
+    createElement(MovieDetail, { movie })
+  );
+  let html = '';
+  for await (const chunk of prelude) html += chunk;
+  const page = template.replace('&lt;div id="root"&gt;&lt;/div&gt;', `&lt;div id="root"&gt;${html}&lt;/div&gt;`);
+  await fs.writeFile(`dist/movies/${movie.id}.html`, page);
+}</code></pre>
+<p>(For hydration on these pages you would also need main.jsx to pick the right component per URL — that is what a router/framework handles.)</p>
+</details>
+<h3>Intermediate 2</h3>
+<p>Write a React Router 7 framework-mode config that pre-renders <code>/</code> plus one path per recipe from <code>getRecipes()</code>, with no runtime server.</p>
+<details><summary>Solution</summary>
+<pre><code>// react-router.config.ts
+import type { Config } from '@react-router/dev/config';
+import { getRecipes } from './app/data';
+
+export default {
+  ssr: false,
+  async prerender() {
+    const recipes = await getRecipes();
+    return ['/', ...recipes.map((r) =&gt; `/recipes/${r.slug}`)];
+  },
+} satisfies Config;</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>A food-delivery site has 50,000 restaurant pages. Menus change a few times a day; ratings change every minute. Design a rendering plan.</p>
+<details><summary>Solution</summary>
+<ul>
+<li>Pre-build only the top ~1,000 popular restaurants at build; render the rest on demand (framework features such as Next.js ISR or on-demand SSR + CDN caching).</li>
+<li>Menu: static/cached, revalidated a few times a day.</li>
+<li>Ratings: fetch on the client after hydration (small widget), so the static HTML never needs rebuilding for them.</li>
+<li>Cart/checkout: client-side, per-user.</li>
+</ul>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>SSG = render React to HTML <b>once at build time</b>.</li>
+<li>Output is static files → host on any CDN, no server.</li>
+<li>Browser uses <code>hydrateRoot</code> to make the HTML interactive.</li>
+<li>Data is as old as the last build.</li>
+<li>Avoid <code>window</code>, dates and random values in render output — move them into <code>useEffect</code>.</li>
+<li>React API: <code>prerender</code> / <code>prerenderToNodeStream</code> in <code>react-dom/static</code>.</li>
+<li>Frameworks (React Router 7, Next.js, Astro) automate routes, data and file writing.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What is static site generation?</summary><p>Rendering pages to HTML during the build, so each request just serves a pre-made file from a CDN. React hydrates it in the browser for interactivity.</p></details>
+<details><summary>Q2. When does SSG beat SSR?</summary><p>When content is the same for all users and changes less often than you can rebuild: lower cost, faster time-to-first-byte (TTFB), no server to scale or secure.</p></details>
+<details><summary>Q3. What is a hydration mismatch?</summary><p>The HTML React renders in the browser differs from the pre-built HTML (e.g. dates, <code>Math.random()</code>, <code>window</code> checks). React reports an error and re-renders that part on the client.</p></details>
+<details><summary>Q4. Does a Vite React app do SSG by default?</summary><p>No. <code>vite build</code> outputs a CSR app with an empty root. You need your own prerender script or a framework (e.g. React Router 7 framework mode with <code>prerender</code>).</p></details>
+<details><summary>Q5. How do you show fresh data on an SSG page?</summary><p>Rebuild and redeploy, use a framework’s incremental regeneration (framework-only), or fetch the changing part on the client after hydration.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-012.html">INTRO-012 · Previous lesson</a>
+<a href="INTRO-012.html#rev">INTRO-012 · Revision</a>
+<a href="INTRO-014.html">INTRO-014 · React ecosystem overview</a>
+<a href="INTRO-015.html">INTRO-015 · React architecture</a>
+<a href="INTRO-013.html#rev">INTRO-013 · Revision tab</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">SSG (static site generation) runs React <b>at build time</b> to produce finished HTML files. A CDN serves them instantly; React then hydrates them for clicks. Perfect for content that is the same for everyone and changes slowly. Trade-off: data is only as fresh as the last build.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>// Build-time render (Node)
+import { prerenderToNodeStream } from 'react-dom/static';
+const { prelude } = await prerenderToNodeStream(&lt;App /&gt;);
+
+// Web-streams version (Node 18+, edge, Deno)
+import { prerender } from 'react-dom/static';
+const { prelude } = await prerender(&lt;App /&gt;);
+const html = await new Response(prelude).text();
+
+// Browser
+import { hydrateRoot } from 'react-dom/client';
+hydrateRoot(document.getElementById('root'), &lt;App /&gt;);
+
+// React Router 7 framework mode
+export default { ssr: false, prerender: ['/', '/menu'] };</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>HTML is generated once per build, not per request.</li>
+<li>Output = static files; no Node server needed in production.</li>
+<li><code>hydrateRoot</code>, not <code>createRoot</code>, on pre-rendered HTML.</li>
+<li>Build render and first browser render must produce identical output.</li>
+<li><code>prerender</code> APIs wait for Suspense data; <code>renderToString</code> does not.</li>
+<li>Dynamic routes must be listed in advance.</li>
+<li>Build time grows with page count.</li>
+<li>Per-user or live data → SSR/CSR, or client-side fetch after hydration.</li>
+<li>ISR and <code>generateStaticParams</code> are Next.js (framework-only) features.</li>
+<li>Create React App is deprecated — start with Vite or a framework.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What does SSG output?</summary><p>Static <code>.html</code> files plus JS/CSS bundles, ready for any static host.</p></details>
+<details><summary>Name one benefit over CSR.</summary><p>Content is visible before JS loads — better first paint and SEO (search engine optimisation).</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why can’t you read <code>localStorage</code> while pre-rendering?</summary><p>The render runs in Node at build time; browser APIs don’t exist there. Read it in <code>useEffect</code>, which runs only in the browser.</p></details>
+<details><summary>Difference between <code>renderToString</code> and <code>prerender</code>?</summary><p><code>renderToString</code> is synchronous and emits Suspense fallbacks; <code>prerender</code> (react-dom/static) is async and waits for all data so the HTML is complete.</p></details>
+<h3>Advanced</h3>
+<details><summary>How would you pre-build 1 million product pages?</summary><p>You usually don’t. Pre-build the popular subset; generate the rest on demand and cache at the CDN (framework features like ISR or SSR + cache headers).</p></details>
+<details><summary>What is partial pre-rendering in React 19.2?</summary><p>React 19.2 added APIs to pre-render a static shell and later resume rendering the dynamic parts (e.g. <code>resume</code> in react-dom/server, <code>resumeAndPrerender</code> in react-dom/static). Mainly used by frameworks.</p></details>
+<h3>Tricky</h3>
+<details><summary>An SSG page shows yesterday’s price even after a DB update. Bug?</summary><p>Not a React bug — it is by design. The page needs a rebuild, a revalidation strategy, or a client-side fetch for the price.</p></details>
+<details><summary>Is SSG the same as “no JavaScript”?</summary><p>No. The HTML is static, but React’s JS still loads to hydrate unless the page has no interactivity (e.g. Astro islands ship JS only where needed).</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<p>Build ran on Monday at 10:00. A user opens the page on Wednesday. What shows?</p>
+<pre><code>export default function App({ builtAt }) {
+  return &lt;p&gt;Updated: {builtAt}&lt;/p&gt;;
+}
+// builtAt was injected by the build script</code></pre>
+<details><summary>Answer</summary><pre class="output">Updated: Monday 10:00</pre><p>Static HTML does not change until the next build.</p></details>
+<p>What does a crawler see in <code>dist/index.html</code> for a plain <code>vite build</code> (no prerender)?</p>
+<details><summary>Answer</summary><pre class="output">&lt;div id="root"&gt;&lt;/div&gt;</pre><p>An empty root — content only appears after JS runs.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<p>Build fails with <code>ReferenceError: document is not defined</code>.</p>
+<pre><code>const theme = document.body.dataset.theme;
+export default function App() { return &lt;p&gt;{theme}&lt;/p&gt;; }</code></pre>
+<details><summary>Fix</summary><p>Top-level code runs in Node during the prerender. Move DOM access into <code>useEffect</code> and keep a safe default for the first render.</p></details>
+<p>Console: “Hydration failed because the server rendered HTML didn’t match the client.”</p>
+<pre><code>&lt;p&gt;Lucky number: {Math.floor(Math.random() * 10)}&lt;/p&gt;</code></pre>
+<details><summary>Fix</summary><p>Random values differ between build and browser. Generate the number in <code>useEffect</code>, or pass a fixed value from the build.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A café wants a 5-page site, menu updated monthly, cheapest hosting.</summary><p>SSG on a free static host/CDN. Rebuild when the menu changes.</p></details>
+<details><summary>A movie site: film pages static, but “seats left” must be live.</summary><p>SSG the film pages; fetch seat counts on the client after hydration (or with TanStack Query).</p></details>
+<details><summary>An admin dashboard behind login.</summary><p>Not an SSG fit — CSR (Vite SPA) or SSR. Content is per-user and private.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write a minimal web-streams prerender that returns an HTML string for <code>&lt;Menu items={items} /&gt;</code>.</p>
+<details><summary>Solution</summary>
+<pre><code>import { prerender } from 'react-dom/static';
+import { createElement } from 'react';
+import Menu from './Menu.jsx';
+
+export async function renderMenu(items) {
+  const { prelude } = await prerender(createElement(Menu, { items }));
+  return await new Response(prelude).text();
+}</code></pre>
+</details>
+<p>Make this component safe for SSG (it shows the visitor’s local time).</p>
+<pre><code>export default function Clock() {
+  return &lt;p&gt;{new Date().toLocaleTimeString()}&lt;/p&gt;;
+}</code></pre>
+<details><summary>Solution</summary>
+<pre><code>import { useEffect, useState } from 'react';
+
+export default function Clock() {
+  const [time, setTime] = useState(null);
+  useEffect(() =&gt; {
+    setTime(new Date().toLocaleTimeString());
+  }, []);
+  return &lt;p&gt;{time ?? 'Loading time…'}&lt;/p&gt;;
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Aspect</th><th>CSR</th><th>SSR</th><th>SSG</th></tr>
+<tr><td>Render happens</td><td>Browser</td><td>Server, per request</td><td>Build machine, once</td></tr>
+<tr><td>First paint</td><td>Slow (blank)</td><td>Fast</td><td>Fastest</td></tr>
+<tr><td>Hosting</td><td>Static</td><td>Server needed</td><td>Static</td></tr>
+<tr><td>Fresh data</td><td>Yes</td><td>Yes</td><td>Until next build</td></tr>
+<tr><td>Per-user content</td><td>Yes</td><td>Yes</td><td>No (use client fetch)</td></tr>
+<tr><td>Example</td><td>Chat app</td><td>Order history</td><td>Recipe blog</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Remember</th><th>One line</th></tr>
+<tr><td>SSG</td><td>HTML at build time</td></tr>
+<tr><td>React API</td><td><code>prerender</code>, <code>prerenderToNodeStream</code> (react-dom/static)</td></tr>
+<tr><td>Client</td><td><code>hydrateRoot</code> (react-dom/client)</td></tr>
+<tr><td>Rule</td><td>Build output must equal first client render</td></tr>
+<tr><td>Browser APIs</td><td>Only inside <code>useEffect</code></td></tr>
+<tr><td>Best for</td><td>Menus, blogs, docs, landing pages</td></tr>
+<tr><td>Avoid for</td><td>Per-user or live data</td></tr>
+<tr><td>Frameworks</td><td>React Router 7 <code>prerender</code>, Next.js, Astro</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

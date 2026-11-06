@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-012 · JSX fragments</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-012</span><span>Module 4: JSX Fundamentals</span><span>Lesson 12</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-011</b></span></div>
+<h1>JSX fragments</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-012-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>A delivery rider can only carry <b>one</b> bag. To deliver a burger and fries, you put both in a bag.</li>
+<li>A component can only return <b>one</b> thing. A <code>&lt;div&gt;</code> works as the bag, but that bag stays on the page as an extra box.</li>
+<li>A <b>fragment</b> (<code>&lt;&gt;...&lt;/&gt;</code>) is a bag that disappears on arrival: React groups the items, but adds nothing to the real page (the <b>DOM</b>).</li>
+</ul>
+<pre class="diagram">
+  With a &lt;div&gt; wrapper                  With a fragment &lt;&gt;...&lt;/&gt;
+  ─────────────────────                  ──────────────────────────
+  return (                               return (
+    &lt;div&gt;                                  &lt;&gt;
+      &lt;h2&gt;Burger&lt;/h2&gt;                        &lt;h2&gt;Burger&lt;/h2&gt;
+      &lt;p&gt;₹199&lt;/p&gt;                           &lt;p&gt;₹199&lt;/p&gt;
+    &lt;/div&gt;                                 &lt;/&gt;
+  );                                     );
+
+  DOM:  &lt;div&gt;                           DOM:  &lt;h2&gt;Burger&lt;/h2&gt;
+          &lt;h2&gt;Burger&lt;/h2&gt;                   &lt;p&gt;₹199&lt;/p&gt;
+          &lt;p&gt;₹199&lt;/p&gt;                    (no extra box)
+        &lt;/div&gt;   ← extra box
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>A component returns one value. Two side-by-side elements are two values → syntax error.</li>
+<li>Extra <code>&lt;div&gt;</code>s can break HTML rules: a <code>&lt;tr&gt;</code> may only contain <code>&lt;td&gt;</code>/<code>&lt;th&gt;</code>, a <code>&lt;ul&gt;</code> only <code>&lt;li&gt;</code>.</li>
+<li>Extra wrappers can break CSS layouts (flex and grid see the wrapper, not your items).</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before</span><pre><code>// Error: Adjacent JSX elements must be
+// wrapped in an enclosing tag
+function Price() {
+  return (
+    &lt;td&gt;Pizza&lt;/td&gt;
+    &lt;td&gt;₹299&lt;/td&gt;
+  );
+}
+
+// "Fix" with div → invalid table HTML
+function Price() {
+  return (
+    &lt;div&gt;
+      &lt;td&gt;Pizza&lt;/td&gt;
+      &lt;td&gt;₹299&lt;/td&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></div>
+<div><span class="good">After</span><pre><code>// Fragment: groups without a DOM node
+function Price() {
+  return (
+    &lt;&gt;
+      &lt;td&gt;Pizza&lt;/td&gt;
+      &lt;td&gt;₹299&lt;/td&gt;
+    &lt;/&gt;
+  );
+}
+
+// &lt;tr&gt;&lt;Price /&gt;&lt;/tr&gt;
+// → &lt;tr&gt;&lt;td&gt;Pizza&lt;/td&gt;&lt;td&gt;₹299&lt;/td&gt;&lt;/tr&gt;</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li>Short syntax: <code>&lt;&gt;...&lt;/&gt;</code>. No import needed.</li>
+<li>Long syntax: <code>&lt;Fragment&gt;...&lt;/Fragment&gt;</code>, imported from <code>'react'</code>.</li>
+<li>Only the long syntax accepts a <code>key</code> (needed inside <code>.map()</code>).</li>
+<li>In stable React 19.2, <code>key</code> is the only attribute a fragment accepts. No <code>className</code>, <code>style</code> or <code>onClick</code> — there is no DOM element to put them on.</li>
+<li>Behind the scenes: <code>&lt;&gt;a b&lt;/&gt;</code> compiles to <code>jsxs(Fragment, { children: [a, b] })</code> (automatic JSX runtime).</li>
+<li>Fragments can be nested and can be empty (<code>&lt;&gt;&lt;/&gt;</code> renders nothing).</li>
+<li>Returning an array <code>[&lt;a key="1"/&gt;, &lt;b key="2"/&gt;]</code> also works, but every item needs a key. Fragments are cleaner.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. Short syntax
+function Title() {
+  return (
+    &lt;&gt;
+      &lt;h1&gt;Movie Night&lt;/h1&gt;
+      &lt;p&gt;Friday, 8 PM&lt;/p&gt;
+    &lt;/&gt;
+  );
+}
+
+// 2. Long syntax (same result)
+import { Fragment } from 'react';
+function Title() {
+  return (
+    &lt;Fragment&gt;
+      &lt;h1&gt;Movie Night&lt;/h1&gt;
+      &lt;p&gt;Friday, 8 PM&lt;/p&gt;
+    &lt;/Fragment&gt;
+  );
+}
+
+// 3. Keyed fragment in a list (long syntax only)
+{items.map((item) =&gt; (
+  &lt;Fragment key={item.id}&gt;
+    &lt;dt&gt;{item.name}&lt;/dt&gt;
+    &lt;dd&gt;{item.price}&lt;/dd&gt;
+  &lt;/Fragment&gt;
+))}
+
+// 4. Fragment inside conditional JSX
+{isLoggedIn ? (
+  &lt;&gt;
+    &lt;span&gt;Hi, Asha&lt;/span&gt;
+    &lt;button&gt;Log out&lt;/button&gt;
+  &lt;/&gt;
+) : (
+  &lt;button&gt;Log in&lt;/button&gt;
+)}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A food-delivery bill: table rows from a component, a description list built with keyed fragments, and a header that returns two elements. In a Vite React app, replace <code>src/App.jsx</code>:</p>
+<pre><code>// src/App.jsx
+import { Fragment, useState } from 'react';
+
+const cart = [
+  { id: 'b1', name: 'Veg Burger', qty: 2, price: 149 },
+  { id: 'f1', name: 'Fries', qty: 1, price: 99 },
+  { id: 'c1', name: 'Cola', qty: 2, price: 49 },
+];
+
+const offers = [
+  { id: 'o1', code: 'FIRST50', text: '50% off first order' },
+  { id: 'o2', code: 'FREEDEL', text: 'Free delivery above ₹300' },
+];
+
+// Returns two sibling elements → fragment
+function Header({ count }) {
+  return (
+    &lt;&gt;
+      &lt;h2&gt;Your order&lt;/h2&gt;
+      &lt;p&gt;{count} items&lt;/p&gt;
+    &lt;/&gt;
+  );
+}
+
+// Returns several &lt;td&gt; for one &lt;tr&gt; → fragment keeps the table valid
+function Cells({ item }) {
+  return (
+    &lt;&gt;
+      &lt;td&gt;{item.name}&lt;/td&gt;
+      &lt;td&gt;{item.qty}&lt;/td&gt;
+      &lt;td&gt;₹{item.qty * item.price}&lt;/td&gt;
+    &lt;/&gt;
+  );
+}
+
+export default function App() {
+  const [showOffers, setShowOffers] = useState(true);
+  const total = cart.reduce((sum, i) =&gt; sum + i.qty * i.price, 0);
+
+  return (
+    &lt;main style={{ fontFamily: 'sans-serif', padding: 16 }}&gt;
+      &lt;Header count={cart.length} /&gt;
+
+      &lt;table&gt;
+        &lt;tbody&gt;
+          {cart.map((item) =&gt; (
+            &lt;tr key={item.id}&gt;
+              &lt;Cells item={item} /&gt;
+            &lt;/tr&gt;
+          ))}
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;p&gt;&lt;strong&gt;Total: ₹{total}&lt;/strong&gt;&lt;/p&gt;
+
+      &lt;button onClick={() =&gt; setShowOffers(!showOffers)}&gt;
+        {showOffers ? 'Hide offers' : 'Show offers'}
+      &lt;/button&gt;
+
+      {showOffers &amp;&amp; (
+        &lt;dl&gt;
+          {/* Each offer = one &lt;dt&gt; + one &lt;dd&gt;. Key goes on the Fragment. */}
+          {offers.map((o) =&gt; (
+            &lt;Fragment key={o.id}&gt;
+              &lt;dt&gt;&lt;code&gt;{o.code}&lt;/code&gt;&lt;/dt&gt;
+              &lt;dd&gt;{o.text}&lt;/dd&gt;
+            &lt;/Fragment&gt;
+          ))}
+        &lt;/dl&gt;
+      )}
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3 style="margin-top:0">Your order</h3>
+<p>3 items</p>
+<table><tbody>
+<tr><td>Veg Burger</td><td>2</td><td>₹298</td></tr>
+<tr><td>Fries</td><td>1</td><td>₹99</td></tr>
+<tr><td>Cola</td><td>2</td><td>₹98</td></tr>
+</tbody></table>
+<p><strong>Total: ₹495</strong></p>
+<p><button type="button">Hide offers</button></p>
+<dl><dt><code>FIRST50</code></dt><dd>50% off first order</dd><dt><code>FREEDEL</code></dt><dd>Free delivery above ₹300</dd></dl>
+</div>
+<p>DevTools → Elements (inside <code>&lt;div id="root"&gt;</code>) — no fragment tags anywhere:</p>
+<pre class="output">&lt;main&gt;
+  &lt;h2&gt;Your order&lt;/h2&gt;
+  &lt;p&gt;3 items&lt;/p&gt;
+  &lt;table&gt;&lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;Veg Burger&lt;/td&gt;&lt;td&gt;2&lt;/td&gt;&lt;td&gt;₹298&lt;/td&gt;&lt;/tr&gt;
+    ...
+  &lt;/tbody&gt;&lt;/table&gt;
+  ...
+  &lt;dl&gt;
+    &lt;dt&gt;...&lt;/dt&gt;&lt;dd&gt;...&lt;/dd&gt;
+    &lt;dt&gt;...&lt;/dt&gt;&lt;dd&gt;...&lt;/dd&gt;
+  &lt;/dl&gt;
+&lt;/main&gt;</pre>
+<ul>
+<li>React DevTools (Components tab) shows <code>Header</code> and <code>Cells</code>, but the browser Elements panel shows only real tags.</li>
+<li>No "missing key" warning, because the key sits on the <code>Fragment</code>.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. Vite compiles  &lt;&gt;&lt;h2/&gt;&lt;p/&gt;&lt;/&gt;
+      ──► jsxs(Fragment, { children: [ jsx("h2"), jsx("p") ] })
+        │
+        ▼
+ 2. Header() returns ONE value: a Fragment element holding 2 children
+        │
+        ▼
+ 3. React builds its tree:
+        App
+         └─ main
+             ├─ Header
+             │   └─ Fragment          ← exists only in React's tree
+             │        ├─ h2
+             │        └─ p
+             └─ table ...
+        │
+        ▼
+ 4. react-dom writes to the DOM: Fragment is skipped,
+    its children are inserted straight into &lt;main&gt;
+        │
+        ▼
+ 5. On re-render, the key on &lt;Fragment key={o.id}&gt; tells React
+    which dt/dd pair belongs to which offer
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Tables</b>: a <code>&lt;Cells&gt;</code> or <code>&lt;Columns&gt;</code> component returning several <code>&lt;td&gt;</code>/<code>&lt;th&gt;</code>.</li>
+<li><b>Description lists</b>: product specs as <code>&lt;dt&gt;</code>/<code>&lt;dd&gt;</code> pairs in a keyed fragment.</li>
+<li><b>Flex/grid layouts</b>: a chat header returning avatar + name + status as direct flex children.</li>
+<li><b>Layout pieces</b>: a page component returning <code>&lt;Header/&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;Footer/&gt;</code> side by side.</li>
+<li><b>Conditional groups</b>: show "Edit" + "Delete" buttons together only for the todo's owner.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Key on the short syntax</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{movies.map((m) =&gt; (
+  &lt;key={m.id}&gt;        // syntax error
+    &lt;h3&gt;{m.title}&lt;/h3&gt;
+    &lt;p&gt;{m.year}&lt;/p&gt;
+  &lt;/&gt;
+))}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { Fragment } from 'react';
+
+{movies.map((m) =&gt; (
+  &lt;Fragment key={m.id}&gt;
+    &lt;h3&gt;{m.title}&lt;/h3&gt;
+    &lt;p&gt;{m.year}&lt;/p&gt;
+  &lt;/Fragment&gt;
+))}</code></pre></div>
+</div>
+<h3>Mistake 2: Unkeyed fragment in a list</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{movies.map((m) =&gt; (
+  &lt;&gt;
+    &lt;h3&gt;{m.title}&lt;/h3&gt;
+    &lt;p&gt;{m.year}&lt;/p&gt;
+  &lt;/&gt;
+))}
+// Warning: Each child in a list should
+// have a unique "key" prop.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{movies.map((m) =&gt; (
+  &lt;Fragment key={m.id}&gt;
+    &lt;h3&gt;{m.title}&lt;/h3&gt;
+    &lt;p&gt;{m.year}&lt;/p&gt;
+  &lt;/Fragment&gt;
+))}</code></pre></div>
+</div>
+<h3>Mistake 3: Styling a fragment</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;Fragment className="card"&gt;
+  &lt;h3&gt;Pasta&lt;/h3&gt;
+  &lt;p&gt;₹249&lt;/p&gt;
+&lt;/Fragment&gt;
+// Warning: Invalid prop `className`
+// supplied to `React.Fragment`</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// Need a box? Use a real element.
+&lt;div className="card"&gt;
+  &lt;h3&gt;Pasta&lt;/h3&gt;
+  &lt;p&gt;₹249&lt;/p&gt;
+&lt;/div&gt;</code></pre></div>
+</div>
+<h3>Mistake 4: Forgetting the import for the long form</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// no import
+&lt;Fragment key={o.id}&gt;...&lt;/Fragment&gt;
+// ReferenceError: Fragment is not defined</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { Fragment } from 'react';
+&lt;Fragment key={o.id}&gt;...&lt;/Fragment&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Fix this component without adding a DOM element: <code>return &lt;h1&gt;Weather&lt;/h1&gt;&lt;p&gt;Sunny&lt;/p&gt;;</code></p>
+<details><summary>Show solution</summary>
+<pre><code>return (
+  &lt;&gt;
+    &lt;h1&gt;Weather&lt;/h1&gt;
+    &lt;p&gt;Sunny&lt;/p&gt;
+  &lt;/&gt;
+);</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Write the same thing with the long syntax.</p>
+<details><summary>Show solution</summary>
+<pre><code>import { Fragment } from 'react';
+
+return (
+  &lt;Fragment&gt;
+    &lt;h1&gt;Weather&lt;/h1&gt;
+    &lt;p&gt;Sunny&lt;/p&gt;
+  &lt;/Fragment&gt;
+);</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Render a glossary from <code>[{ id, word, meaning }]</code> as <code>&lt;dl&gt;</code> with <code>&lt;dt&gt;</code>/<code>&lt;dd&gt;</code> pairs and no wrapper per pair.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;dl&gt;
+  {terms.map((t) =&gt; (
+    &lt;Fragment key={t.id}&gt;
+      &lt;dt&gt;{t.word}&lt;/dt&gt;
+      &lt;dd&gt;{t.meaning}&lt;/dd&gt;
+    &lt;/Fragment&gt;
+  ))}
+&lt;/dl&gt;</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>A flex row <code>&lt;div className="row"&gt;</code> must have avatar, name and time as direct children. Write a <code>ChatMeta</code> component that returns all three.</p>
+<details><summary>Show solution</summary>
+<pre><code>function ChatMeta({ user, time }) {
+  return (
+    &lt;&gt;
+      &lt;img src={user.avatar} alt="" width={32} height={32} /&gt;
+      &lt;strong&gt;{user.name}&lt;/strong&gt;
+      &lt;small&gt;{time}&lt;/small&gt;
+    &lt;/&gt;
+  );
+}
+&lt;div className="row"&gt;&lt;ChatMeta user={u} time="10:42" /&gt;&lt;/div&gt;</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Build a shop order table where each order row can be expanded to show a second "details" row below it. Use one keyed fragment per order (two <code>&lt;tr&gt;</code>s).</p>
+<details><summary>Show solution</summary>
+<pre><code>import { Fragment, useState } from 'react';
+
+const orders = [
+  { id: 101, item: 'Headphones', status: 'Shipped', address: 'Pune' },
+  { id: 102, item: 'Keyboard', status: 'Packed', address: 'Delhi' },
+];
+
+export default function Orders() {
+  const [openId, setOpenId] = useState(null);
+  return (
+    &lt;table&gt;
+      &lt;tbody&gt;
+        {orders.map((o) =&gt; (
+          &lt;Fragment key={o.id}&gt;
+            &lt;tr&gt;
+              &lt;td&gt;#{o.id}&lt;/td&gt;
+              &lt;td&gt;{o.item}&lt;/td&gt;
+              &lt;td&gt;
+                &lt;button onClick={() =&gt; setOpenId(openId === o.id ? null : o.id)}&gt;
+                  {openId === o.id ? 'Hide' : 'Details'}
+                &lt;/button&gt;
+              &lt;/td&gt;
+            &lt;/tr&gt;
+            {openId === o.id &amp;&amp; (
+              &lt;tr&gt;
+                &lt;td colSpan={3}&gt;{o.status} → {o.address}&lt;/td&gt;
+              &lt;/tr&gt;
+            )}
+          &lt;/Fragment&gt;
+        ))}
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>A component returns one value; fragments group many elements into one.</li>
+<li>Fragments add no DOM node.</li>
+<li><code>&lt;&gt;&lt;/&gt;</code> = short, no import, no key.</li>
+<li><code>&lt;Fragment key={id}&gt;</code> = long, import from <code>'react'</code>, allows <code>key</code>.</li>
+<li>No <code>className</code>/<code>style</code>/events on fragments.</li>
+<li>Use them for table cells, <code>dt</code>/<code>dd</code> pairs, flex/grid children.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why can't a component return two sibling elements directly?</summary>
+<p>JSX compiles to function calls. <code>return jsx('h1') jsx('p')</code> is not valid JavaScript — a function returns one value. A fragment wraps them into one value.</p>
+</details>
+<details><summary>Fragment vs <code>&lt;div&gt;</code>?</summary>
+<p>A <code>&lt;div&gt;</code> is a real DOM node (stylable, clickable, affects layout and HTML validity). A fragment exists only in React's tree and leaves no trace in the DOM.</p>
+</details>
+<details><summary>When must you use <code>&lt;Fragment&gt;</code> instead of <code>&lt;&gt;</code>?</summary>
+<p>When you need a <code>key</code>, typically inside <code>.map()</code>.</p>
+</details>
+<details><summary>What does <code>&lt;&gt;&lt;A /&gt;&lt;B /&gt;&lt;/&gt;</code> compile to?</summary>
+<p>With the automatic runtime: <code>jsxs(Fragment, { children: [jsx(A, {}), jsx(B, {})] })</code>, with <code>jsxs</code> and <code>Fragment</code> imported from <code>react/jsx-runtime</code>.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-008.html">JSX-008 · JSX attributes</a>
+<a href="JSX-010.html">JSX-010 · htmlFor</a>
+<a href="JSX-011.html">JSX-011 · Inline styles</a>
+<a href="JSX-013.html">JSX-013 · Conditional expressions</a>
+<a href="JSX-012.html#rev">JSX-012-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">A component must return one thing. A fragment (<code>&lt;&gt;...&lt;/&gt;</code> or <code>&lt;Fragment&gt;</code>) groups several elements into one without adding a DOM node. Use <code>&lt;Fragment key&gt;</code> in lists.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;&gt;
+  &lt;h1&gt;A&lt;/h1&gt;
+  &lt;p&gt;B&lt;/p&gt;
+&lt;/&gt;
+
+import { Fragment } from 'react';
+&lt;Fragment&gt;...&lt;/Fragment&gt;
+
+{list.map((x) =&gt; (
+  &lt;Fragment key={x.id}&gt;
+    &lt;dt&gt;{x.k}&lt;/dt&gt;&lt;dd&gt;{x.v}&lt;/dd&gt;
+  &lt;/Fragment&gt;
+))}</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li>Fragments render no DOM element.</li>
+<li>Short syntax needs no import and takes no attributes.</li>
+<li>Long syntax: <code>import { Fragment } from 'react'</code>.</li>
+<li><code>key</code> is the only attribute you can give a fragment (long syntax).</li>
+<li>Keep HTML valid: <code>&lt;tr&gt;</code> → <code>&lt;td&gt;</code>, <code>&lt;ul&gt;</code> → <code>&lt;li&gt;</code>, <code>&lt;dl&gt;</code> → <code>&lt;dt&gt;</code>/<code>&lt;dd&gt;</code>.</li>
+<li>Fragments keep flex/grid items as direct children.</li>
+<li>Arrays also work as return values but need keys on every item.</li>
+<li>Compiles to the <code>Fragment</code> type from <code>react/jsx-runtime</code>.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What is a fragment?</summary>
+<p>A wrapper that lets a component return several elements without adding an extra node to the DOM.</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>Can you attach an <code>onClick</code> to a fragment?</summary>
+<p>No. There is no DOM element to listen on. Use a real element, or put the handler on each child.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>Fragment vs returning an array?</summary>
+<p>Both give multiple children. Arrays need a <code>key</code> on every item and use commas; fragments use normal JSX and need no keys for static children.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary>Does switching from <code>&lt;Child /&gt;</code> to <code>&lt;&gt;&lt;Child /&gt;&lt;/&gt;</code> reset Child's state?</summary>
+<p>No — React's docs say it does not reset state for <code>&lt;Child /&gt;</code> ↔ <code>&lt;&gt;&lt;Child /&gt;&lt;/&gt;</code> or ↔ <code>[&lt;Child /&gt;]</code>, but only one level deep. <code>&lt;&gt;&lt;&gt;&lt;Child /&gt;&lt;/&gt;&lt;/&gt;</code> ↔ <code>&lt;Child /&gt;</code> does reset it.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary>How many DOM elements? <code>&lt;&gt;&lt;li&gt;Tea&lt;/li&gt;&lt;li&gt;Coffee&lt;/li&gt;&lt;/&gt;</code></summary>
+<p>Two <code>&lt;li&gt;</code> elements. The fragment adds none.</p>
+</details>
+<details><summary>What renders? <code>return &lt;&gt;&lt;/&gt;;</code></summary>
+<p>Nothing visible. An empty fragment renders no DOM.</p>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>"Adjacent JSX elements must be wrapped in an enclosing tag."</summary>
+<p>You returned two siblings. Wrap them in <code>&lt;&gt;...&lt;/&gt;</code>.</p>
+</details>
+<details><summary>"Each child in a list should have a unique key" though items are fragments.</summary>
+<p>Short fragments can't take keys. Switch to <code>&lt;Fragment key={item.id}&gt;</code>.</p>
+</details>
+<details><summary>Dev console warning: "In HTML, &lt;div&gt; cannot be a child of &lt;tr&gt;".</summary>
+<p>A component inside <code>&lt;tr&gt;</code> returns a <code>&lt;div&gt;</code> wrapper. Replace it with a fragment.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A grid card component returns image + title + price, but the wrapper div breaks the grid.</summary>
+<p>Return a fragment so the three items become direct grid children — or keep the div and make it the grid item intentionally.</p>
+</details>
+<details><summary>Each FAQ question needs a heading and an answer paragraph, rendered from an array.</summary>
+<p><code>faqs.map(f =&gt; &lt;Fragment key={f.id}&gt;&lt;h3&gt;{f.q}&lt;/h3&gt;&lt;p&gt;{f.a}&lt;/p&gt;&lt;/Fragment&gt;)</code>.</p>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Movie specs as a description list</h3>
+<details><summary>Show solution</summary>
+<pre><code>import { Fragment } from 'react';
+
+const specs = [
+  { k: 'Runtime', v: '2h 49m' },
+  { k: 'Genre', v: 'Sci-fi' },
+];
+
+export default function Specs() {
+  return (
+    &lt;dl&gt;
+      {specs.map((s) =&gt; (
+        &lt;Fragment key={s.k}&gt;
+          &lt;dt&gt;{s.k}&lt;/dt&gt;
+          &lt;dd&gt;{s.v}&lt;/dd&gt;
+        &lt;/Fragment&gt;
+      ))}
+    &lt;/dl&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge 2: Owner-only todo actions</h3>
+<details><summary>Show solution</summary>
+<pre><code>function TodoActions({ isOwner }) {
+  if (!isOwner) return null;
+  return (
+    &lt;&gt;
+      &lt;button&gt;Edit&lt;/button&gt;
+      &lt;button&gt;Delete&lt;/button&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td><code>&lt;&gt;</code> vs <code>&lt;Fragment&gt;</code></td><td>Short, no key vs long, key allowed, needs import</td></tr>
+<tr><td>Fragment vs <code>&lt;div&gt;</code></td><td>No DOM node vs real, stylable node</td></tr>
+<tr><td>Fragment vs array</td><td>JSX children, keys only in lists vs keys on every item</td></tr>
+<tr><td>Fragment vs <code>return null</code></td><td>Groups children vs renders nothing</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Goal</th><th>Write</th></tr>
+<tr><td>Return 2+ siblings</td><td><code>&lt;&gt;...&lt;/&gt;</code></td></tr>
+<tr><td>Fragment in a list</td><td><code>&lt;Fragment key={id}&gt;</code></td></tr>
+<tr><td>Import</td><td><code>import { Fragment } from 'react'</code></td></tr>
+<tr><td>Need a style/class</td><td>Use a real element</td></tr>
+<tr><td>Table cells component</td><td>Return <code>&lt;&gt;&lt;td/&gt;&lt;td/&gt;&lt;/&gt;</code></td></tr>
+<tr><td>Render nothing</td><td><code>return null</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

@@ -1,0 +1,1108 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>React Mastery Curriculum</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky control bar · stage rail · collapsible module ledger · projects · interview roadmap · formats */
+:root{
+  --bg:#f4f7fa; --panel:#ffffff; --ink:#122130; --muted:#5a6b7c; --line:#dbe3eb;
+  --accent:#0a7aa0; --accent-ink:#ffffff; --accent-soft:#e2f3f9;
+  --rev:#7a4cc2; --rev-soft:#f0e9fb;
+  --b:#2f8a4a; --b-soft:#e4f4e8; --i:#b9770e; --i-soft:#fbf0dc; --a:#c0392b; --a-soft:#fbe6e3;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c141c; --panel:#121d28; --ink:#e3ecf3; --muted:#93a5b6; --line:#243444;
+  --accent:#5ccfe6; --accent-ink:#06202a; --accent-soft:#12323e;
+  --rev:#b892f2; --rev-soft:#2a2040;
+  --b:#6fd08c; --b-soft:#163222; --i:#f0b54d; --i-soft:#3a2c12; --a:#f08a7e; --a-soft:#3d1d1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c141c; --panel:#121d28; --ink:#e3ecf3; --muted:#93a5b6; --line:#243444;
+  --accent:#5ccfe6; --accent-ink:#06202a; --accent-soft:#12323e;
+  --rev:#b892f2; --rev-soft:#2a2040;
+  --b:#6fd08c; --b-soft:#163222; --i:#f0b54d; --i-soft:#3a2c12; --a:#f08a7e; --a-soft:#3d1d1a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+.mono{font-family:var(--mono);font-size:.8em}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+header.hero{padding-block:36px 20px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header.hero h1{font-size:clamp(30px,5vw,48px);font-weight:800;margin-top:6px}
+header.hero p{color:var(--muted);max-width:68ch;margin:10px 0 0}
+.stats{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:20px}
+.stat b{font-family:var(--display);font-size:26px;display:block;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* sticky bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-block:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-block:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:7px 12px;cursor:pointer;font-weight:600;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+body.rev .seg button[aria-pressed="true"][data-mode]{background:var(--rev);color:#fff}
+.bar input[type=search]{flex:1 1 200px;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 10px}
+.bar select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 8px;font-size:13px}
+.prog{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter{width:110px;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);width:0}
+body.rev .meter i{background:var(--rev)}
+
+/* sections */
+section.block{padding-block:28px}
+section.block > h2{font-size:26px;margin-bottom:6px}
+.lede{color:var(--muted);margin:0 0 18px;max-width:70ch}
+
+/* stages */
+.stages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.stages{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.stages{grid-template-columns:1fr}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:6px}
+.stage[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.stage .k{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:600}
+.stage h3{font-size:18px}
+.stage small{color:var(--muted)}
+.stage .meter{width:100%}
+.stagedetail{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.stagedetail h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stagedetail ul{margin:0;padding-left:18px}
+.stagedetail li{margin:3px 0}
+
+/* modules */
+.mod{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.mod summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 14px;align-items:center}
+.mod summary::-webkit-details-marker{display:none}
+.mod .num{font-family:var(--display);font-weight:800;font-size:24px;color:var(--accent);width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+body.rev .mod .num{color:var(--rev)}
+.mod .t{min-width:0}
+.mod .t h3{font-size:18px}
+.mod .t .sub{font-size:12.5px;color:var(--muted)}
+.mod .side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mod .side .meter{width:90px}
+.modbody{border-top:1px solid var(--line);padding:12px 16px 16px}
+.modmeta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin-bottom:10px}
+.modmeta b{color:var(--ink);font-weight:600}
+.note{background:var(--accent-soft);border-radius:8px;padding:9px 12px;font-size:13.5px;margin-bottom:10px}
+body.rev .note{background:var(--rev-soft)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.id{white-space:nowrap}
+.idtag{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent)}
+.revtag{font-family:var(--mono);font-size:11.5px;color:var(--rev)}
+body.rev .idtag{color:var(--muted);font-weight:400}
+body.rev .revtag{font-weight:600;font-size:12px}
+td.title b{font-weight:600}
+td.title .obj{display:block;color:var(--muted);font-size:13px}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap}
+.pill.B{background:var(--b-soft);color:var(--b)} .pill.I{background:var(--i-soft);color:var(--i)} .pill.A{background:var(--a-soft);color:var(--a)}
+.freq{font-size:11px;font-weight:600;white-space:nowrap}
+.freq.H{color:var(--a)} .freq.M{color:var(--i)} .freq.L{color:var(--muted)}
+.api{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);vertical-align:1px}
+.api.new{border-color:var(--rev);color:var(--rev)}
+.api.leg{border-style:dashed}
+.pre{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+td.chk{width:34px}
+td.chk input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+body.rev td.chk input{accent-color:var(--rev)}
+tr.done td.title b{text-decoration:line-through;text-decoration-color:var(--muted)}
+.hide-r{} body.rev .hide-r{display:none} .show-r{display:none} body.rev .show-r{display:table-cell}
+.empty{padding:30px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed var(--line);border-radius:10px}
+
+/* projects */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.proj{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.proj .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.proj h3{font-size:16px}
+.proj p{margin:0;font-size:13.5px;color:var(--muted)}
+.proj .skills{font-size:12px;color:var(--ink)}
+.checklist{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.checklist span{font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+/* roadmap */
+.weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.week{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--rev);border-radius:10px;padding:14px}
+.week .k{font-family:var(--mono);font-size:11px;color:var(--rev);font-weight:600}
+.week h3{font-size:16px;margin:4px 0 6px}
+.week ul{margin:0;padding-left:18px;font-size:13.5px}
+
+/* formats */
+.formats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.fmt{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.fmt h3{font-size:17px;margin-bottom:8px}
+.fmt ol{margin:0;padding-left:22px;font-size:14px}
+.fmt ol li{margin:3px 0}
+.fmt li span{color:var(--muted)}
+pre.diagram{font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;margin:10px 0 0;line-height:1.45}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--muted);margin-bottom:14px;align-items:center}
+.approve{background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:16px 18px;margin-top:6px}
+.approve h3{font-size:18px;margin-bottom:6px}
+.approve p{margin:0;color:var(--muted)}
+footer{padding-block:30px 50px;color:var(--muted);font-size:13px}
+.btnlink{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+.pp{padding-block:4px 16px;border-top:1px solid var(--line)}
+.ppgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+.ppgrid>div{min-width:0}
+.pp h3{font-size:15px;margin:10px 0 4px}
+.pp p{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.pprow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.primary{border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:7px 12px;font-weight:600;font-size:13px;cursor:pointer}
+body.rev .primary{background:var(--rev);color:#fff}
+.danger{color:var(--a);border-color:var(--a)}
+#pFile{position:absolute;width:1px;height:1px;opacity:0}
+.filebtn{display:inline-block}
+.pp textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 9px;font-family:var(--mono);font-size:12px;resize:vertical}
+.radio{font-size:13px;display:inline-flex;gap:5px;align-items:center}
+.ppsum{font-variant-numeric:tabular-nums}
+.ppmsg{margin:10px 0 0;font-size:13.5px;font-weight:600;color:var(--ink)}
+.ppmsg.err{color:var(--a)}
+@media (max-width:640px){
+  .mod summary{grid-template-columns:auto 1fr}
+  .mod .side{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between}
+  .prog .meter{width:70px}
+}
+@media (prefers-reduced-motion:no-preference){.meter i{transition:width .3s ease}}
+</style>
+
+<header class="wrap hero">
+  <div class="eyebrow">Curriculum v1 · draft for approval · React 19.2 · Vite 8 · React Router 7</div>
+  <h1>React Mastery Curriculum</h1>
+  <p>Two synced tracks. <b>Detailed Learning</b> takes you from zero to production React. <b>Interview &amp; Revision</b> gives a fast, question-first version of every lesson. Each lesson ID (like <span class="idtag">HOOKS-005</span>) has a matching revision ID (<span class="revtag">HOOKS-005-REV</span>).</p>
+  <div class="stats" id="stats"></div>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="seg" role="group" aria-label="Learning mode">
+      <button id="mDetail" data-mode="d" aria-pressed="true">Detailed Learning</button>
+      <button id="mRev" data-mode="r" aria-pressed="false">Interview &amp; Revision</button>
+    </div>
+    <input id="q" type="search" placeholder="Search lessons, IDs, topics (e.g. useEffect, ROUTE-014)" aria-label="Search lessons">
+    <select id="fReady" aria-label="Written lessons filter">
+      <option value="">All lessons</option><option value="1">Written lessons only</option>
+    </select>
+    <select id="fDiff" aria-label="Difficulty filter">
+      <option value="">All levels</option><option value="B">Beginner</option><option value="I">Intermediate</option><option value="A">Advanced</option>
+    </select>
+    <select id="fFreq" aria-label="Interview frequency filter">
+      <option value="">Any interview frequency</option><option value="H">High-frequency only</option><option value="HM">High + medium</option>
+    </select>
+    <div class="prog"><span id="progTxt">0 / 0</span><div class="meter"><i id="progBar"></i></div></div>
+    <button class="btnlink" id="pBtn" aria-expanded="false" aria-controls="pPanel">My progress</button>
+  </div>
+  <div class="wrap pp" id="pPanel" hidden>
+    <div class="ppgrid">
+      <div>
+        <h3>Back up your progress</h3>
+        <p>Your ticks are saved automatically in this browser. They are lost if you clear browser data or switch device, so export a backup file now and then.</p>
+        <div class="pprow"><button class="primary" id="pExport">Export progress (.json)</button><button class="btnlink" id="pCopy">Copy as text</button></div>
+        <p class="ppsum" id="pSum"></p>
+      </div>
+      <div>
+        <h3>Restore from a backup</h3>
+        <p>Pick a backup file, or paste the text you copied earlier.</p>
+        <div class="pprow"><label class="btnlink filebtn" for="pFile">Choose file…</label><input type="file" id="pFile" accept=".json,application/json"></div>
+        <textarea id="pText" rows="3" placeholder='Or paste backup text here: {"app":"react-mastery",…}' aria-label="Paste backup text"></textarea>
+        <div class="pprow">
+          <label class="radio"><input type="radio" name="pHow" id="pMerge" value="merge" checked> Merge with current</label>
+          <label class="radio"><input type="radio" name="pHow" id="pReplace" value="replace"> Replace current</label>
+          <button class="primary" id="pImport">Import</button>
+        </div>
+      </div>
+      <div>
+        <h3>Start over</h3>
+        <p>Clears all ticks in both tracks on this browser.</p>
+        <div class="pprow"><button class="btnlink danger" id="pReset">Reset progress</button><button class="btnlink danger" id="pResetYes" hidden>Yes, clear everything</button><button class="btnlink" id="pResetNo" hidden>Cancel</button></div>
+      </div>
+    </div>
+    <p class="ppmsg" id="pMsg" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="block" id="stagesSec">
+    <h2>Learning progression</h2>
+    <p class="lede">Four stages. Pick one to see its objectives, entry check, assignments, stage-end project and assessment. Module numbers stay fixed; the stage sets the order you study them in.</p>
+    <div class="stages" id="stages"></div>
+    <div class="stagedetail" id="stageDetail"></div>
+  </section>
+
+  <section class="block" id="modsSec">
+    <h2 id="modsTitle">Module-wise lesson breakdown</h2>
+    <p class="lede" id="modsLede"></p>
+    <div class="legend">
+      <span><span class="pill B">Beginner</span> ~30 min</span>
+      <span><span class="pill I">Intermediate</span> ~45 min</span>
+      <span><span class="pill A">Advanced</span> ~60 min</span>
+      <span><span class="freq H">● High</span> / <span class="freq M">● Medium</span> / <span class="freq L">● Low</span> interview frequency</span>
+      <span><span class="api new">Ready</span> lesson written: click its title</span>
+      <span><span class="api">Stable 18+</span> <span class="api new">React 19+</span> <span class="api leg">Legacy</span> API status</span>
+      <button class="btnlink" id="expandAll">Expand all</button>
+      <button class="btnlink" id="collapseAll">Collapse all</button>
+    </div>
+    <div id="mods"></div>
+  </section>
+
+  <section class="block" id="projSec">
+    <h2>Real-world projects</h2>
+    <p class="lede">Module 25 in card form, simple to production grade. Every project ships with the same 12-part checklist.</p>
+    <div class="checklist" id="projChecklist"></div>
+    <div class="cards" id="projects" style="margin-top:14px"></div>
+  </section>
+
+  <section class="block" id="roadSec">
+    <h2>Final React interview roadmap</h2>
+    <p class="lede">A six-week revision plan built on the <span class="revtag">-REV</span> lessons. Do it after Stage 3, or run it on its own if you already build React apps.</p>
+    <div class="weeks" id="weeks"></div>
+  </section>
+
+  <section class="block" id="fmtSec">
+    <h2>Lesson formats</h2>
+    <p class="lede">Every lesson in both tracks follows these templates, trimmed where a section does not fit the topic.</p>
+    <div class="formats">
+      <div class="fmt">
+        <h3>Detailed lesson · e.g. <span class="idtag">HOOKS-005</span></h3>
+        <ol>
+          <li>Lesson header <span>module, lesson, level, time, prerequisites</span></li>
+          <li>Visual introduction <span>diagram or analogy</span></li>
+          <li>Why do we need it? <span>before / after</span></li>
+          <li>Core concept <span>short bullets</span></li>
+          <li>Syntax</li>
+          <li>Practical example <span>complete, runnable in Vite</span></li>
+          <li>Expected output</li>
+          <li>Execution flow <span>step-by-step diagram</span></li>
+          <li>Real-world application</li>
+          <li>Common mistakes <span>wrong → fixed code</span></li>
+          <li>Practice <span>2 beginner · 2 intermediate · 1 challenge</span></li>
+          <li>Quick revision <span>5–7 points</span></li>
+          <li>Interview corner · Related lessons</li>
+        </ol>
+        <pre class="diagram">User clicks button
+      │
+      ▼
+setCount(c => c + 1)
+      │
+      ▼
+React queues the update
+      │
+      ▼
+Component renders again
+      │
+      ▼
+DOM shows the new count</pre>
+      </div>
+      <div class="fmt">
+        <h3>Revision lesson · e.g. <span class="revtag">HOOKS-005-REV</span></h3>
+        <ol type="A">
+          <li>Concept in 30 seconds</li>
+          <li>Important syntax</li>
+          <li>Must-know points <span>5–10</span></li>
+          <li>Interview questions <span>basic → advanced → tricky</span></li>
+          <li>Output-based questions</li>
+          <li>Debugging questions</li>
+          <li>Scenario-based questions</li>
+          <li>Coding challenges <span>with solutions</span></li>
+          <li>Comparison questions</li>
+          <li>Revision cheat sheet <span>compact table</span></li>
+        </ol>
+        <pre class="diagram">Parent component
+      │  passes props
+      ▼
+Child component
+      │  reads data
+      ▼
+Rendered UI</pre>
+      </div>
+    </div>
+    <div class="approve">
+      <h3>Next step: approve, then lessons go out one by one</h3>
+      <p>Reply in chat with "approved" (or the changes you want). Lessons are then written in sequence starting at <span class="idtag">WEB-001</span>, or from any ID you choose, and added to this page. Code is checked against react.dev, vite.dev and reactrouter.com at writing time.</p>
+    </div>
+  </section>
+</main>
+<footer class="wrap">Progress is saved in this browser automatically, with Detailed and Revision tracked separately. Use “My progress” to export a backup file and import it on another browser or device.</footer>
+
+<script>
+const MODULES = [
+{c:"WEB",n:1,s:1,name:"Web Development Foundations",pre:[],
+note:"Why JavaScript first: React is plain JavaScript. Every hook is a closure, every list is map(), every update is an immutable copy with spread. Weak JS shows up as React bugs, so this module is not optional.",
+L:`How the web works|Trace what happens from typing a URL to seeing a page (DNS, TCP, rendering)|B|M
+Client-server architecture|Identify the roles of browser, server, and database in a web app|B|M
+HTTP and HTTPS|Explain HTTP messages and headers, and why TLS encryption matters|B|H
+Request-response lifecycle|Follow one request from DNS lookup to browser paint|B|M
+HTML fundamentals|Build a page with elements, attributes, links, images, and forms|B|L
+Semantic HTML|Use header, nav, main, article, and section for accessibility and SEO|B|M
+CSS fundamentals|Apply selectors, the box model, specificity, and the cascade|B|M
+Flexbox|Lay out rows and columns with direction, alignment, and wrapping|B|M
+CSS Grid|Build two-dimensional layouts with templates and areas|B|M
+Responsive design|Adapt layouts with media queries, relative units, and mobile-first CSS|B|M
+JavaScript fundamentals|Run JS in the browser and Node; know statements vs expressions|B|M
+Variables: var, let, const|Pick the right declaration and explain block vs function scope|B|H
+Data types|Tell primitives from objects and use typeof correctly|B|H
+Operators|Use arithmetic, comparison (== vs ===), logical, and ?? operators|B|H
+Conditions and loops|Control flow with if/else, switch, for, while, and for...of|B|L
+Functions|Declare, call, and return from functions; parameters and defaults|B|M
+Arrow functions|Write arrow functions and explain their lexical this|B|H
+Scope|Trace global, function, and block scope and the scope chain|I|H
+Hoisting|Predict hoisting of var, let/const (temporal dead zone), and functions|I|H
+Closures|Use closures for private state and spot them inside React hooks|I|H
+Arrays and objects|Create, read, and update arrays and objects; reference vs value|B|H
+Array methods: map, filter, reduce, find, some, every|Transform data the way React lists do|B|H
+Destructuring|Unpack arrays and objects, including nested values and defaults|B|H
+Spread and rest operators|Copy and merge immutably; collect arguments with rest|B|H
+Template literals|Build strings with interpolation and multiple lines|B|L
+ES6 modules|Explain module scope and why bundlers rely on ES modules|B|M
+Import and export|Use named, default, and namespace imports correctly|B|M
+Promises|Create and chain promises; handle rejection; Promise.all and allSettled|I|H
+Async/await|Write async code that reads top to bottom, with try/catch|I|H
+Fetch API|Call a REST API, parse JSON, and check response.ok|I|H
+Event loop|Explain how a single thread runs async work|I|H
+Call stack|Trace calls on the stack and read stack traces|I|M
+Microtasks and macrotasks|Predict output order of promises vs setTimeout|A|H
+DOM manipulation|Select, create, and update DOM nodes with vanilla JS|B|M
+Event bubbling and capturing|Trace event phases and stop propagation correctly|I|H
+Event delegation|Handle events for many children with one parent listener|I|M
+LocalStorage and SessionStorage|Persist small data in the browser and know the limits|B|M
+JSON|Serialise and parse data with JSON.stringify and JSON.parse|B|M
+Error handling|Use try/catch/finally, custom errors, and async error paths|I|M
+npm and package management|Install, update, and audit packages; semantic versioning|B|M
+Git and GitHub basics|Commit, branch, merge, and open a pull request|B|M`},
+{c:"INTRO",n:2,s:1,name:"React Introduction",pre:["WEB"],
+L:`What is React?|Describe React as a library for building UIs from components|B|H
+Why React?|List the problems React solves: keeping UI in sync with data, reuse, scale|B|H
+Problems with traditional DOM manipulation|See how manual DOM updates drift out of sync with data|B|M
+React vs Vanilla JavaScript|Build the same counter both ways and compare|B|M
+React vs Angular vs Vue|Compare scope, learning curve, and ecosystem|B|M
+Library vs framework|Explain inversion of control and where React sits|B|H
+Features of React|Summarise components, JSX, one-way data flow, virtual DOM, hooks|B|H
+Declarative vs imperative programming|Describe UI as a function of state instead of step-by-step DOM edits|B|H
+Single Page Applications|Explain how SPAs swap views without full page reloads|B|H
+Multi Page Applications|Compare MPAs with SPAs on SEO, speed, and complexity|B|M
+Client-side rendering|Trace a CSR page load and its trade-offs|I|H
+Server-side rendering|Explain how SSR sends HTML first, then hydrates|I|H
+Static site generation|Explain build-time HTML and when it beats SSR|I|M
+React ecosystem overview|Map routing, data, state, styling, testing, and frameworks|B|M
+Understanding React architecture|See how react, react-dom, components, and the reconciler fit together|I|M`},
+{c:"ENV",n:3,s:1,name:"Development Environment",pre:["WEB"],
+note:"Vite is the primary setup. Create React App was deprecated in February 2025; alternatives covered: Next.js, React Router framework mode, Rsbuild, Parcel.",
+L:`Installing Node.js|Install an LTS release and verify node and npm|B|L
+Understanding npm|Use npm install, npx, and the registry|B|M
+Creating a React application using Vite|Scaffold with npm create vite@latest and run it|B|H
+Understanding project structure|Know what index.html, main.jsx, App.jsx, and public/ do|B|M
+package.json|Read dependencies, devDependencies, scripts, and version ranges|B|M
+package-lock.json|Explain why lock files give reproducible installs|B|M
+node_modules|Know why it is never committed and how to rebuild it|B|L
+npm scripts|Run dev, build, preview, lint, and custom scripts|B|M
+Starting the development server|Use Vite's dev server and hot module replacement|B|M
+Production build|Create and preview an optimised dist/ build|B|H
+Environment variables|Use .env files and import.meta.env.VITE_* safely|I|H
+VS Code setup|Configure extensions, Prettier, ESLint, and snippets|B|L
+Browser developer tools|Use the Elements, Console, Network, and Sources panels|B|M
+React Developer Tools|Inspect component trees, props, state, and the Profiler|B|M
+Debugging React applications|Use breakpoints, logging patterns, and error overlays|I|H`},
+{c:"JSX",n:4,s:1,name:"JSX Fundamentals",pre:["INTRO","ENV"],
+note:"Every JSX lesson shows an incorrect example, the corrected version, and the expected output.",
+L:`What is JSX?|Read JSX as JavaScript that describes UI|B|H
+Why JSX?|Compare JSX with React.createElement calls|B|M
+JSX vs HTML|Spot the differences: camelCase, className, self-closing tags|B|H
+JSX transformation|See how JSX compiles to jsx() calls with the automatic runtime|I|H
+Babel and modern compilation concepts|Know what Babel, esbuild, SWC, and Oxc do in a build|I|M
+Embedding JavaScript in JSX|Use curly braces to insert values and call functions|B|H
+JSX expressions|Know which expressions work in JSX and why statements do not|B|H
+JSX attributes|Pass strings, expressions, and spread attributes|B|M
+className|Apply CSS classes, including conditional class strings|B|M
+htmlFor|Link labels to inputs for accessibility|B|L
+Inline styles|Use style objects with camelCase properties|B|M
+JSX fragments|Return several elements without extra DOM wrappers|B|H
+Conditional expressions|Use ternaries and && inside JSX|B|H
+Rendering lists|Map arrays to elements with keys|B|H
+JSX restrictions|Know the single-root rule, reserved words, and closing tags|B|M
+Common JSX errors|Fix the most frequent JSX compile and runtime errors|B|M`},
+{c:"COMP",n:5,s:1,name:"Components",pre:["JSX"],
+L:`What are components?|Define a component as a function that returns UI|B|H
+Why component-based architecture?|Explain reuse, isolation, and team scale|B|H
+Functional components|Write function components and know why class components are legacy|B|H
+Component naming conventions|Use PascalCase names and one main component per file|B|M
+Component composition|Build bigger UIs by combining small components|B|H
+Component reuse|Make a component configurable instead of copy-pasting it|B|M
+Parent and child components|Identify parent and child roles in a tree|B|M
+Nested components|Nest safely and never define a component inside another|I|H
+Component tree|Draw the component tree of a real app|B|M
+Component separation|Decide when and where to split a component|I|M
+Reusable UI architecture|Design a small UI kit: Button, Card, Modal, Input|I|M
+Default exports|Use export default and know its trade-offs|B|M
+Named exports|Use named exports and barrel files|B|M
+Importing components|Import with relative paths and path aliases|B|L
+Component organization|Organise folders by feature vs by type|I|M
+Presentational vs container components|Separate data logic from display; see how hooks changed this|I|M
+Component design principles|Apply single responsibility, pure rendering, and small APIs|I|H`},
+{c:"PROPS",n:6,s:1,name:"Props",pre:["COMP"],
+note:"Builds reusable Card, Button, UserProfile and Product components that later projects reuse.",
+L:`What are props?|Explain props as read-only inputs to a component|B|H
+Passing props|Pass data from parent to child as attributes|B|H
+Reading props|Access the props object in a child|B|M
+Multiple props|Pass and use several props together|B|L
+Props destructuring|Destructure props in the parameter list|B|M
+Default values|Set defaults with destructuring defaults (defaultProps is removed for functions in React 19)|B|M
+Passing strings, numbers, arrays and objects|Pass each data type correctly with quotes or braces|B|M
+Passing functions as props|Let children call parent callbacks|B|H
+Passing JSX as props|Pass elements as props for flexible layouts (slots)|I|M
+children prop|Wrap content with the children prop|B|H
+Props drilling|Recognise drilling and its pain points|I|H
+Props vs state|Choose props or state for a given piece of data|B|H
+One-way data flow|Trace data flowing down and events flowing up|B|H
+Immutable props|Explain why components must never change their props|B|H
+Common mistakes|Fix the frequent props mistakes|B|M`},
+{c:"STATE",n:7,s:1,name:"State Management Fundamentals",pre:["PROPS"],
+note:"Worked examples across the module: counter, todo list, shopping cart, and a multi-field form.",
+L:`What is state?|Define state as data a component remembers between renders|B|H
+Local component state|Keep state inside the component that owns it|B|M
+Why state is required|See why a normal variable cannot update the screen|B|H
+useState|Declare state and update it with the setter|B|H
+State initialization|Choose good initial values for each data type|B|M
+Updating state|Trigger a re-render by calling the setter|B|H
+State vs normal variables|Compare lifetime and re-render behaviour|B|H
+State update scheduling|Understand that updates are queued for the next render|I|H
+Asynchronous-looking state behavior|Explain why state still shows the old value right after set|I|H
+Functional state updates|Use setX(prev => …) when the next value depends on the previous one|I|H
+Updating numbers|Increment, decrement, and clamp numeric state|B|L
+Updating strings|Bind a text input to string state|B|L
+Updating arrays|Add, remove, and update items without mutation|B|H
+Updating objects|Update object fields with spread|B|H
+Nested state updates|Update nested objects and arrays immutably|I|H
+State immutability|Explain why mutation breaks re-renders|I|H
+Multiple state variables|Split or group state sensibly|B|M
+Lazy initialization|Pass an initializer function for expensive initial state|I|M
+Batching|See how React groups several updates into one render|I|H
+State preservation and reset|Know when React keeps or resets state, by tree position and key|A|H
+Lifting state up|Move shared state to the closest common parent|I|H
+Derived state|Calculate values during render instead of storing them|I|H
+Controlled components|Drive input values from state|I|H`},
+{c:"EVT",n:8,s:2,name:"Events and Forms",pre:["STATE"],
+L:`Event handling|Attach handlers with onClick={fn}, not onClick={fn()}|B|H
+Synthetic events|Explain React's cross-browser event wrapper and root delegation|I|H
+onClick|Handle clicks and pass arguments|B|M
+onChange|Read input values on every keystroke|B|M
+onSubmit|Handle form submission in one place|B|M
+onMouseEnter|Build hover interactions (and why it does not bubble)|B|L
+Event objects|Use target, currentTarget, key, and preventDefault|B|M
+Event propagation|Stop propagation in nested handlers|I|M
+Preventing default behavior|Stop page reloads on submit and link navigation|B|H
+Controlled forms|Build forms whose values live in state|I|H
+Uncontrolled forms|Read values with refs or FormData|I|H
+Input handling|Handle text, number, and date inputs|B|M
+Textarea|Control multi-line text|B|L
+Select|Control single and multiple select menus|B|L
+Checkbox|Control checked state and checkbox groups|B|M
+Radio buttons|Control a radio group with one state value|B|L
+Form validation|Validate on change, blur, and submit with clear messages|I|H
+Dynamic forms|Add and remove fields at runtime|I|M
+Multiple input handling|Handle many inputs with one change handler|I|M
+Form submission|Submit to an API with loading, success, and error states|I|H
+Form libraries overview|Compare manual forms, React Hook Form, Formik, and React 19 form Actions|I|M
+React Hook Form|Build a validated form with useForm and a Zod schema|I|M
+Formik overview|Read and maintain existing Formik code|I|L|leg`},
+{c:"COND",n:9,s:2,name:"Conditional Rendering and Lists",pre:["STATE"],
+L:`Conditional rendering|Show different UI based on state|B|H
+if/else|Return early with if/else|B|M
+Ternary operator|Pick between two elements inline|B|H
+Logical AND|Render or skip with && and avoid the stray 0 bug|B|H
+Rendering nothing|Return null to hide a component|B|M
+Dynamic components|Choose a component from a lookup map at runtime|I|M
+Array rendering|Render arrays of data as elements|B|M
+map()|Map data to JSX with keys|B|H
+Filtering data|Filter lists before rendering|B|M
+Sorting data|Sort a copy (toSorted), never the state array itself|B|M
+Unique keys|Give each list item a stable, unique key|B|H
+Why keys are important|See how keys let React match items between renders|I|H
+Index as key problems|Reproduce the input-mismatch bug caused by index keys|I|H
+Reconciliation and list updates|Trace how React inserts, moves, and removes list items|A|H
+Empty states|Design helpful no-data screens|B|M
+Loading states|Show spinners and skeletons while data loads|B|M
+Error states|Show recoverable error messages with retry|B|M`},
+{c:"HOOKS",n:10,s:2,name:"React Hooks",pre:["STATE","EVT","COND"],
+note:"HOOKS-005 (useEffect) is the deepest lesson in the course: dependency arrays, cleanup, infinite loops, stale closures, data fetching, race conditions, effect lifecycle, Strict Mode double-run, and when not to use an effect. Each advanced hook carries its API status.",
+L:`What are hooks?|Explain hooks as functions that plug into React features|B|H
+Rules of hooks|Call hooks only at the top level of components and custom hooks|B|H
+Why hooks were introduced|Compare class lifecycles with hooks and logic reuse|B|H
+useState|Revisit useState: update queues, identity, and pitfalls|I|H|s18
+useEffect|Sync with external systems: deps, cleanup, races, Strict Mode, when NOT to use it|I|H|s18
+useContext|Read shared values without prop drilling|I|H|s18
+useRef|DOM refs, mutable values, previous values, avoiding re-renders|I|H|s18
+useReducer|Manage complex state transitions with a reducer|I|H|s18
+useMemo|Memoisation, referential equality, and when it is unnecessary|A|H|s18
+useCallback|Keep function identity stable for memoised children|A|H|s18
+useLayoutEffect|Measure layout before the browser paints|A|H|s18
+useImperativeHandle|Expose a custom imperative API through a ref|A|M|s18
+useId|Generate stable, SSR-safe IDs for accessibility|I|M|s18
+useTransition|Mark updates as non-urgent to keep typing responsive|A|H|s18
+useDeferredValue|Defer re-rendering of a slow part of the UI|A|M|s18
+useSyncExternalStore|Subscribe to external stores without tearing|A|M|s18
+useInsertionEffect|Know it exists for CSS-in-JS library authors only|A|L|s18
+useActionState|Manage form Action state, pending flag, and result|A|M|s19
+useOptimistic|Show optimistic UI while an Action runs|A|M|s19
+useEffectEvent|Read the latest values inside effects without re-running them|A|M|s192
+What are custom hooks?|Explain custom hooks as reusable stateful logic|I|H
+Creating custom hooks|Extract logic from a component into a hook|I|H
+Reusing logic|Share logic, not state, across components|I|M
+Custom hook naming|Name hooks useSomething so the lint rules apply|B|M
+useFetch|Build a fetch hook with loading, error, and abort|I|H
+useLocalStorage|Sync state with localStorage safely|I|M
+useDebounce|Debounce a fast-changing value|I|H
+useWindowSize|Track window size with cleanup|I|M
+useAuth|Wrap auth context in a hook|I|M
+useForm|Build a small form-state hook|I|M`},
+{c:"RENDER",n:11,s:3,name:"React Rendering and Internals",pre:["HOOKS"],
+note:"Diagram-heavy module: trigger → render → commit, fiber trees, lanes, and hydration drawn step by step.",
+L:`React rendering process|See trigger, render, and commit as three steps|I|H
+Triggering a render|List what causes a render: mount, state, parent render, context|I|H
+Render phase|Know that render must be pure and may run more than once|A|H
+Commit phase|See how React applies changes to the DOM and runs effects|A|H
+Reconciliation|Explain the diffing rules React uses|A|H
+Virtual DOM|Describe the element tree and why comparing it is cheap|I|H
+Fiber architecture|Explain fibers as units of work that can pause and resume|A|H
+Component identity|Know that identity comes from type and position|A|H
+Keys and reconciliation|Use keys to keep or reset component identity|A|H
+DOM updates|See that React touches only changed DOM nodes|I|M
+State snapshots|Explain why each render sees fixed state values|A|H
+Batching updates|Trace several setState calls into one render|I|H
+Concurrent rendering|Explain rendering that can be prepared in the background|A|H
+Interruptible rendering|See how urgent updates interrupt slow ones|A|M
+Strict Mode|Know why Strict Mode double-invokes renders and effects in development|I|H
+Automatic batching|Compare batching in React 17 with React 18+|I|H
+Hydration|Explain attaching React to server HTML and fixing mismatches|A|H
+React scheduling|Explain lanes and update priorities at a high level|A|M
+Why components re-render|Diagnose the four reasons a component re-renders|I|H
+Preventing unnecessary rendering|Use state colocation, children-as-props, and memo|A|H`},
+{c:"COMM",n:12,s:2,name:"Component Communication",pre:["HOOKS"],
+L:`Parent to child communication|Pass data down with props|B|H
+Child to parent communication|Send data up with callback props|B|H
+Sibling communication|Share data through a common parent|I|H
+Props drilling|Measure drilling pain and decide when to fix it|I|H
+Lifting state|Apply lifting state in a multi-component feature|I|H
+Context API|Provide and consume context (<Context> as provider in React 19)|I|H
+Multiple contexts|Split context by concern: theme, auth, locale|I|M
+Context performance|Avoid re-rendering every consumer on each change|A|H
+Compound components|Build Tabs or Accordion APIs with shared implicit state|A|M
+Controlled vs uncontrolled components|Design components that support both modes|A|H
+Render props|Share behaviour through a function prop|A|M
+Higher-order components|Wrap components to add behaviour, and know the drawbacks|A|M
+Component composition patterns|Choose between children, slots, compound components, and hooks|A|M`},
+{c:"ROUTE",n:13,s:2,name:"Routing",pre:["HOOKS","COMM"],
+note:"Uses React Router v7 (package: react-router). Covers its three modes: declarative (BrowserRouter), data (createBrowserRouter + loaders/actions), and framework (Vite plugin). v6 → v7 differences are flagged where they matter.",
+L:`What is routing?|Map URLs to screens|B|H
+Why client-side routing?|Navigate without full reloads while keeping URLs shareable|B|M
+React Router introduction|Know the v7 modes and pick one|B|H
+Installation|Install react-router and set up a router|B|L
+BrowserRouter|Use BrowserRouter (declarative) vs createBrowserRouter (data mode)|B|M
+Routes and Route|Define routes and their elements|B|H
+Link|Navigate with Link instead of a plain anchor|B|M
+NavLink|Style the active link|B|L
+useNavigate|Navigate from code|B|M
+useParams|Read URL parameters like /users/:id|B|H
+useLocation|Read the current location and its state|I|M
+useSearchParams|Read and update query strings for filters|I|M
+Dynamic routes|Build detail pages from route params|I|M
+Nested routes|Nest child routes with Outlet|I|H
+Layout routes|Share headers and sidebars across pages|I|M
+Protected routes|Guard pages behind login|I|H
+Authentication-based routing|Redirect by auth status and send users back afterwards|I|H
+Route loaders and actions|Load data and handle mutations at the route level|A|M
+Error boundaries in routing|Show route-level errors with ErrorBoundary / errorElement|A|M
+Lazy-loaded routes|Split routes into separate chunks with route.lazy|A|M
+404 pages|Catch unknown URLs with a splat route|B|L
+Programmatic navigation|Redirect after login, submit, or logout|I|M`},
+{c:"API",n:14,s:2,name:"API Integration",pre:["HOOKS","EVT"],
+note:"Module capstone: a complete CRUD app (contacts manager) against a REST API, built up lesson by lesson.",
+L:`What is an API?|Explain APIs as contracts between programs|B|M
+REST APIs|Use resources, URLs, and verbs|B|H
+HTTP methods|Pick GET, POST, PUT, PATCH, or DELETE|B|H
+Status codes|Read 2xx, 3xx, 4xx, 5xx and react to each|B|H
+JSON|Send and receive JSON bodies|B|M
+Fetch API|Call APIs with fetch inside React|B|H
+Axios|Use axios instances, defaults, and error objects|B|M
+GET requests|Load lists and detail records|B|M
+POST requests|Create records|B|M
+PUT and PATCH|Replace vs partially update records|B|M
+DELETE|Remove records with confirmation|B|L
+Async/await|Write clean async handlers and effects|I|M
+Loading states|Track loading per request|B|M
+Error handling|Handle network, HTTP, and parsing errors|I|H
+API authentication|Send credentials with requests|I|H
+Bearer tokens|Attach Authorization: Bearer headers|I|M
+JWT basics|Read JWT parts and know what the client must not trust|I|H
+Refresh tokens|Renew sessions without forcing a new login|A|H
+Environment variables|Keep API base URLs per environment|B|M
+CORS|Explain preflight requests and fix CORS at the server|I|H
+Request interceptors|Add tokens and headers globally|I|M
+Response interceptors|Handle 401s and errors globally|I|M
+Cancellation using AbortController|Cancel stale requests on unmount or new input|I|H
+Pagination|Build page-based and cursor-based lists|I|M
+Search and filtering|Sync filters with query params and the API|I|M
+Debouncing API requests|Cut requests while the user types|I|H
+Optimistic updates|Update the UI first and roll back on failure|A|M
+Retry strategies|Retry with exponential backoff, only when safe|A|M
+API caching|Avoid refetching unchanged data|A|M
+Race condition handling|Make sure only the latest response wins|A|H`},
+{c:"STORE",n:15,s:2,name:"State Management Libraries",pre:["API","COMM"],
+note:"Decision guide: local state → lift it → Context for rarely-changing values → TanStack Query for server data → Zustand or Redux Toolkit for large shared client state.",
+L:`State management fundamentals|Classify state: local, shared, server, URL, form|I|H
+Context API|Use context as dependency injection, not as a fast store|I|H
+Redux introduction|Know what problem Redux solves and what it costs|I|H
+Redux architecture|Trace action → reducer → store → UI|I|H
+Store|Create a single store|I|M
+Actions|Describe events as plain objects|I|M
+Reducers|Write pure reducers|I|H
+Dispatch|Send actions to the store|I|M
+Selectors|Read derived data efficiently|I|M
+Redux Toolkit|Use RTK as the standard way to write Redux|I|H
+createSlice|Generate actions and reducers with Immer|I|H
+configureStore|Set up a store with good defaults|I|M
+useSelector|Subscribe components to store slices|I|H
+useDispatch|Dispatch from components|I|M
+createAsyncThunk|Handle async logic in Redux|A|M
+RTK Query|Fetch and cache server data with Redux|A|M
+Zustand|Build a small store with a hook API|I|H
+Jotai|Use atomic state for fine-grained updates|A|L
+Recoil overview|Recognise Recoil in older code (project archived in 2025)|A|L|leg
+TanStack Query|Fetch, cache, and sync server state|I|H
+Server state vs client state|Separate cached API data from UI state|I|H
+Caching and invalidation|Invalidate queries after mutations|A|H`},
+{c:"STYLE",n:16,s:2,name:"Styling in React",pre:["COMP","PROPS"],
+L:`CSS in React|Survey styling options and their trade-offs|B|M
+External stylesheets|Import global CSS files|B|L
+CSS modules|Scope class names per component|B|H
+Inline styling|Use style objects for dynamic values|B|M
+CSS-in-JS|Know runtime vs zero-runtime CSS-in-JS|I|M
+Styled Components|Read and write styled-components (in maintenance mode since 2025)|I|L|leg
+Emotion|Use the css prop and styled API|I|L
+Tailwind CSS|Style with utility classes using Tailwind v4 and its Vite plugin|B|H
+Bootstrap|Use Bootstrap or React-Bootstrap in existing apps|B|L
+Conditional styling|Toggle classes from state|B|M
+Dynamic classes|Compose class names with clsx|B|M
+Responsive components|Adapt with breakpoints and container queries|I|M
+Theme management|Share theme tokens through CSS variables and context|I|M
+Dark mode|Support system preference plus a manual toggle|I|M
+Design systems|Know tokens, primitives, and libraries such as shadcn/ui and MUI|I|M
+Component styling architecture|Pick a styling strategy for a large codebase|A|M`},
+{c:"ADV",n:17,s:3,name:"Advanced React Concepts",pre:["HOOKS","RENDER"],
+note:"Three worlds kept apart: (1) client-only React with Vite, (2) framework server rendering (Next.js, React Router framework mode), (3) React Server Components, which need a framework or bundler that supports them.",
+L:`React.memo|Skip re-renders when props are equal|A|H
+Lazy loading|Load components on demand with React.lazy|I|H
+Suspense|Show fallbacks while code or data loads|A|H
+Error boundaries|Catch render errors with a class boundary or react-error-boundary|A|H
+Portals|Render modals and tooltips outside the parent DOM node|I|M
+Fragments|Use keyed fragments in lists|B|L
+Forwarding refs and modern ref patterns|Pass ref as a normal prop in React 19; read forwardRef in older code|A|H|s19
+Higher-order components|Compare HOCs with hooks in modern code|A|M
+Render props|Recognise render props in libraries|A|L
+Compound components|Build an accessible Tabs component|A|M
+Controlled component patterns|Build value / onChange component APIs|A|M
+Uncontrolled component patterns|Build defaultValue APIs with internal state|A|M
+Code splitting|Split bundles by route and feature|A|H
+Dynamic imports|Use import() for on-demand modules|I|M
+React Server Components|Explain components that run only on the server|A|H|s19
+Client Components|Mark interactive parts with 'use client'|A|H|s19
+Server Functions and Actions|Call server code from forms with 'use server'|A|M|s19
+Streaming SSR|Send HTML in chunks with Suspense boundaries|A|M
+Hydration|Fix hydration mismatches; understand selective hydration|A|M
+Progressive enhancement|Make forms work before JavaScript loads|A|L
+React Compiler|Know what React Compiler 1.0 does and how to enable it in Vite|A|H
+Compiler-driven memoization|Decide when manual useMemo and useCallback are still needed|A|M`},
+{c:"PERF",n:18,s:3,name:"Performance Optimization",pre:["RENDER","ADV"],
+note:"Every lesson has a before/after with a measured number (render count, ms in Profiler, KB of bundle, or a Web Vitals score).",
+L:`Understanding performance|Define load, runtime, and perceived performance|I|H
+React Profiler|Record and read flame graphs|A|H
+Identifying unnecessary renders|Find wasted renders with the Profiler and render highlights|A|H
+React.memo|Measure the before/after impact of memo|A|H
+useMemo|Measure what a cached calculation saves|A|H
+useCallback|Stabilise callbacks for memoised lists|A|M
+Virtualization|Render 10,000 rows smoothly with TanStack Virtual|A|H
+List optimization|Optimise keys, row components, and pagination|A|M
+Lazy loading|Defer below-the-fold components and images|I|M
+Code splitting|Cut initial bundle size by route|A|H
+Bundle optimization|Analyse bundles and remove heavy dependencies|A|M
+Image optimization|Use modern formats, sizes, and lazy loading|I|M
+Debouncing|Debounce input-driven work|I|H
+Throttling|Throttle scroll and resize handlers|I|M
+Network optimization|Cut requests with caching, prefetching, and compression|A|M
+Caching|Cache at HTTP, query, and memo levels|A|M
+Avoiding expensive calculations|Move heavy work out of render or into a Web Worker|A|M
+Optimizing context|Split and memoise context values|A|H
+React Compiler|Measure the compiler's effect on a real app|A|M
+Core Web Vitals|Improve LCP, INP, and CLS|A|H`},
+{c:"AUTH",n:19,s:3,name:"Authentication and Authorization",pre:["ROUTE","API"],
+L:`Authentication vs authorization|Separate who you are from what you may do|I|H
+Login flow|Build login with validation and error states|I|H
+Registration flow|Build sign-up with confirmation|I|M
+JWT authentication|Implement JWT login end to end|I|H
+Token storage|Compare memory, localStorage, and httpOnly cookies|A|H
+Protected routes|Guard routes using auth state|I|H
+Role-based access control|Show and hide features by role|A|H
+Permission-based access|Check fine-grained permissions|A|M
+Logout|Clear tokens, caches, and state|I|M
+Refresh token flow|Rotate tokens silently with interceptors|A|H
+Auth context|Provide the user and auth actions app-wide|I|H
+Auth custom hooks|Build useAuth and useRequireRole|I|M
+Secure API integration|Send credentials safely and never trust the client|A|H
+XSS and CSRF considerations|Know how each threat affects token choices|A|H
+Common authentication vulnerabilities|Avoid the usual auth mistakes in SPAs|A|M`},
+{c:"TEST",n:20,s:3,name:"Testing React Applications",pre:["HOOKS","API"],
+note:"Stack: Vitest + React Testing Library + user-event + MSW for unit and integration; Playwright for end-to-end. Jest and Cypress taught for existing codebases.",
+L:`Why testing?|Explain the cost of bugs and the testing trophy|B|H
+Unit testing|Test small functions and components in isolation|I|H
+Integration testing|Test components working together|I|H
+End-to-end testing|Test full user flows in a real browser|I|M
+Jest|Read and maintain Jest suites|I|M
+Vitest|Set up Vitest with Vite and jsdom|I|H
+React Testing Library|Query by role and test like a user|I|H
+Rendering components in tests|Render with providers and routers|I|M
+Testing props|Assert output for different props|I|M
+Testing state|Assert the UI after state changes|I|M
+Testing events|Simulate users with user-event|I|H
+Testing hooks|Test custom hooks with renderHook|A|M
+Mocking APIs|Mock network calls with MSW|A|H
+Async testing|Use findBy and waitFor correctly|A|H
+Playwright|Write cross-browser end-to-end tests|A|M
+Cypress|Read and write Cypress tests|A|L
+Test coverage|Measure coverage without chasing 100%|I|M
+Best practices|Write tests that survive refactors|A|H`},
+{c:"TS",n:21,s:2,name:"TypeScript with React",pre:["HOOKS"],
+L:`TypeScript introduction|Set up a React + TypeScript project with Vite|I|M
+Why TypeScript?|See bugs TypeScript catches before runtime|B|H
+Type annotations|Annotate variables, parameters, and returns|B|M
+Interfaces|Describe object shapes|B|H
+Types|Use type aliases and know interface vs type|B|H
+Union types|Model variants and narrow them|I|H
+Generics|Write reusable typed functions|I|H
+Props typing|Type component props|I|H
+State typing|Type useState, including null and unions|I|H
+Event typing|Type change, click, and submit events|I|M
+Form typing|Type form values and validation errors|I|M
+API response typing|Type fetch results and validate them with Zod|I|H
+Component typing|Know why React.FC is optional and what to use instead|I|M
+Children typing|Use React.ReactNode for children|I|M
+Custom hook typing|Type hook inputs and returned tuples|A|M
+Context typing|Type context with safe defaults|A|M
+Reducer typing|Use discriminated unions for actions|A|H
+Generic components|Build a typed generic Table or Select|A|M
+Utility types|Use Partial, Pick, Omit, Record, and ComponentProps|A|H
+TypeScript best practices|Turn on strict mode and avoid any|A|M`},
+{c:"SEC",n:22,s:3,name:"React Security",pre:["AUTH"],
+L:`XSS|Explain how React escapes output and where XSS still gets in|I|H
+CSRF|Explain CSRF and SameSite cookies|I|H
+Unsafe HTML rendering|Spot unsafe sinks such as javascript: URLs and innerHTML|A|H
+dangerouslySetInnerHTML|Sanitise HTML with DOMPurify before rendering it|A|H
+Input validation|Validate on the client for UX and on the server for security|I|H
+Output encoding|Encode for HTML, URL, and attribute contexts|A|M
+Secure authentication|Apply secure session patterns|A|H
+Token handling|Limit token exposure and lifetime|A|H
+Dependency vulnerabilities|Audit and update dependencies|I|M
+Environment variables|Know that every VITE_ variable ships to the browser|I|H
+API security|Rely on server-side authorisation and rate limits|A|M
+Content Security Policy|Write a CSP that blocks injected scripts|A|M
+Common React security mistakes|Fix the frequent security bugs in React code|A|H`},
+{c:"NEXT",n:23,s:3,name:"Next.js and React Ecosystem",pre:["ADV","ROUTE"],
+note:"Next.js App Router (current major is v16). Next.js-only features are labelled so they are not confused with core React.",
+L:`What is Next.js?|Explain Next.js as a full-stack React framework|I|H
+React vs Next.js|Compare library and framework responsibilities|I|H
+File-based routing|Create routes from folders|I|H
+App Router|Use layout, page, loading, and error files|I|H
+Server Components|Fetch data inside server components|A|H
+Client Components|Add interactivity with 'use client'|A|H
+Server-side rendering|Render per request|A|H
+Static rendering|Pre-render at build time|A|M
+Dynamic rendering|Know what makes a route dynamic|A|M
+Streaming|Stream UI with loading.js and Suspense|A|M
+Data fetching|Fetch, cache, and revalidate data|A|H
+Server Actions|Change data from forms|A|H
+Metadata|Set page titles and Open Graph tags|I|M
+Image optimization|Use next/image|I|M
+Route handlers|Build API endpoints in route.ts|A|M
+Middleware|Run code before requests (renamed proxy in Next.js 16)|A|M
+Deployment|Deploy to Vercel or self-host with Node or Docker|I|M
+When to use React alone vs Next.js|Pick the right tool for a project|I|H`},
+{c:"PROD",n:24,s:4,name:"Production and Deployment",pre:["TEST","PERF"],
+L:`Production builds|Build, preview, and verify a release|I|H
+Environment configuration|Manage dev, staging, and production config|I|M
+Build optimization|Tune Vite build output|A|M
+Hosting|Compare static, server, and edge hosting|I|M
+Vercel|Deploy a Vite app to Vercel|B|M
+Netlify|Deploy with SPA redirects|B|L
+Static hosting|Host on GitHub Pages or S3 with an SPA fallback|B|M
+Nginx|Serve an SPA with try_files and cache headers|I|M
+Docker basics|Containerise a React build with a multi-stage Dockerfile|I|M
+CI/CD|Automate lint, test, build, and deploy|I|H
+GitHub Actions|Write a workflow that tests and deploys|I|H
+Error monitoring|Capture production errors with Sentry|I|M
+Logging|Log useful client events without leaking data|I|L
+Analytics|Track usage with privacy in mind|I|L
+SEO|Improve discoverability of SPA and SSR apps|I|M
+Accessibility|Meet WCAG basics: roles, labels, focus, contrast|I|H
+Production debugging|Debug with source maps and repro steps|A|H
+Application maintenance|Upgrade React and dependencies safely|A|M`},
+{c:"PROJ",n:25,s:4,name:"Real-World Projects",pre:["see each project"],
+note:"Projects are spread across stages (see the stage column); this module collects them. Each has requirements, architecture, folders, component tree, data flow, full code, tests, deployment, and interview questions.",
+L:`Counter application|State, events, and conditional styling|B|M
+Todo application|Array state, keys, filters, and localStorage|B|H
+Calculator|Keyboard events and a reducer-based state machine|B|M
+Weather application|Fetch, loading and error states, debounced search|I|H
+Expense tracker|Forms, derived totals, and charts|I|M
+Notes application|Routing, search, and persistence|I|M
+Product listing and filtering|URL filters, sorting, and pagination|I|H
+Shopping cart|Context + useReducer and price totals|I|H
+E-commerce application|Router, TanStack Query, cart, and checkout|A|H
+Authentication dashboard|JWT, refresh tokens, protected routes|A|H
+Employee management system|CRUD tables, forms, and role-based access|A|H
+Admin dashboard|Charts, virtualised tables, and theming|A|M
+Blog application|Next.js, static and dynamic rendering, metadata|A|M
+Real-time chat application|WebSockets, optimistic UI, presence|A|H
+Kanban task management system|Drag and drop, reducers, persistence|A|M
+Job portal|Search, filters, roles, and applications|A|M
+Social media application|Infinite feed, uploads, and notifications|A|M
+Full-stack enterprise management system|TypeScript, Next.js, auth, RBAC, tests, CI/CD|A|H`}
+];
+
+const READY=new Set(["INTRO-001", "INTRO-002", "INTRO-003", "INTRO-004", "INTRO-005", "INTRO-006", "INTRO-007", "INTRO-008", "INTRO-009", "INTRO-010", "INTRO-011", "INTRO-012", "INTRO-013", "INTRO-014", "INTRO-015", "JSX-001", "JSX-002", "JSX-003", "JSX-004", "JSX-005", "JSX-006", "JSX-007", "JSX-008", "JSX-009", "JSX-010", "JSX-011", "JSX-012", "JSX-013", "JSX-014", "JSX-015", "JSX-016"]);
+const PROJ_STAGE=[1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4];
+const PROJ_AFTER=["STATE","STATE","STATE","API","EVT","ROUTE","ROUTE","STORE","STORE","AUTH","AUTH","PERF","NEXT","ADV","STORE","AUTH","PERF","PROD"];
+
+const STAGES=[
+{n:1,name:"Foundation",sub:"Web basics to state",
+obj:["Explain how a browser loads and renders a page","Write modern JavaScript fluently: closures, array methods, async","Set up a Vite project and debug it","Build UIs from components, props, and state"],
+check:["Comfortable with HTML and CSS basics","Can write a JS function and loop (else start at WEB-011)"],
+assign:["Rebuild a static landing page in React components","Product grid from a JSON array with props","Counter and todo with immutable updates"],
+project:"PROJ-002 Todo application (plus PROJ-001 and PROJ-003 warm-ups)",
+assess:"30 questions (JS output, JSX fixes, props vs state) + build a filterable list in 45 minutes"},
+{n:2,name:"Professional React",sub:"Hooks, routing, data, TypeScript",
+obj:["Use every core hook correctly, especially useEffect","Build multi-page apps with React Router 7","Integrate REST APIs with loading, errors, and cancellation","Choose between Context, Zustand, Redux Toolkit, and TanStack Query","Type React code with TypeScript"],
+check:["Stage 1 assessment ≥ 70%","Can explain closures and promises without notes"],
+assign:["Five custom hooks with tests","Multi-page notes app with nested routes","Contacts CRUD against a REST API"],
+project:"PROJ-008 Shopping cart and PROJ-007 Product listing (TypeScript)",
+assess:"40 questions (hooks output, effect debugging, routing) + a timed CRUD feature"},
+{n:3,name:"Advanced Engineering",sub:"Internals, performance, testing, security, Next.js",
+obj:["Explain render/commit, fiber, and reconciliation with diagrams","Profile and fix slow renders with measured results","Test with Vitest, RTL, MSW, and Playwright","Secure auth flows and HTML rendering","Build with Server Components and Next.js"],
+check:["Stage 2 project complete and typed","Comfortable with useEffect cleanup and race conditions"],
+assign:["Profile and speed up a 10,000-row table","Reach 80% meaningful test coverage on the cart","Security review of an auth dashboard"],
+project:"PROJ-009 E-commerce application",
+assess:"50 questions (internals, performance scenarios, security) + a 60-minute performance debug task"},
+{n:4,name:"Industry Readiness",sub:"Deploy, architect, interview",
+obj:["Ship with CI/CD, monitoring, and accessibility checks","Architect a large app: folders, state, data, auth","Explain project decisions in interviews","Clear React interview rounds: concepts, coding, system design"],
+check:["Stage 3 assessment ≥ 70%","At least one deployed project"],
+assign:["GitHub Actions pipeline with tests and preview deploys","Write an architecture decision record for your enterprise app","Three mock interviews using the -REV lessons"],
+project:"PROJ-018 Full-stack enterprise management system",
+assess:"Full mock interview: 45-min concepts, 60-min live coding, 30-min frontend system design"}
+];
+
+const WEEKS=[
+{w:"Week 1",t:"JavaScript that interviewers test",items:["WEB-018 → WEB-024 scope, hoisting, closures, array methods","WEB-028 → WEB-033 promises and the event loop","Daily: 10 output-based questions"]},
+{w:"Week 2",t:"React core",items:["JSX, COMP, PROPS, STATE -REV lessons","Props vs state, keys, batching, derived state","Coding: todo, counter, filterable list under 30 min each"]},
+{w:"Week 3",t:"Hooks deep dive",items:["HOOKS-004 → HOOKS-020 -REV","useEffect scenarios: loops, stale closures, races","Write useFetch, useDebounce, useLocalStorage from memory"]},
+{w:"Week 4",t:"Rendering and performance",items:["RENDER and PERF -REV lessons","Why did this re-render? debugging drills","useMemo vs useCallback vs React.memo vs Compiler"]},
+{w:"Week 5",t:"Ecosystem",items:["ROUTE, API, STORE, AUTH -REV","Context vs Redux vs Zustand vs TanStack Query","CSR vs SSR vs SSG vs RSC; React vs Next.js"]},
+{w:"Week 6",t:"Mock interviews and system design",items:["Frontend system design: feed, dashboard, chat","Walk through two of your projects using their interview questions","Two full mock interviews, then review weak IDs"]}
+];
+
+const CHECKLIST=["Requirements","Architecture","Folder structure","Component tree","Data flow","Full code","API integration","Error handling","Responsive UI","Testing","Deployment","Interview questions"];
+
+const API_LABEL={s18:["Stable 18+",""],s19:["React 19+","new"],s192:["React 19.2+","new"],leg:["Legacy","leg"]};
+const MIN={B:30,I:45,A:60}, DIFF={B:"Beginner",I:"Intermediate",A:"Advanced"}, FREQ={H:"High",M:"Medium",L:"Low"};
+
+// parse
+const ALL=[];
+MODULES.forEach(m=>{
+  m.lessons=m.L.trim().split("\n").map((line,i)=>{
+    const [t,o,d,f,api]=line.split("|");
+    const id=m.c+"-"+String(i+1).padStart(3,"0");
+    const l={id,rev:id+"-REV",t,o,d,f:f||"M",api,m,i};
+    ALL.push(l); return l;
+  });
+  m.mins=m.lessons.reduce((a,l)=>a+MIN[l.d],0);
+});
+const byCode=Object.fromEntries(MODULES.map(m=>[m.c,m]));
+
+// storage
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let mode=store.get("rm-mode","d");
+let done={d:new Set(store.get("rm-done-d",[])),r:new Set(store.get("rm-done-r",[]))};
+let stage=store.get("rm-stage",0); // 0 = all
+let openMods=new Set(store.get("rm-open",["HOOKS"]));
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function stats(){
+  const hrs=Math.round(ALL.reduce((a,l)=>a+MIN[l.d],0)/60);
+  $("#stats").innerHTML=[[MODULES.length,"modules"],[ALL.length,"lessons"],[ALL.length,"revision lessons"],[18,"projects"],["~"+hrs+"h","detailed track"]]
+    .map(([b,s])=>`<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+}
+function pct(list,set){const n=list.filter(l=>set.has(l.id)).length;return [n,list.length]}
+
+function renderStages(){
+  const set=done[mode];
+  $("#stages").innerHTML=STAGES.map(s=>{
+    const mods=MODULES.filter(m=>m.s===s.n); const ls=mods.flatMap(m=>m.lessons);
+    const [n,t]=pct(ls,set);
+    return `<button class="stage" aria-pressed="${stage===s.n}" data-stage="${s.n}">
+      <span class="k">STAGE ${s.n} · ${mods.length} modules · ${t} lessons</span>
+      <h3>${s.name}</h3><small>${s.sub}</small>
+      <div class="meter"><i style="width:${t?n/t*100:0}%"></i></div><small>${n} / ${t} done</small></button>`}).join("");
+  const s=STAGES.find(x=>x.n===stage);
+  const d=$("#stageDetail");
+  if(!s){d.hidden=true;return}
+  d.hidden=false;
+  const mods=MODULES.filter(m=>m.s===s.n).map(m=>`M${m.n} ${m.name}`);
+  const li=a=>"<ul>"+a.map(x=>`<li>${esc(x)}</li>`).join("")+"</ul>";
+  d.innerHTML=`<div><h4>Learning objectives</h4>${li(s.obj)}</div>
+    <div><h4>Study order</h4>${li(mods)}</div>
+    <div><h4>Prerequisite check</h4>${li(s.check)}<h4 style="margin-top:12px">Practical assignments</h4>${li(s.assign)}</div>
+    <div><h4>Stage-end project</h4><p style="margin:0 0 12px">${esc(s.project)}</p><h4>Knowledge assessment</h4><p style="margin:0">${esc(s.assess)}</p></div>`;
+}
+
+function matches(l,q,fd,ff){
+  if($("#fReady").value&&!READY.has(l.id)) return false;
+  if(fd&&l.d!==fd) return false;
+  if(ff&&!ff.includes(l.f)) return false;
+  if(!q) return true;
+  return (l.id+" "+l.rev+" "+l.t+" "+l.o+" "+l.m.name).toLowerCase().includes(q);
+}
+
+function renderMods(){
+  const q=$("#q").value.trim().toLowerCase(), fd=$("#fDiff").value, ff=$("#fFreq").value;
+  const set=done[mode]; const filtering=!!(q||fd||ff||$("#fReady").value);
+  let mods=MODULES.filter(m=>!stage||m.s===stage);
+  if(stage){mods.sort((a,b)=>a.n-b.n)}
+  const html=mods.map(m=>{
+    const ls=m.lessons.filter(l=>matches(l,q,fd,ff));
+    if(!ls.length) return "";
+    const [n,t]=pct(m.lessons,set);
+    const pre=m.pre.map(p=>byCode[p]?`M${byCode[p].n} ${byCode[p].c}`:p).join(", ")||"None";
+    const rows=ls.map(l=>{
+      const prev=l.i===0?(m.pre[0]&&byCode[m.pre[0]]?byCode[m.pre[0]].c+" module":"—"):m.lessons[l.i-1].id;
+      const api=l.api&&API_LABEL[l.api]?`<span class="api ${API_LABEL[l.api][1]}">${API_LABEL[l.api][0]}</span>`:"";
+      const isDone=set.has(l.id);
+      return `<tr class="${isDone?"done":""}">
+        <td class="chk"><input type="checkbox" id="c-${l.id}" data-id="${l.id}" ${isDone?"checked":""} aria-label="Mark ${l.id} done"></td>
+        <td class="id"><span class="idtag">${l.id}</span><br><span class="revtag">${l.rev}</span></td>
+        <td class="title">${READY.has(l.id)?`<a href="lessons/${l.id}.html${mode==="r"?"#rev":""}"><b>${esc(l.t)}</b></a> <span class="api new">Ready</span>`:`<b>${esc(l.t)}</b>`}${api}<span class="obj">${esc(l.o)}</span></td>
+        <td><span class="pill ${l.d}">${DIFF[l.d]}</span></td>
+        <td class="hide-r pre">${MIN[l.d]} min<br>after ${prev}</td>
+        <td class="show-r"><span class="freq ${l.f}">● ${FREQ[l.f]}</span></td>
+        ${m.c==="PROJ"?`<td class="pre">Stage ${PROJ_STAGE[l.i]}<br>after ${PROJ_AFTER[l.i]}</td>`:""}
+      </tr>`}).join("");
+    const open=filtering||openMods.has(m.c);
+    return `<details class="mod" data-mod="${m.c}" ${open?"open":""}>
+      <summary><span class="num">${m.n}</span>
+        <span class="t"><h3>${esc(m.name)}</h3><span class="sub"><span class="mono">${m.c}</span> · Stage ${m.s} · ${m.lessons.length} lessons · ~${Math.round(m.mins/60*10)/10}h</span></span>
+        <span class="side"><span>${n} / ${t}</span><span class="meter"><i style="width:${t?n/t*100:0}%"></i></span></span></summary>
+      <div class="modbody">
+        <div class="modmeta"><span>Module prerequisites: <b>${esc(pre)}</b></span><span>Revision IDs: <b class="mono">${m.c}-NNN-REV</b></span></div>
+        ${m.note?`<div class="note">${esc(m.note)}</div>`:""}
+        <div class="tablewrap"><table>
+          <thead><tr><th></th><th>ID</th><th>Lesson and objective</th><th>Level</th><th class="hide-r">Time · prereq</th><th class="show-r">Interview freq.</th>${m.c==="PROJ"?"<th>Stage</th>":""}</tr></thead>
+          <tbody>${rows}</tbody></table></div>
+      </div></details>`}).join("");
+  $("#mods").innerHTML=html||`<div class="empty">No lessons match. Clear the search or filters.</div>`;
+  const st=STAGES.find(s=>s.n===stage);
+  $("#modsTitle").textContent=st?`Stage ${st.n}: ${st.name} modules`:"Module-wise lesson breakdown";
+  $("#modsLede").textContent=mode==="d"
+    ? "Detailed track. Each row is one full lesson in the 13-part format. Tick it when you finish."
+    : "Interview track. Same topics, question-first. Use the frequency column to revise the most-asked topics first.";
+}
+
+function renderProg(){
+  const [n,t]=pct(ALL,done[mode]);
+  $("#progTxt").textContent=`${n} / ${t} ${mode==="d"?"lessons":"revisions"}`;
+  $("#progBar").style.width=(n/t*100)+"%";
+}
+
+function renderProjects(){
+  $("#projChecklist").innerHTML=CHECKLIST.map(c=>`<span>${c}</span>`).join("");
+  $("#projects").innerHTML=byCode.PROJ.lessons.map(l=>`<div class="proj">
+    <div class="top"><span class="idtag">${l.id}</span><span class="pill ${l.d}">Stage ${PROJ_STAGE[l.i]}</span></div>
+    <h3>${esc(l.t)}</h3><p class="skills">${esc(l.o)}</p><p>Start after module ${byCode[PROJ_AFTER[l.i]].n} (${PROJ_AFTER[l.i]}) · <span class="revtag">${l.rev}</span></p></div>`).join("");
+}
+function renderWeeks(){
+  $("#weeks").innerHTML=WEEKS.map(w=>`<div class="week"><span class="k">${w.w}</span><h3>${w.t}</h3><ul>${w.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`).join("");
+}
+
+function setMode(m){
+  mode=m; store.set("rm-mode",m);
+  document.body.classList.toggle("rev",m==="r");
+  $("#mDetail").setAttribute("aria-pressed",m==="d"); $("#mRev").setAttribute("aria-pressed",m==="r");
+  renderAll();
+}
+function renderAll(){renderStages();renderMods();renderProg()}
+
+$("#mDetail").onclick=()=>setMode("d");
+$("#mRev").onclick=()=>setMode("r");
+["#q","#fDiff","#fFreq","#fReady"].forEach(s=>$(s).addEventListener("input",renderMods));
+$("#stages").addEventListener("click",e=>{const b=e.target.closest(".stage");if(!b)return;const n=+b.dataset.stage;stage=stage===n?0:n;store.set("rm-stage",stage);renderAll()});
+$("#mods").addEventListener("change",e=>{
+  const id=e.target.dataset&&e.target.dataset.id; if(!id) return;
+  const set=done[mode]; e.target.checked?set.add(id):set.delete(id);
+  store.set("rm-done-"+mode,[...set]);
+  e.target.closest("tr").classList.toggle("done",e.target.checked);
+  renderStages(); renderProg();
+  const det=e.target.closest(".mod"); const m=byCode[det.dataset.mod]; const [n,t]=pct(m.lessons,set);
+  det.querySelector(".side span").textContent=`${n} / ${t}`; det.querySelector(".side .meter i").style.width=(n/t*100)+"%";
+});
+$("#mods").addEventListener("toggle",e=>{const d=e.target;if(!d.dataset||!d.dataset.mod)return;d.open?openMods.add(d.dataset.mod):openMods.delete(d.dataset.mod);store.set("rm-open",[...openMods])},true);
+$("#expandAll").onclick=()=>{MODULES.forEach(m=>openMods.add(m.c));store.set("rm-open",[...openMods]);renderMods()};
+$("#collapseAll").onclick=()=>{openMods.clear();store.set("rm-open",[]);renderMods()};
+
+// ---- progress backup: export / import / reset ----
+const VALID=new Set(ALL.map(l=>l.id));
+const msg=(t,err)=>{const m=$("#pMsg");m.textContent=t;m.classList.toggle("err",!!err)};
+function backup(){return {app:"react-mastery",version:1,exportedAt:new Date().toISOString(),
+  detailed:[...done.d].sort(),revision:[...done.r].sort(),
+  summary:{detailedDone:done.d.size,revisionDone:done.r.size,totalLessons:ALL.length}}}
+function sumLine(){$("#pSum").textContent=`Now saved: ${done.d.size} detailed lessons and ${done.r.size} revision lessons done, out of ${ALL.length} each.`}
+function persist(){store.set("rm-done-d",[...done.d]);store.set("rm-done-r",[...done.r]);sumLine();renderAll()}
+$("#pBtn").onclick=()=>{const p=$("#pPanel");p.hidden=!p.hidden;$("#pBtn").setAttribute("aria-expanded",!p.hidden);sumLine();msg("")};
+let dl=null;
+(async()=>{try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null}catch(e){dl=null}})();
+$("#pExport").onclick=async()=>{
+  const json=JSON.stringify(backup(),null,2);
+  const name=`react-mastery-progress-${new Date().toISOString().slice(0,10)}.json`;
+  if(!dl){$("#pText").value=json;msg("File download is not available here, so the backup text is in the box on the right. Copy it and keep it somewhere safe.");return}
+  try{await dl.save({filename:name,data:json});msg("Backup saved as "+name+".")}
+  catch(e){ if(e&&e.code==="declined"){msg("Export cancelled.")} else {$("#pText").value=json;msg("Could not save the file here. The backup text is in the box on the right; copy it instead.",true)} }
+};
+$("#pCopy").onclick=()=>{
+  const json=JSON.stringify(backup());
+  const fallback=()=>{const t=$("#pText");t.value=json;t.focus();t.select();msg("Backup text selected in the box. Press Ctrl+C (or Cmd+C) to copy.")};
+  try{navigator.clipboard.writeText(json).then(()=>msg("Backup text copied. Paste it into a note or file to keep it."),fallback)}catch(e){fallback()}
+};
+$("#pFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("#pText").value=r.result;msg(`Loaded ${f.name}. Choose merge or replace, then Import.`)};r.onerror=()=>msg("Could not read that file. Try another one.",true);r.readAsText(f);e.target.value=""};
+$("#pImport").onclick=()=>{
+  const raw=$("#pText").value.trim();
+  if(!raw){msg("Pick a backup file or paste backup text first.",true);return}
+  let data;try{data=JSON.parse(raw)}catch(e){msg("That text is not a valid backup. It should start with {\"app\":\"react-mastery\".",true);return}
+  if(!data||data.app!=="react-mastery"||!Array.isArray(data.detailed)||!Array.isArray(data.revision)){msg("This file is not a React Mastery progress backup.",true);return}
+  const d=data.detailed.filter(id=>VALID.has(id)), r=data.revision.filter(id=>VALID.has(id));
+  const skipped=data.detailed.length+data.revision.length-d.length-r.length;
+  if($("#pReplace").checked){done.d=new Set(d);done.r=new Set(r)} else {d.forEach(x=>done.d.add(x));r.forEach(x=>done.r.add(x))}
+  persist();$("#pText").value="";
+  msg(`Imported ${d.length} detailed and ${r.length} revision ticks${$("#pReplace").checked?" (replaced)":" (merged)"}.`+(skipped?` Skipped ${skipped} unknown lesson IDs.`:""));
+};
+const resetUI=on=>{$("#pReset").hidden=on;$("#pResetYes").hidden=!on;$("#pResetNo").hidden=!on};
+$("#pReset").onclick=()=>{resetUI(true);msg("This clears every tick. Export a backup first if you might want it back.")};
+$("#pResetNo").onclick=()=>{resetUI(false);msg("")};
+$("#pResetYes").onclick=()=>{done.d=new Set();done.r=new Set();persist();resetUI(false);msg("Progress cleared.")};
+
+stats(); renderProjects(); renderWeeks(); setMode(mode);
+</script>
+
+</body></html>

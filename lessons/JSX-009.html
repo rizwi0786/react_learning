@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-009 · className</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-009</span><span>Module 4: JSX Fundamentals</span><span>Lesson 9</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-008</b></span></div>
+<h1>className</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-009-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of name badges at a food court: "staff", "manager", "on-break". One person can wear several badges, and badges get added or removed as their status changes.</li>
+<li>A CSS class is a badge for an element. In JSX you set badges with <b><code>className</code></b> (the JSX name for HTML's <code>class</code> attribute).</li>
+<li>Because <code>className</code> takes a JavaScript value, you can <b>build the badge list from data</b>: add "done" when a todo is finished, "active" for the selected tab.</li>
+</ul>
+<pre class="diagram">
+   data / state                 class string               CSS rules apply
+ ┌────────────────────┐     ┌───────────────────────┐    ┌─────────────────────┐
+ │ todo.done = true   │     │                       │    │ .todo      {...}    │
+ │ todo.urgent = false│ ──► │ "todo done"           │ ─► │ .todo.done { line-  │
+ │                    │     │                       │    │   through; }        │
+ └────────────────────┘     └───────────────────────┘    └─────────────────────┘
+     &lt;li className={`todo ${todo.done ? 'done' : ''}`}&gt;
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Styling usually lives in CSS files, not inline <code>style</code> objects — classes keep it reusable and fast.</li>
+<li>Many styles depend on state: selected, disabled, error, dark mode.</li>
+<li>In vanilla JS you add/remove classes by hand (<code>classList.toggle</code>) and must remember to keep them in sync. In React, the class string is <b>recalculated from state on every render</b>, so it is always correct.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (vanilla JS)</span><pre><code>// Vanilla JS: manual sync
+const li = document.querySelector('#todo-1');
+checkbox.addEventListener('change', () =&gt; {
+  li.classList.toggle('done', checkbox.checked);
+});
+// Forget one toggle → UI out of sync</code></pre></div>
+<div><span class="good">After (JSX)</span><pre><code>// React: class derived from state
+&lt;li className={todo.done ? 'todo done' : 'todo'}&gt;
+  {todo.text}
+&lt;/li&gt;
+// Change state → React re-renders
+// → correct class every time</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li>Write <code>className</code>, not <code>class</code>. (<code>class</code> is a reserved word in JS; <code>className</code> matches the DOM property <code>element.className</code>.)</li>
+<li><code>className</code> takes a <b>string</b> of space-separated class names: <code>className="btn btn-primary"</code>.</li>
+<li>Static class → quotes. Dynamic class → braces with any expression that produces a string.</li>
+<li>Common patterns: <b>ternary</b>, <b>template literal</b>, <b>array + filter + join</b>, a small <b>helper function</b>.</li>
+<li>Watch the <b>spaces</b>: <code>'btn' + 'active'</code> becomes <code>"btnactive"</code>.</li>
+<li>Avoid putting <code>false</code>, <code>undefined</code> or <code>"undefined"</code> into the string.</li>
+<li>In Vite, <code>import './App.css'</code> adds global CSS. <code>import styles from './Card.module.css'</code> gives <b>CSS Modules</b> (locally scoped class names): <code>className={styles.card}</code>.</li>
+<li>On <b>your own components</b>, <code>className</code> is just a normal prop — the component must pass it on to a DOM element for it to work.</li>
+<li>The third-party package <b>clsx</b> (<code>npm i clsx</code>) is a popular helper for conditional classes; it is not part of React.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. Static
+&lt;button className="btn"&gt;Order&lt;/button&gt;
+
+// 2. Ternary — choose one of two
+&lt;span className={isOpen ? 'badge open' : 'badge closed'}&gt;…&lt;/span&gt;
+
+// 3. Template literal — base + optional extra
+&lt;li className={`todo ${done ? 'done' : ''}`}&gt;…&lt;/li&gt;
+
+// 4. Array + filter + join — many optional classes
+&lt;button
+  className={['btn', isPrimary &amp;&amp; 'btn-primary', isLoading &amp;&amp; 'loading']
+    .filter(Boolean)
+    .join(' ')}
+/&gt;
+
+// 5. Small helper (no library)
+const cx = (...names) =&gt; names.filter(Boolean).join(' ');
+&lt;div className={cx('card', selected &amp;&amp; 'card--selected')} /&gt;
+
+// 6. CSS Modules (Vite supports *.module.css)
+import styles from './Card.module.css';
+&lt;div className={styles.card} /&gt;
+&lt;div className={`${styles.card} ${styles.highlight}`} /&gt;
+
+// 7. Forwarding className in your own component
+function Card({ className, children }) {
+  return &lt;div className={cx('card', className)}&gt;{children}&lt;/div&gt;;
+}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A food-delivery menu with category tabs and dish cards. In a Vite React app create <code>src/App.css</code> and replace <code>src/App.jsx</code>:</p>
+<pre><code>/* src/App.css */
+.tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.tab { padding: 6px 12px; border: 1px solid #ccc; border-radius: 999px; background: #fff; cursor: pointer; }
+.tab.active { background: #e85d04; color: #fff; border-color: #e85d04; }
+
+.dish { padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; }
+.dish.veg { border-left: 4px solid #2b9348; }
+.dish.non-veg { border-left: 4px solid #d00000; }
+.dish.sold-out { opacity: 0.5; }
+.dish.selected { outline: 2px solid #e85d04; }</code></pre>
+<pre><code>// src/App.jsx
+import { useState } from 'react';
+import './App.css';
+
+const DISHES = [
+  { id: 1, name: 'Paneer Butter Masala', veg: true, category: 'mains', soldOut: false },
+  { id: 2, name: 'Chicken Biryani', veg: false, category: 'mains', soldOut: false },
+  { id: 3, name: 'Gulab Jamun', veg: true, category: 'desserts', soldOut: true },
+  { id: 4, name: 'Masala Chai', veg: true, category: 'drinks', soldOut: false },
+];
+
+const CATEGORIES = ['all', 'mains', 'desserts', 'drinks'];
+
+// Tiny helper: keeps only truthy names, joins with spaces
+function cx(...names) {
+  return names.filter(Boolean).join(' ');
+}
+
+export default function App() {
+  const [category, setCategory] = useState('all');
+  const [selectedId, setSelectedId] = useState(null);
+
+  const visible = DISHES.filter(
+    (d) =&gt; category === 'all' || d.category === category
+  );
+
+  return (
+    &lt;main&gt;
+      &lt;nav className="tabs"&gt;
+        {CATEGORIES.map((c) =&gt; (
+          &lt;button
+            key={c}
+            className={`tab ${c === category ? 'active' : ''}`.trim()}
+            onClick={() =&gt; setCategory(c)}
+          &gt;
+            {c}
+          &lt;/button&gt;
+        ))}
+      &lt;/nav&gt;
+
+      {visible.map((d) =&gt; (
+        &lt;div
+          key={d.id}
+          className={cx(
+            'dish',
+            d.veg ? 'veg' : 'non-veg',
+            d.soldOut &amp;&amp; 'sold-out',
+            d.id === selectedId &amp;&amp; 'selected'
+          )}
+          onClick={() =&gt; setSelectedId(d.id)}
+        &gt;
+          {d.name} {d.soldOut &amp;&amp; '(sold out)'}
+        &lt;/div&gt;
+      ))}
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+<span style="padding:4px 12px;border-radius:999px;background:#e85d04;color:#fff;border:1px solid #e85d04">all</span>
+<span style="padding:4px 12px;border-radius:999px;border:1px solid var(--line)">mains</span>
+<span style="padding:4px 12px;border-radius:999px;border:1px solid var(--line)">desserts</span>
+<span style="padding:4px 12px;border-radius:999px;border:1px solid var(--line)">drinks</span>
+</div>
+<div style="padding:8px 10px;border:1px solid var(--line);border-left:4px solid #2b9348;border-radius:8px;margin-bottom:8px">Paneer Butter Masala</div>
+<div style="padding:8px 10px;border:1px solid var(--line);border-left:4px solid #d00000;border-radius:8px;margin-bottom:8px">Chicken Biryani</div>
+<div style="padding:8px 10px;border:1px solid var(--line);border-left:4px solid #2b9348;border-radius:8px;margin-bottom:8px;opacity:.5">Gulab Jamun (sold out)</div>
+<div style="padding:8px 10px;border:1px solid var(--line);border-left:4px solid #2b9348;border-radius:8px">Masala Chai</div>
+</div>
+<ul>
+<li>Click <b>desserts</b> → that tab turns orange (<code>class="tab active"</code>); only Gulab Jamun stays.</li>
+<li>Click a dish → it gets an orange outline (<code>class="dish veg selected"</code>).</li>
+<li>In DevTools → Elements, the sold-out card shows <code>class="dish veg sold-out"</code> — no stray <code>false</code>.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. User clicks the "desserts" tab
+        │
+        ▼
+ 2. setCategory('desserts') → React re-renders App
+        │
+        ▼
+ 3. For each tab, the class string is rebuilt:
+      c = 'all'       →  `tab ${''}`.trim()        → "tab"
+      c = 'desserts'  →  `tab ${'active'}`.trim()  → "tab active"
+        │
+        ▼
+ 4. For each visible dish, cx(...) runs:
+      cx('dish', 'veg', true &amp;&amp; 'sold-out', false) 
+        → ['dish','veg','sold-out',false].filter(Boolean)
+        → "dish veg sold-out"
+        │
+        ▼
+ 5. react-dom compares with the previous render and updates only
+    the changed class attributes in the real DOM (el.className = ...)
+        │
+        ▼
+ 6. Browser matches .tab.active / .dish.sold-out CSS rules → new look
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Shopping</b>: <code>className={cx('product', outOfStock &amp;&amp; 'muted', onSale &amp;&amp; 'sale')}</code>.</li>
+<li><b>Todo app</b>: strike-through for completed items with <code>className={todo.done ? 'done' : undefined}</code>.</li>
+<li><b>Chat</b>: <code>className={msg.from === me ? 'bubble mine' : 'bubble theirs'}</code> to align bubbles left/right.</li>
+<li><b>Forms</b>: <code>className={error ? 'input input--error' : 'input'}</code>.</li>
+<li><b>Utility CSS</b> (e.g. Tailwind): very long <code>className</code> strings, often managed with <code>clsx</code> — same rules apply.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Using class instead of className</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;div class="card"&gt;Pizza&lt;/div&gt;
+// Works, but React warns in dev:
+// Invalid DOM property `class`.
+// Did you mean `className`?</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;div className="card"&gt;Pizza&lt;/div&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Missing space when joining</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;button className={'btn' + (active ? 'active' : '')}&gt;
+// → "btnactive"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;button className={'btn' + (active ? ' active' : '')}&gt;
+// → "btn active"
+// or: className={`btn ${active ? 'active' : ''}`}</code></pre></div>
+</div>
+<h3>Mistake 3: &amp;&amp; giving false or "false"</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;li className={done &amp;&amp; 'done'}&gt;
+// done = false → React warns:
+// Received `false` for a non-boolean attribute
+
+&lt;li className={`todo ${done &amp;&amp; 'done'}`}&gt;
+// → "todo false"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;li className={done ? 'done' : undefined}&gt;
+// undefined → no class attribute at all
+
+&lt;li className={`todo ${done ? 'done' : ''}`}&gt;
+// → "todo " (harmless trailing space)</code></pre></div>
+</div>
+<h3>Mistake 4: Component ignores className</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Card({ children }) {
+  return &lt;div className="card"&gt;{children}&lt;/div&gt;;
+}
+&lt;Card className="featured"&gt;Dune&lt;/Card&gt;
+// "featured" is silently dropped</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Card({ className = '', children }) {
+  return (
+    &lt;div className={`card ${className}`.trim()}&gt;
+      {children}
+    &lt;/div&gt;
+  );
+}</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Give a <code>&lt;p&gt;</code> the classes <code>price</code> and <code>big</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;p className="price big"&gt;₹299&lt;/p&gt;</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Give a weather <code>&lt;div&gt;</code> the class <code>hot</code> when <code>temp &gt; 30</code>, else <code>cool</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;div className={temp &gt; 30 ? 'hot' : 'cool'}&gt;{temp}°C&lt;/div&gt;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>A movie card always has <code>movie</code>, plus <code>watched</code> if <code>movie.watched</code> and <code>fav</code> if <code>movie.fav</code>. Use the array + filter + join pattern.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;div
+  className={['movie', movie.watched &amp;&amp; 'watched', movie.fav &amp;&amp; 'fav']
+    .filter(Boolean)
+    .join(' ')}
+&gt;
+  {movie.title}
+&lt;/div&gt;</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Use a CSS Module <code>Badge.module.css</code> with classes <code>.badge</code> and <code>.new</code> and apply both when <code>isNew</code> is true.</p>
+<details><summary>Show solution</summary>
+<pre><code>/* Badge.module.css */
+.badge { padding: 2px 6px; border-radius: 4px; }
+.new { background: gold; }</code></pre>
+<pre><code>import styles from './Badge.module.css';
+
+export function Badge({ isNew, children }) {
+  return (
+    &lt;span className={isNew ? `${styles.badge} ${styles.new}` : styles.badge}&gt;
+      {children}
+    &lt;/span&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Build a <code>Button</code> with props <code>variant</code> (<code>'primary'|'ghost'</code>), <code>size</code> (<code>'sm'|'md'</code>), <code>loading</code>, and an outside <code>className</code>. Output classes like <code>"btn btn-primary btn-sm is-loading extra"</code>. Forward all other props.</p>
+<details><summary>Show solution</summary>
+<pre><code>function cx(...names) {
+  return names.filter(Boolean).join(' ');
+}
+
+function Button({ variant = 'primary', size = 'md', loading = false, className, ...rest }) {
+  return (
+    &lt;button
+      {...rest}
+      disabled={loading || rest.disabled}
+      className={cx(
+        'btn',
+        `btn-${variant}`,
+        `btn-${size}`,
+        loading &amp;&amp; 'is-loading',
+        className
+      )}
+    /&gt;
+  );
+}
+
+&lt;Button size="sm" loading className="extra"&gt;Pay ₹499&lt;/Button&gt;
+// class="btn btn-primary btn-sm is-loading extra"</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>JSX uses <code>className</code>, not <code>class</code>.</li>
+<li>Value is one space-separated string.</li>
+<li>Static → <code>"a b"</code>; dynamic → <code>{expression}</code>.</li>
+<li>Patterns: ternary, template literal, <code>[...].filter(Boolean).join(' ')</code>, helper <code>cx()</code>.</li>
+<li>Check spaces and avoid <code>false</code>/<code>undefined</code> ending up in the string.</li>
+<li>CSS Modules: <code>import styles from './X.module.css'</code> → <code>styles.name</code>.</li>
+<li>Custom components must forward <code>className</code> themselves.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why does JSX use <code>className</code>?</summary>
+<p>JSX is JavaScript, where <code>class</code> is a reserved keyword, and React props follow DOM property names — the DOM property for the class attribute is <code>element.className</code>.</p>
+</details>
+<details><summary>How do you apply classes conditionally?</summary>
+<p>Compute a string: ternary (<code>a ? 'x' : 'y'</code>), template literal, an array filtered for truthy values and joined, or a helper like the third-party <code>clsx</code>.</p>
+</details>
+<details><summary>What happens if you pass <code>className={false}</code>?</summary>
+<p>React omits the attribute and logs a development warning ("Received <code>false</code> for a non-boolean attribute <code>className</code>"). Use <code>undefined</code> or an empty string instead.</p>
+</details>
+<details><summary>What do CSS Modules solve?</summary>
+<p>Class name collisions. Each <code>*.module.css</code> class is renamed to a unique local name at build time (Vite supports this out of the box), so <code>.title</code> in two files never clashes.</p>
+</details>
+<details><summary><code>className</code> vs <code>style</code> — when to use which?</summary>
+<p><code>className</code> for reusable, theme-able styles defined in CSS (supports hover, media queries). <code>style</code> for truly dynamic per-element values, e.g. a progress bar width.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-008.html">JSX-008 · JSX attributes</a>
+<a href="JSX-007.html">JSX-007 · JSX expressions</a>
+<a href="JSX-006.html">JSX-006 · Embedding JavaScript</a>
+<a href="JSX-009.html#rev">JSX-009-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout"><code>className</code> sets CSS classes in JSX. It takes one space-separated string, so you can build it from state with a ternary, template literal, or <code>filter(Boolean).join(' ')</code>. React re-computes it on every render, so classes always match the data.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;div className="card" /&gt;                                   // static
+&lt;div className={ok ? 'card ok' : 'card'} /&gt;                // ternary
+&lt;div className={`card ${ok ? 'ok' : ''}`} /&gt;               // template literal
+&lt;div className={['card', ok &amp;&amp; 'ok'].filter(Boolean).join(' ')} /&gt;
+import styles from './Card.module.css';
+&lt;div className={styles.card} /&gt;                            // CSS Module
+import clsx from 'clsx';            // third-party package
+&lt;div className={clsx('card', { ok: isOk })} /&gt;</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li><code>className</code> replaces <code>class</code> in JSX.</li>
+<li>It is a single string with spaces between names.</li>
+<li>Use braces for dynamic values.</li>
+<li>Mind the spaces when concatenating.</li>
+<li><code>false</code> as <code>className</code> triggers a dev warning; <code>undefined</code> simply omits it.</li>
+<li><code>${cond &amp;&amp; 'x'}</code> inside a template literal can produce the text "false".</li>
+<li><code>filter(Boolean)</code> removes <code>false</code>, <code>null</code>, <code>undefined</code>, <code>''</code>, <code>0</code>.</li>
+<li>Vite supports plain CSS imports and <code>*.module.css</code> CSS Modules.</li>
+<li>Components must forward <code>className</code> to a DOM element.</li>
+<li><code>clsx</code> is a third-party helper, not part of React.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>How do you add two classes to an element?</summary>
+<p><code>className="price big"</code> — separate them with a space.</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>Write a conditional class without a library.</summary>
+<p><code>className={['tab', active &amp;&amp; 'active'].filter(Boolean).join(' ')}</code>.</p>
+</details>
+<details><summary>Does <code>class</code> work at all in React?</summary>
+<p>React DOM still sets it, but logs a dev warning suggesting <code>className</code>. Always use <code>className</code>.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>How do CSS Modules change class names?</summary>
+<p>The build tool rewrites each class to a unique scoped name (e.g. <code>_card_1x2y3</code>) and the imported <code>styles</code> object maps your names to the generated ones.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary>What class does <code>className={`btn ${undefined}`}</code> produce?</summary>
+<p><code>"btn undefined"</code> — template literals turn <code>undefined</code> into the text "undefined".</p>
+</details>
+<details><summary>Why might <code>&lt;Card className="wide" /&gt;</code> have no effect?</summary>
+<p><code>Card</code> is your component; <code>className</code> is just a prop. If <code>Card</code> doesn't pass it to an inner DOM element, nothing happens.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<h3>Q1</h3>
+<pre><code>const active = true;
+&lt;a className={'link' + (active ? ' on' : '')} /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">class="link on"</pre>
+</details>
+<h3>Q2</h3>
+<pre><code>const sale = false;
+&lt;p className={`price ${sale &amp;&amp; 'sale'}`} /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">class="price false"</pre>
+</details>
+<h3>Q3</h3>
+<pre><code>&lt;p className={['a', null, 'b', 0, '', 'c'].filter(Boolean).join(' ')} /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">class="a b c"</pre>
+</details>
+<h3>Q4</h3>
+<pre><code>const done = false;
+&lt;li className={done ? 'done' : undefined}&gt;Milk&lt;/li&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">&lt;li&gt;Milk&lt;/li&gt;   (no class attribute)</pre>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<h3>Bug 1</h3>
+<pre><code>&lt;button className={"btn" + selected ? "selected" : ""}&gt;Tea&lt;/button&gt;</code></pre>
+<details><summary>Show answer</summary>
+<p>Operator precedence: <code>+</code> runs before <code>?:</code>, so it becomes <code>("btn" + selected) ? "selected" : ""</code> → always "selected". Fix: <code>"btn" + (selected ? " selected" : "")</code>.</p>
+</details>
+<h3>Bug 2</h3>
+<pre><code>import styles from './Card.module.css';
+&lt;div className="styles.card" /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<p>Quoted, so the class is literally <code>styles.card</code>. Use <code>className={styles.card}</code>.</p>
+</details>
+<h3>Bug 3</h3>
+<pre><code>&lt;div className={isOpen &amp;&amp; 'open'} /&gt;
+// Console: Received `false` for a non-boolean attribute `className`</code></pre>
+<details><summary>Show answer</summary>
+<p>Use <code>className={isOpen ? 'open' : undefined}</code>.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<h3>Scenario 1</h3>
+<p>Chat bubbles: yours on the right in blue, others on the left in grey.</p>
+<details><summary>Show answer</summary>
+<pre><code>&lt;div className={msg.from === me ? 'bubble mine' : 'bubble theirs'}&gt;
+  {msg.text}
+&lt;/div&gt;</code></pre>
+</details>
+<h3>Scenario 2</h3>
+<p>Two teammates both defined <code>.title</code> in different CSS files and the styles clash.</p>
+<details><summary>Show answer</summary>
+<p>Move them to CSS Modules (<code>Header.module.css</code>, <code>Card.module.css</code>) and use <code>styles.title</code> — names are scoped per file.</p>
+</details>
+<h3>Scenario 3</h3>
+<p>A shared <code>Card</code> must accept extra classes from the caller.</p>
+<details><summary>Show answer</summary>
+<pre><code>function Card({ className, ...rest }) {
+  return &lt;div {...rest} className={['card', className].filter(Boolean).join(' ')} /&gt;;
+}</code></pre>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Rating stars</h3>
+<p>Render 5 stars; the first <code>rating</code> stars get class <code>star filled</code>, the rest <code>star</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>function Stars({ rating }) {
+  return (
+    &lt;div&gt;
+      {[1, 2, 3, 4, 5].map((n) =&gt; (
+        &lt;span key={n} className={n &lt;= rating ? 'star filled' : 'star'}&gt;★&lt;/span&gt;
+      ))}
+    &lt;/div&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge 2: Write your own cx</h3>
+<p>Write <code>cx</code> that accepts strings and objects: <code>cx('a', { b: true, c: false })</code> → <code>"a b"</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>function cx(...args) {
+  return args
+    .flatMap((a) =&gt;
+      a &amp;&amp; typeof a === 'object'
+        ? Object.keys(a).filter((k) =&gt; a[k])
+        : [a]
+    )
+    .filter(Boolean)
+    .join(' ');
+}
+cx('a', { b: true, c: false }); // "a b"</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td><code>class</code> vs <code>className</code></td><td>HTML attribute vs JSX prop (class gives a dev warning)</td></tr>
+<tr><td><code>className</code> vs <code>style</code></td><td>CSS classes (reusable, hover, media queries) vs inline object</td></tr>
+<tr><td>Ternary vs <code>&amp;&amp;</code></td><td>Ternary returns a string either way; <code>&amp;&amp;</code> can return <code>false</code></td></tr>
+<tr><td>Global CSS vs CSS Modules</td><td>Shared names (can clash) vs scoped per file</td></tr>
+<tr><td>Hand-written <code>cx</code> vs <code>clsx</code></td><td>Same idea; <code>clsx</code> is a tiny third-party package</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Goal</th><th>Write</th></tr>
+<tr><td>Static classes</td><td><code>className="a b"</code></td></tr>
+<tr><td>One of two</td><td><code>{c ? 'a' : 'b'}</code></td></tr>
+<tr><td>Base + optional</td><td><code>{`base ${c ? 'x' : ''}`}</code></td></tr>
+<tr><td>Many optional</td><td><code>{['a', c &amp;&amp; 'b'].filter(Boolean).join(' ')}</code></td></tr>
+<tr><td>No class at all</td><td><code>className={undefined}</code></td></tr>
+<tr><td>CSS Module</td><td><code>className={styles.card}</code></td></tr>
+<tr><td>Forward from parent</td><td><code>({ className }) =&gt; &lt;div className={cx('card', className)} /&gt;</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

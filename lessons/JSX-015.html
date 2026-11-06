@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-015 · JSX restrictions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-015</span><span>Module 4: JSX Fundamentals</span><span>Lesson 15</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-014</b></span></div>
+<h1>JSX restrictions</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-015-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>A food-delivery order goes out in <b>one bag</b>. You cannot hand the rider three loose boxes; you put them in one bag first.</li>
+<li>A component's <code>return</code> is the same: it must give back <b>one</b> thing (the <b>single-root rule</b>).</li>
+<li>JSX looks like HTML but is really JavaScript, so it follows stricter rules: every tag closed, some words renamed (<b>reserved words</b>), attributes in camelCase.</li>
+</ul>
+<pre class="diagram">
+   return (                         return (
+     &lt;h1&gt;Menu&lt;/h1&gt;     ✗              &lt;&gt;                 ✓  one "bag"
+     &lt;ul&gt;...&lt;/ul&gt;                      &lt;h1&gt;Menu&lt;/h1&gt;         (Fragment)
+   );                                   &lt;ul&gt;...&lt;/ul&gt;
+                                      &lt;/&gt;
+   two loose boxes                  );
+   → compile error                  → one value returned
+
+   Why? JSX compiles to a function call:
+   jsxs(Fragment, { children: [ jsx('h1', ...), jsx('ul', ...) ] })
+   A function can return only ONE value.
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Knowing the rules turns red compile errors into a 5-second fix.</li>
+<li>HTML is forgiving (it auto-closes <code>&lt;br&gt;</code>, <code>&lt;li&gt;</code>). JSX is not: it is parsed as JavaScript.</li>
+<li>Words like <code>class</code> and <code>for</code> already mean something in JavaScript, so JSX uses <code>className</code> and <code>htmlFor</code>.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (HTML habits)</span><pre><code>function WeatherCard() {
+  return (
+    &lt;h2 class="title"&gt;Delhi&lt;/h2&gt;
+    &lt;img src="sun.png"&gt;
+    &lt;p&gt;Sunny, 31°C&lt;br&gt;Humidity 40%
+    &lt;label for="unit"&gt;Unit&lt;/label&gt;
+    &lt;input id="unit" onclick="toggle()"&gt;
+  );
+}
+// Compile error: adjacent JSX elements
+// + unclosed &lt;img&gt;, &lt;br&gt;, &lt;p&gt;, &lt;input&gt;</code></pre></div>
+<div><span class="good">After (JSX rules)</span><pre><code>function WeatherCard({ onToggle }) {
+  return (
+    &lt;section&gt;
+      &lt;h2 className="title"&gt;Delhi&lt;/h2&gt;
+      &lt;img src="/sun.png" alt="Sunny" /&gt;
+      &lt;p&gt;Sunny, 31°C&lt;br /&gt;Humidity 40%&lt;/p&gt;
+      &lt;label htmlFor="unit"&gt;Unit&lt;/label&gt;
+      &lt;input id="unit" onClick={onToggle} /&gt;
+    &lt;/section&gt;
+  );
+}</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>One root</b>: return one element. Wrap siblings in a <code>&lt;div&gt;</code> or a <code>&lt;&gt;...&lt;/&gt;</code> (<b>Fragment</b>, adds no DOM node).</li>
+<li><b>Close every tag</b>: <code>&lt;p&gt;...&lt;/p&gt;</code>, and empty ones self-close: <code>&lt;img /&gt;</code>, <code>&lt;br /&gt;</code>, <code>&lt;input /&gt;</code>, <code>&lt;hr /&gt;</code>.</li>
+<li>Any element can self-close in JSX: <code>&lt;div /&gt;</code> is fine.</li>
+<li><b>Reserved words</b>: <code>class</code> → <code>className</code>, <code>for</code> → <code>htmlFor</code>.</li>
+<li><b>camelCase attributes</b>: <code>onclick</code> → <code>onClick</code>, <code>tabindex</code> → <code>tabIndex</code>, <code>maxlength</code> → <code>maxLength</code>.</li>
+<li>Exceptions keep dashes: <code>aria-label</code>, <code>data-id</code>.</li>
+<li><b>Events take functions</b>, not strings: <code>onClick={handleClick}</code>.</li>
+<li><b><code>style</code> takes an object</b>: <code>style={{ color: 'red' }}</code>.</li>
+<li><b>Braces hold expressions only</b> (something that gives a value). No <code>if</code>, <code>for</code> or <code>const</code> inside <code>{ }</code>; use ternary, <code>&amp;&amp;</code>, <code>map</code>.</li>
+<li><b>Comments</b> inside JSX: <code>{/* like this */}</code>. HTML comments <code>&lt;!-- --&gt;</code> are an error.</li>
+<li><b>Component names start with a capital</b>: <code>&lt;Cart /&gt;</code>. Lowercase = treated as an HTML tag.</li>
+<li>Objects cannot be rendered as children; <code>true</code>, <code>false</code>, <code>null</code>, <code>undefined</code> render nothing.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// Single root: Fragment (no extra DOM)
+return (
+  &lt;&gt;
+    &lt;Header /&gt;
+    &lt;Main /&gt;
+  &lt;/&gt;
+);
+
+// Self-closing tags
+&lt;img src={url} alt="Pizza" /&gt;
+&lt;input type="text" /&gt;
+&lt;br /&gt;
+&lt;MovieCard movie={m} /&gt;
+
+// Renamed + camelCase attributes
+&lt;div className="card" tabIndex={0} onClick={open}&gt;
+&lt;label htmlFor="qty"&gt;Qty&lt;/label&gt;
+&lt;input id="qty" maxLength={2} autoFocus readOnly /&gt;
+
+// Dashed attributes stay as-is
+&lt;button aria-label="Close" data-order-id="42"&gt;×&lt;/button&gt;
+
+// Style object (outer braces = JS, inner = object)
+&lt;p style={{ fontSize: 18, backgroundColor: 'gold' }}&gt;Offer!&lt;/p&gt;
+
+// Comments
+{/* Shown only when the cart is not empty */}
+
+// Expressions only inside { }
+{isOpen ? 'Open now' : 'Closed'}
+{items.length &gt; 0 &amp;&amp; &lt;Cart /&gt;}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A restaurant card that follows every JSX rule. Each rule is marked in a comment.</p>
+<pre><code>// src/App.jsx  (Vite + React 19)
+import { useState } from 'react';
+
+function RestaurantCard({ name, rating, isOpen, dishes }) {
+  const [qty, setQty] = useState(1);
+
+  // Statements (if/const) go ABOVE the return, not inside JSX
+  let badge = null;
+  if (rating &gt;= 4.5) {
+    badge = &lt;span className="badge"&gt;Top rated&lt;/span&gt;;
+  }
+
+  return (
+    // Rule: one root element
+    &lt;article className="card" data-restaurant={name}&gt;
+      {/* Rule: comments use braces */}
+      &lt;h2&gt;
+        {name} {badge}
+      &lt;/h2&gt;
+
+      {/* Rule: self-close empty tags */}
+      &lt;img src="/thali.jpg" alt={name + ' thali'} width={120} /&gt;
+      &lt;hr /&gt;
+
+      {/* Rule: expressions only (ternary, not if) */}
+      &lt;p style={{ color: isOpen ? 'green' : 'crimson' }}&gt;
+        {isOpen ? 'Open now' : 'Closed'}
+      &lt;/p&gt;
+
+      &lt;ul&gt;
+        {dishes.map((d) =&gt; (
+          &lt;li key={d}&gt;{d}&lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+
+      {/* Rule: htmlFor + camelCase attributes */}
+      &lt;label htmlFor="qty"&gt;Plates: &lt;/label&gt;
+      &lt;input
+        id="qty"
+        type="number"
+        min={1}
+        max={20}
+        value={qty}
+        onChange={(e) =&gt; setQty(Number(e.target.value))}
+      /&gt;
+
+      {/* Rule: events take a function, aria-* keeps dashes */}
+      &lt;button
+        aria-label={'Add ' + qty + ' plates to cart'}
+        disabled={!isOpen}
+        onClick={() =&gt; alert(`Added ${qty} × ${name}`)}
+      &gt;
+        Add to cart
+      &lt;/button&gt;
+    &lt;/article&gt;
+  );
+}
+
+export default function App() {
+  // Rule: Fragment when you need siblings without a wrapper div
+  return (
+    &lt;&gt;
+      &lt;h1&gt;Order Food&lt;/h1&gt;
+      &lt;RestaurantCard
+        name="Spice Garden"
+        rating={4.6}
+        isOpen={true}
+        dishes={['Paneer Tikka', 'Dal Makhani', 'Butter Naan']}
+      /&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3>Order Food</h3>
+<p><b>Spice Garden</b> <code>Top rated</code></p>
+<p>[ thali image ]</p>
+<hr>
+<p><b>Open now</b> (green text)</p>
+<ul><li>Paneer Tikka</li><li>Dal Makhani</li><li>Butter Naan</li></ul>
+<p>Plates: [ 1 ] <button>Add to cart</button></p>
+</div>
+<p>Click "Add to cart" → browser alert: <code>Added 1 × Spice Garden</code>.</p>
+<p>Rendered DOM (Fragment leaves no wrapper; <code>className</code> became <code>class</code>, <code>htmlFor</code> became <code>for</code>):</p>
+<pre class="output">&lt;div id="root"&gt;
+  &lt;h1&gt;Order Food&lt;/h1&gt;
+  &lt;article class="card" data-restaurant="Spice Garden"&gt;
+    ...
+    &lt;label for="qty"&gt;Plates: &lt;/label&gt;
+    &lt;input id="qty" type="number" min="1" max="20" value="1"&gt;
+    &lt;button aria-label="Add 1 plates to cart"&gt;Add to cart&lt;/button&gt;
+  &lt;/article&gt;
+&lt;/div&gt;</pre>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. You write JSX in App.jsx
+        │
+ 2. Vite's React plugin compiles it (automatic JSX runtime)
+        │   &lt;&gt;&lt;h1/&gt;&lt;Card/&gt;&lt;/&gt;
+        │      ↓
+        │   jsxs(Fragment, { children: [jsx('h1',..), jsx(Card,..)] })
+        │
+        ├── Two roots without a wrapper? → parse error, page shows error overlay
+        ├── Unclosed &lt;img&gt;?             → parse error
+        ├── &lt;!-- comment --&gt;?            → parse error
+        │
+ 3. Code runs in the browser → React gets element objects
+        │   'h1'  (lowercase)  → real HTML tag
+        │   Card  (Capital)    → call your component function
+        │
+ 4. React DOM maps props to DOM
+        │   className → class   htmlFor → for   onClick → click listener
+        │   style object → inline CSS   aria-* / data-* → copied as-is
+        │
+ 5. Browser paints the card. Fragment adds no node.
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Table rows</b>: a component that returns two <code>&lt;td&gt;</code> must use a Fragment; a <code>&lt;div&gt;</code> inside <code>&lt;tr&gt;</code> is invalid HTML.</li>
+<li><b>Copy-pasting HTML templates</b> (e.g. a shop landing page): convert <code>class</code>, <code>for</code>, inline <code>style</code> strings, and unclosed tags.</li>
+<li><b>Accessible buttons</b>: icon-only buttons in a chat app use <code>aria-label</code> (dashes kept).</li>
+<li><b>Analytics tags</b>: <code>data-product-id</code> attributes for click tracking work unchanged.</li>
+<li><b>Forms</b>: delivery-address inputs need <code>htmlFor</code>, <code>maxLength</code>, <code>autoComplete</code>, <code>readOnly</code>.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Two roots</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Movie() {
+  return (
+    &lt;h2&gt;Inception&lt;/h2&gt;
+    &lt;p&gt;2010 · Sci-fi&lt;/p&gt;
+  );
+}
+// Adjacent JSX elements must be wrapped
+// in an enclosing tag.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Movie() {
+  return (
+    &lt;&gt;
+      &lt;h2&gt;Inception&lt;/h2&gt;
+      &lt;p&gt;2010 · Sci-fi&lt;/p&gt;
+    &lt;/&gt;
+  );
+}</code></pre></div>
+</div>
+<h3>Mistake 2: Unclosed void tags</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;form&gt;
+  &lt;input type="email"&gt;
+  &lt;br&gt;
+  &lt;img src="/logo.png"&gt;
+&lt;/form&gt;
+// Expected corresponding JSX closing
+// tag for &lt;input&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;form&gt;
+  &lt;input type="email" /&gt;
+  &lt;br /&gt;
+  &lt;img src="/logo.png" alt="Shop logo" /&gt;
+&lt;/form&gt;</code></pre></div>
+</div>
+<h3>Mistake 3: HTML attribute names</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;label class="lbl" for="city"&gt;City&lt;/label&gt;
+&lt;input id="city" tabindex="1"
+       onchange="save()" /&gt;
+// Dev warnings: Invalid DOM property
+// `class`. Did you mean `className`?
+// onchange string is not a function</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;label className="lbl" htmlFor="city"&gt;City&lt;/label&gt;
+&lt;input id="city" tabIndex={1}
+       onChange={save} /&gt;</code></pre></div>
+</div>
+<h3>Mistake 4: Statement inside braces</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;p&gt;
+  {if (stock &gt; 0) { 'In stock' }}
+&lt;/p&gt;
+// Unexpected token (syntax error)</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;p&gt;
+  {stock &gt; 0 ? 'In stock' : 'Sold out'}
+&lt;/p&gt;</code></pre></div>
+</div>
+<h3>Mistake 5: HTML comment</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;div&gt;
+  &lt;!-- Offer banner --&gt;
+  &lt;Banner /&gt;
+&lt;/div&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;div&gt;
+  {/* Offer banner */}
+  &lt;Banner /&gt;
+&lt;/div&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Fix this so it compiles: <code>return &lt;h1&gt;Cart&lt;/h1&gt;&lt;p&gt;3 items&lt;/p&gt;;</code></p>
+<details><summary>Show solution</summary>
+<pre><code>return (
+  &lt;&gt;
+    &lt;h1&gt;Cart&lt;/h1&gt;
+    &lt;p&gt;3 items&lt;/p&gt;
+  &lt;/&gt;
+);</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Convert to JSX: <code>&lt;img src="dosa.jpg" class="dish"&gt;&lt;hr&gt;</code></p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;&gt;
+  &lt;img src="dosa.jpg" className="dish" alt="Masala dosa" /&gt;
+  &lt;hr /&gt;
+&lt;/&gt;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Convert this HTML login form to a JSX component.</p>
+<pre><code>&lt;form onsubmit="login()"&gt;
+  &lt;!-- email --&gt;
+  &lt;label for="em" class="lbl"&gt;Email&lt;/label&gt;
+  &lt;input id="em" type="email" maxlength="40" autofocus&gt;
+  &lt;button style="background: teal; color: white"&gt;Log in&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+<details><summary>Show solution</summary>
+<pre><code>function LoginForm({ onLogin }) {
+  return (
+    &lt;form onSubmit={onLogin}&gt;
+      {/* email */}
+      &lt;label htmlFor="em" className="lbl"&gt;Email&lt;/label&gt;
+      &lt;input id="em" type="email" maxLength={40} autoFocus /&gt;
+      &lt;button style={{ background: 'teal', color: 'white' }}&gt;Log in&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>A <code>PriceCells</code> component must return two <code>&lt;td&gt;</code>s to sit inside a <code>&lt;tr&gt;</code>. Write it.</p>
+<details><summary>Show solution</summary>
+<pre><code>function PriceCells({ name, price }) {
+  return (
+    &lt;&gt;
+      &lt;td&gt;{name}&lt;/td&gt;
+      &lt;td&gt;₹{price}&lt;/td&gt;
+    &lt;/&gt;
+  );
+}
+// &lt;tr&gt;&lt;PriceCells name="Tea" price={20} /&gt;&lt;/tr&gt;
+// A &lt;div&gt; wrapper would put a div inside &lt;tr&gt; (invalid HTML).</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Find and fix all 7 rule breaks.</p>
+<pre><code>function chatMessage({ from, text, unread }) {
+  return (
+    &lt;div class="msg"&gt;&lt;b&gt;{from}&lt;/b&gt;&lt;br&gt;{text}&lt;/div&gt;
+    &lt;!-- badge --&gt;
+    {if (unread) &lt;span&gt;New&lt;/span&gt;}
+    &lt;button onclick="markRead()"&gt;Read&lt;/button&gt;
+  );
+}</code></pre>
+<details><summary>Show solution</summary>
+<pre><code>// 1 capital name  2 single root  3 className  4 &lt;br /&gt;
+// 5 JSX comment   6 &amp;&amp; not if    7 onClick with a function
+function ChatMessage({ from, text, unread, onRead }) {
+  return (
+    &lt;&gt;
+      &lt;div className="msg"&gt;&lt;b&gt;{from}&lt;/b&gt;&lt;br /&gt;{text}&lt;/div&gt;
+      {/* badge */}
+      {unread &amp;&amp; &lt;span&gt;New&lt;/span&gt;}
+      &lt;button onClick={onRead}&gt;Read&lt;/button&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Return one root: wrap in <code>&lt;div&gt;</code> or <code>&lt;&gt;&lt;/&gt;</code>.</li>
+<li>Close every tag; void tags self-close (<code>&lt;img /&gt;</code>).</li>
+<li><code>class</code> → <code>className</code>, <code>for</code> → <code>htmlFor</code>.</li>
+<li>camelCase attributes and events; <code>aria-*</code>/<code>data-*</code> keep dashes.</li>
+<li>Events = functions; <code>style</code> = object.</li>
+<li>Braces hold expressions, never statements.</li>
+<li>Comments: <code>{/* */}</code>. Components start with a capital.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why must a component return a single root element?</summary>
+<p>JSX compiles to a function call that creates one element object. A function returns one value, so two siblings must be wrapped in a parent element or Fragment (or returned as an array with keys).</p>
+</details>
+<details><summary>Why <code>className</code> instead of <code>class</code>?</summary>
+<p><code>class</code> is a reserved word in JavaScript, and React follows the DOM property name <code>element.className</code>. React DOM writes it out as the <code>class</code> attribute.</p>
+</details>
+<details><summary>Fragment vs <code>&lt;div&gt;</code> wrapper?</summary>
+<p>A Fragment groups children without adding a DOM node. Use it when an extra div would break layout (flex/grid) or HTML rules (inside <code>&lt;tr&gt;</code>, <code>&lt;ul&gt;</code>). Use a div when you need styling or a ref on the wrapper.</p>
+</details>
+<details><summary>Why can't you use <code>if</code> inside JSX braces?</summary>
+<p>Braces accept JavaScript <b>expressions</b> (things that produce a value). <code>if</code> is a <b>statement</b>. Use a ternary, <code>&amp;&amp;</code>, or compute the value above the return.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-014.html">JSX-014 · Rendering lists</a>
+<a href="JSX-012.html">JSX-012 · JSX fragments</a>
+<a href="JSX-009.html">JSX-009 · className</a>
+<a href="JSX-010.html">JSX-010 · htmlFor</a>
+<a href="JSX-011.html">JSX-011 · Inline styles</a>
+<a href="JSX-016.html">JSX-016 · Common JSX errors</a>
+<a href="JSX-015.html#rev">JSX-015-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<ul>
+<li>JSX is JavaScript, so it is stricter than HTML.</li>
+<li>Return <b>one root</b> (wrap in a Fragment), <b>close every tag</b>, rename <b>reserved words</b> (<code>className</code>, <code>htmlFor</code>), use <b>camelCase</b> attributes.</li>
+<li>Inside <code>{ }</code>: expressions only. Comments: <code>{/* */}</code>.</li>
+</ul>
+<div class="callout">Memory hook: <b>One bag, closed boxes, JS names.</b></div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>return &lt;&gt;&lt;A /&gt;&lt;B /&gt;&lt;/&gt;;                 // single root
+&lt;img src={u} alt="" /&gt;  &lt;br /&gt;  &lt;input /&gt;   // self-close
+&lt;div className="x"&gt;  &lt;label htmlFor="id"&gt;  // reserved words
+&lt;td colSpan={2} tabIndex={0} onClick={fn}&gt; // camelCase
+&lt;b aria-hidden="true" data-id="7"&gt;         // dashes kept
+&lt;p style={{ marginTop: 8 }}&gt;               // style object
+{/* comment */}                            // JSX comment
+{ok ? &lt;Yes /&gt; : &lt;No /&gt;}                   // expression, not if</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Single root per return; Fragment adds no DOM node.</li>
+<li><code>&lt;&gt;</code> takes no props; <code>&lt;Fragment key&gt;</code> takes only <code>key</code>.</li>
+<li>Every tag must close; any element may self-close.</li>
+<li><code>class</code>/<code>for</code> only give a dev warning (no crash), but always use <code>className</code>/<code>htmlFor</code>.</li>
+<li>Most attributes are camelCase; <code>aria-*</code> and <code>data-*</code> are exceptions.</li>
+<li>Event handlers must be functions, not strings.</li>
+<li><code>style</code> must be an object with camelCase keys; numbers mean <code>px</code> for most properties.</li>
+<li>Expressions only inside braces.</li>
+<li>Lowercase tag = HTML element; Capitalised = component.</li>
+<li>Objects are not valid children; booleans, <code>null</code>, <code>undefined</code> render nothing.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Name three differences between JSX and HTML.</summary><p><code>className</code> vs <code>class</code>; all tags must be closed; camelCase attributes and function event handlers; style as object.</p></details>
+<details><summary>What is a Fragment?</summary><p>A wrapper (<code>&lt;&gt;...&lt;/&gt;</code> or <code>&lt;Fragment&gt;</code>) that groups children without adding a DOM element.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why do <code>aria-label</code> and <code>data-id</code> keep dashes?</summary><p>React passes <code>aria-*</code> and <code>data-*</code> attributes straight to the DOM as written; they have no camelCase DOM property mapping.</p></details>
+<details><summary>How do you return siblings without a wrapper and without a Fragment?</summary><p>Return an array with keys: <code>return [&lt;li key="a"&gt;A&lt;/li&gt;, &lt;li key="b"&gt;B&lt;/li&gt;];</code>. Fragments are usually cleaner.</p></details>
+<h3>Advanced</h3>
+<details><summary>Why does <code>&lt;myCard /&gt;</code> not call your component?</summary><p>The compiler treats lowercase tag names as strings (<code>jsx('myCard')</code>), i.e. an HTML element. Capitalised names compile to a variable reference (<code>jsx(MyCard)</code>).</p></details>
+<details><summary>Can you write <code>&lt;Fragment className="x"&gt;</code>?</summary><p>No. Fragment accepts only <code>key</code> (and children). There is no DOM node to put a class on.</p></details>
+<h3>Tricky</h3>
+<details><summary>Is <code>&lt;div /&gt;</code> valid JSX?</summary><p>Yes. Any element can self-close in JSX. React DOM renders <code>&lt;div&gt;&lt;/div&gt;</code>.</p></details>
+<details><summary>Does <code>class</code> crash a React app?</summary><p>No. React logs a development warning ("Invalid DOM property `class`. Did you mean `className`?") and still applies it, but it is wrong practice and lint tools flag it.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<p><b>Q1. What DOM is produced?</b></p>
+<pre><code>return &lt;&gt;&lt;h1&gt;Hi&lt;/h1&gt;&lt;p&gt;Bye&lt;/p&gt;&lt;/&gt;;</code></pre>
+<details><summary>Show answer</summary><p><code>&lt;h1&gt;Hi&lt;/h1&gt;&lt;p&gt;Bye&lt;/p&gt;</code> directly inside the parent. No wrapper element.</p></details>
+<p><b>Q2. What shows on screen?</b></p>
+<pre><code>&lt;p&gt;{true}{null}{undefined}{false}Done&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary><p>Only <code>Done</code>. Booleans, null and undefined render nothing.</p></details>
+<p><b>Q3. What happens?</b></p>
+<pre><code>&lt;p&gt;{ { city: 'Pune' } }&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary><p>Runtime error: "Objects are not valid as a React child (found: object with keys {city})". Render <code>{data.city}</code> instead.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<p><b>Q1. Compile error: "Expected corresponding JSX closing tag for &lt;p&gt;".</b></p>
+<pre><code>&lt;p&gt;Total: ₹450
+&lt;/div&gt;</code></pre>
+<details><summary>Show answer</summary><p>The <code>&lt;p&gt;</code> was never closed before <code>&lt;/div&gt;</code>. Add <code>&lt;/p&gt;</code>.</p></details>
+<p><b>Q2. The button does nothing and the console warns about a string listener.</b></p>
+<pre><code>&lt;button onClick="placeOrder()"&gt;Order&lt;/button&gt;</code></pre>
+<details><summary>Show answer</summary><p>Pass a function: <code>onClick={placeOrder}</code>. React 19 warns: "Expected `onClick` listener to be a function, instead got a value of `string` type."</p></details>
+<p><b>Q3. Style crashes the app.</b></p>
+<pre><code>&lt;p style="color: red"&gt;Sold out&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary><p>Error: "The `style` prop expects a mapping from style properties to values, not a string." Use <code>style={{ color: 'red' }}</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A designer gives you an HTML snippet for a product card. What do you change?</summary><p>Close void tags, <code>class</code>→<code>className</code>, <code>for</code>→<code>htmlFor</code>, inline style strings→objects, event strings→functions, HTML comments→<code>{/* */}</code>, then wrap in one root.</p></details>
+<details><summary>A flex row breaks because your component adds an extra div.</summary><p>Return a Fragment instead of a div so the children become direct flex items.</p></details>
+<details><summary>A table component returns <code>&lt;div&gt;&lt;td/&gt;&lt;td/&gt;&lt;/div&gt;</code> and the browser warns about invalid nesting.</summary><p>Replace the div with a Fragment. React DOM warns in dev: "In HTML, &lt;div&gt; cannot be a child of &lt;tr&gt;."</p></details>
+
+<h2>H. Coding Challenges</h2>
+<h3>1. Convert a weather widget</h3>
+<pre><code>&lt;div class="wx"&gt;&lt;img src="rain.svg"&gt;&lt;span style="font-size:20px"&gt;22°C&lt;/span&gt;&lt;/div&gt;
+&lt;p&gt;Carry an umbrella</code></pre>
+<details><summary>Solution</summary>
+<pre><code>function Weather() {
+  return (
+    &lt;&gt;
+      &lt;div className="wx"&gt;
+        &lt;img src="rain.svg" alt="Rain" /&gt;
+        &lt;span style={{ fontSize: 20 }}&gt;22°C&lt;/span&gt;
+      &lt;/div&gt;
+      &lt;p&gt;Carry an umbrella&lt;/p&gt;
+    &lt;/&gt;
+  );
+}</code></pre></details>
+<h3>2. Glossary with keyed Fragments</h3>
+<p>Render <code>&lt;dt&gt;</code>/<code>&lt;dd&gt;</code> pairs from an array, with no wrapper per pair.</p>
+<details><summary>Solution</summary>
+<pre><code>import { Fragment } from 'react';
+
+function Glossary({ terms }) {
+  return (
+    &lt;dl&gt;
+      {terms.map((t) =&gt; (
+        &lt;Fragment key={t.word}&gt;
+          &lt;dt&gt;{t.word}&lt;/dt&gt;
+          &lt;dd&gt;{t.meaning}&lt;/dd&gt;
+        &lt;/Fragment&gt;
+      ))}
+    &lt;/dl&gt;
+  );
+}</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>HTML</th><th>JSX</th><th>Why</th></tr>
+<tr><td><code>class</code></td><td><code>className</code></td><td>Reserved word</td></tr>
+<tr><td><code>for</code></td><td><code>htmlFor</code></td><td>Reserved word</td></tr>
+<tr><td><code>&lt;br&gt;</code></td><td><code>&lt;br /&gt;</code></td><td>XML-style closing required</td></tr>
+<tr><td><code>onclick="f()"</code></td><td><code>onClick={f}</code></td><td>camelCase + function</td></tr>
+<tr><td><code>style="color:red"</code></td><td><code>style={{ color: 'red' }}</code></td><td>Object, camelCase keys</td></tr>
+<tr><td><code>&lt;!-- x --&gt;</code></td><td><code>{/* x */}</code></td><td>JS comment in braces</td></tr>
+<tr><td><code>tabindex</code></td><td><code>tabIndex</code></td><td>DOM property name</td></tr>
+<tr><td><code>&lt;div&gt;</code> wrapper</td><td><code>&lt;&gt;</code> Fragment</td><td>No extra DOM node</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Rule</th><th>Do</th><th>Don't</th></tr>
+<tr><td>One root</td><td><code>&lt;&gt;&lt;A/&gt;&lt;B/&gt;&lt;/&gt;</code></td><td><code>&lt;A/&gt;&lt;B/&gt;</code></td></tr>
+<tr><td>Close tags</td><td><code>&lt;img /&gt;</code></td><td><code>&lt;img&gt;</code></td></tr>
+<tr><td>Reserved</td><td><code>className</code>, <code>htmlFor</code></td><td><code>class</code>, <code>for</code></td></tr>
+<tr><td>Attributes</td><td><code>onClick</code>, <code>maxLength</code></td><td><code>onclick</code>, <code>maxlength</code></td></tr>
+<tr><td>Dashes</td><td><code>aria-label</code>, <code>data-id</code></td><td><code>ariaLabel</code></td></tr>
+<tr><td>Braces</td><td><code>{a ? b : c}</code></td><td><code>{if (a) b}</code></td></tr>
+<tr><td>Comments</td><td><code>{/* x */}</code></td><td><code>&lt;!-- x --&gt;</code></td></tr>
+<tr><td>Components</td><td><code>&lt;Cart /&gt;</code></td><td><code>&lt;cart /&gt;</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

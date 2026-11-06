@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-012 · Server-side rendering</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-012</span><span>Module 2: React Introduction</span><span>Lesson 12</span><span>Level: <b>Intermediate</b></span><span>Time: <b>45 min</b></span><span>Prerequisites: <b>INTRO-011</b></span></div>
+<h1>Server-side rendering</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-012-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<p>SSR is a restaurant that brings your dish already cooked (HTML first). A moment later the waiter comes back with cutlery (JavaScript) so you can actually eat (click). Attaching the cutlery is called hydration.</p>
+<pre class="diagram">
+ time ---&gt;
+ Server   | runs &lt;App /&gt; -&gt; HTML string |
+          |          |                  |
+ Browser  | paint FULL page (visible)   | download JS | hydrateRoot()
+          | buttons look real but       |             | attaches click
+          | do nothing yet              |             | handlers
+          +-----------------------------+-------------+--------------
+            user SEES content early        ...          user can USE it
+
+ CSR:  blank ......... JS ......... content+interactive
+ SSR:  content ....... JS ......... interactive  (hydration)
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>CSR shows a blank screen until JS runs, and crawlers may see nothing.</li>
+<li>SSR runs the same React components on the server and sends finished HTML.</li>
+<li>The browser shows content immediately; React then "hydrates" it to make it interactive.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;!-- CSR response for /movies (View Source) --&gt;
+&lt;body&gt;
+  &lt;div id="root"&gt;&lt;/div&gt;
+  &lt;script type="module" src="/assets/index.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;!-- link preview: empty. slow phone: blank screen --&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;!-- SSR response for /movies (View Source) --&gt;
+&lt;body&gt;
+  &lt;div id="root"&gt;&lt;main&gt;&lt;h1&gt;Now Showing&lt;/h1&gt;
+    &lt;ul&gt;&lt;li&gt;Space Pirates &lt;button&gt;Like (0)&lt;/button&gt;&lt;/li&gt;
+    ...&lt;/ul&gt;&lt;/main&gt;&lt;/div&gt;
+  &lt;script type="module" src="/assets/client.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;!-- content is in the HTML itself --&gt;</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li>On each request, the server renders components to an HTML string (server-side rendering, SSR).</li>
+<li>Server APIs live in <code>react-dom/server</code>: <code>renderToString</code>, or streaming <code>renderToPipeableStream</code> (Node) / <code>renderToReadableStream</code> (Web Streams).</li>
+<li>The browser paints that HTML at once: fast first content, good SEO and link previews.</li>
+<li>Then the same JS bundle loads and calls <code>hydrateRoot</code> from <code>react-dom/client</code>.</li>
+<li>Hydration = React walks the existing DOM, reuses it, and attaches event handlers. It does not rebuild it.</li>
+<li>Server render and first client render must produce the <b>same</b> output, or you get a hydration mismatch.</li>
+<li>On the server: no <code>useEffect</code>, no <code>window</code>, no clicks. Effects run only in the browser after hydration.</li>
+<li>Most teams get SSR from a framework (React Router 7 framework mode, Next.js); these are framework features, not part of a plain Vite app.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>Server: render to HTML</h3>
+<pre><code>import { renderToString } from "react-dom/server";
+
+const html = renderToString(&lt;App /&gt;);
+// "&lt;main&gt;&lt;h1&gt;Now Showing&lt;/h1&gt;...&lt;/main&gt;"</code></pre>
+<h3>Client: hydrate, do not create</h3>
+<pre><code>import { hydrateRoot } from "react-dom/client";
+
+hydrateRoot(document.getElementById("root"), &lt;App /&gt;);
+// NOT createRoot(...).render(...) - that would rebuild the DOM</code></pre>
+<h3>Streaming version (Node)</h3>
+<pre><code>import { renderToPipeableStream } from "react-dom/server";
+
+const { pipe } = renderToPipeableStream(&lt;App /&gt;, {
+  bootstrapScripts: ["/client.js"],
+  onShellReady() {
+    res.setHeader("Content-Type", "text/html");
+    pipe(res); // send HTML in chunks as Suspense boundaries resolve
+  },
+  onShellError() {
+    res.statusCode = 500;
+    res.end("Something went wrong");
+  },
+});</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A minimal SSR movie list using Vite in middleware mode with Express. Start from a Vite React app, then <code>npm install express</code> and add <code>"type": "module"</code> plus <code>"dev": "node server.js"</code> in <code>package.json</code>.</p>
+<h3>src/App.jsx (shared by server and client)</h3>
+<pre><code>// src/App.jsx
+import { useEffect, useState } from "react";
+
+const MOVIES = [
+  { id: 1, title: "Space Pirates" },
+  { id: 2, title: "The Last Biryani" },
+  { id: 3, title: "Monsoon Love" },
+];
+
+function MovieRow({ movie }) {
+  const [likes, setLikes] = useState(0);
+  return (
+    &lt;li&gt;
+      {movie.title}{" "}
+      &lt;button onClick={() =&gt; setLikes(likes + 1)}&gt;Like ({likes})&lt;/button&gt;
+    &lt;/li&gt;
+  );
+}
+
+export default function App() {
+  console.log("App render on", typeof window === "undefined" ? "server" : "client");
+
+  useEffect(() =&gt; {
+    // effects never run on the server
+    console.log("hydrated - buttons now work");
+  }, []);
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;Now Showing&lt;/h1&gt;
+      &lt;ul&gt;
+        {MOVIES.map((m) =&gt; &lt;MovieRow key={m.id} movie={m} /&gt;)}
+      &lt;/ul&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<h3>src/entry-server.jsx</h3>
+<pre><code>import { StrictMode } from "react";
+import { renderToString } from "react-dom/server";
+import App from "./App.jsx";
+
+export function render() {
+  return renderToString(
+    &lt;StrictMode&gt;
+      &lt;App /&gt;
+    &lt;/StrictMode&gt;
+  );
+}</code></pre>
+<h3>src/entry-client.jsx</h3>
+<pre><code>import { StrictMode } from "react";
+import { hydrateRoot } from "react-dom/client";
+import App from "./App.jsx";
+
+hydrateRoot(
+  document.getElementById("root"),
+  &lt;StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/StrictMode&gt;
+);</code></pre>
+<h3>index.html (placeholder for server HTML)</h3>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;&lt;meta charset="UTF-8" /&gt;&lt;title&gt;MovieTime&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id="root"&gt;&lt;!--app-html--&gt;&lt;/div&gt;
+    &lt;script type="module" src="/src/entry-client.jsx"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>server.js (development server)</h3>
+<pre><code>import fs from "node:fs/promises";
+import express from "express";
+import { createServer as createViteServer } from "vite";
+
+const app = express();
+const vite = await createViteServer({
+  server: { middlewareMode: true },
+  appType: "custom",
+});
+app.use(vite.middlewares);
+
+app.use(async (req, res, next) =&gt; {
+  try {
+    let template = await fs.readFile("index.html", "utf-8");
+    template = await vite.transformIndexHtml(req.originalUrl, template);
+    const { render } = await vite.ssrLoadModule("/src/entry-server.jsx");
+    const html = template.replace("&lt;!--app-html--&gt;", render());
+    res.status(200).set({ "Content-Type": "text/html" }).end(html);
+  } catch (e) {
+    vite.ssrFixStacktrace(e);
+    next(e);
+  }
+});
+
+app.listen(5173, () =&gt; console.log("http://localhost:5173"));</code></pre>
+<div class="callout">This is the hand-made setup from the Vite SSR guide, good for learning. For real projects, a framework (React Router 7 framework mode, Next.js) handles routing, data loading, streaming and production builds for you.</div>
+
+<h2>6. Expected Output</h2>
+<p>Open <code>http://localhost:5173</code>. Page (visible immediately, even before JS loads):</p>
+<div class="ui">
+<h3>Now Showing</h3>
+<ul>
+<li>Space Pirates <button>Like (0)</button></li>
+<li>The Last Biryani <button>Like (0)</button></li>
+<li>Monsoon Love <button>Like (0)</button></li>
+</ul>
+</div>
+<p>Terminal (Node server), once per request:</p>
+<pre class="output">App render on server</pre>
+<p>Browser console in <b>development with Strict Mode</b>:</p>
+<pre class="output">App render on client
+App render on client        (Strict Mode double render; dimmed if React DevTools is installed)
+hydrated - buttons now work
+hydrated - buttons now work (Strict Mode re-runs effects in dev)</pre>
+<p>In production, each line appears once. View Page Source shows the full movie list inside <code>#root</code>. Clicking <b>Like</b> works only after hydration.</p>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. Browser: GET /
+ 2. Express -&gt; read index.html -&gt; vite.transformIndexHtml
+ 3. ssrLoadModule("entry-server.jsx") -&gt; render()
+        |
+        v
+    renderToString(&lt;App /&gt;)   (runs component bodies, NO effects)
+    terminal: "App render on server"
+        |
+        v
+ 4. Replace &lt;!--app-html--&gt; with the HTML string -&gt; send response
+ 5. Browser parses + PAINTS the movie list   (fast first content)
+        |   buttons visible but not wired up yet
+        v
+ 6. GET /src/entry-client.jsx (+ React)  -&gt; JS runs
+ 7. hydrateRoot(#root, &lt;App /&gt;)
+        |   React renders in memory, compares with existing DOM
+        |   match  -&gt; reuse DOM nodes, attach onClick handlers
+        |   mismatch -&gt; error in console, React re-renders that part
+        v
+ 8. useEffect runs -&gt; "hydrated - buttons now work"
+ 9. Click Like -&gt; setLikes -&gt; normal client update from now on
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Online shops</b>: product pages must rank in search and show price instantly.</li>
+<li><b>News and recipe sites</b>: articles readable before JS; rich link previews in chat apps.</li>
+<li><b>Food delivery landing and restaurant pages</b>: fast first view on slow mobile networks.</li>
+<li><b>Personalised pages</b> (logged-in home feed): server reads cookies and renders the user's data in the first HTML.</li>
+<li>Not needed for: internal dashboards and tools behind login, where CSR is simpler and cheaper.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Browser-only APIs during render</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Theme() {
+  const theme = localStorage.getItem("theme"); // runs on server too
+  return &lt;p&gt;Theme: {theme}&lt;/p&gt;;
+}
+// server: ReferenceError: localStorage is not defined</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Theme() {
+  const [theme, setTheme] = useState("light");
+  useEffect(() =&gt; {
+    // effects run only in the browser
+    setTheme(localStorage.getItem("theme") ?? "light");
+  }, []);
+  return &lt;p&gt;Theme: {theme}&lt;/p&gt;;
+}</code></pre></div>
+</div>
+<h3>Mistake 2: Different output on server and client (hydration mismatch)</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Clock() {
+  return &lt;p&gt;Now: {new Date().toLocaleTimeString()}&lt;/p&gt;;
+}
+// server says 10:00:01, client says 10:00:03
+// -&gt; hydration mismatch error in console</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Clock() {
+  const [time, setTime] = useState(null);
+  useEffect(() =&gt; {
+    setTime(new Date().toLocaleTimeString());
+  }, []);
+  return &lt;p&gt;Now: {time ?? "--:--"}&lt;/p&gt;; // same on both at first
+}</code></pre></div>
+</div>
+<h3>Mistake 3: createRoot instead of hydrateRoot on the client</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>import { createRoot } from "react-dom/client";
+createRoot(document.getElementById("root")).render(&lt;App /&gt;);
+// throws away the server HTML and builds it again</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { hydrateRoot } from "react-dom/client";
+hydrateRoot(document.getElementById("root"), &lt;App /&gt;);
+// reuses server HTML, only attaches handlers</code></pre></div>
+</div>
+<h3>Mistake 4: Random ids that differ per render</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const id = "email-" + Math.random();
+&lt;label htmlFor={id}&gt;Email&lt;/label&gt;&lt;input id={id} /&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { useId } from "react";
+const id = useId(); // same on server and client
+&lt;label htmlFor={id}&gt;Email&lt;/label&gt;&lt;input id={id} /&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Run the example, open View Page Source. Is "The Last Biryani" in the HTML? Would it be in the CSR app from INTRO-011?</p>
+<details><summary>Solution</summary><p>Yes with SSR: it is inside <code>#root</code> in the raw HTML. In CSR, the source only had an empty <code>&lt;div id="root"&gt;</code>.</p></details>
+<h3>Beginner 2</h3>
+<p>Throttle the network to "Slow 4G" and click Like the instant the page appears. What happens?</p>
+<details><summary>Solution</summary><p>Nothing at first: the button is plain HTML until hydration attaches the handler. After the JS loads, clicks work. This gap is the "looks ready, is not ready" cost of SSR.</p></details>
+<h3>Intermediate 1</h3>
+<p>Add a "Welcome back, Asha" greeting that reads the name from <code>localStorage</code> without breaking SSR.</p>
+<details><summary>Solution</summary>
+<pre><code>function Greeting() {
+  const [name, setName] = useState(null);
+  useEffect(() =&gt; {
+    setName(localStorage.getItem("name"));
+  }, []);
+  return &lt;p&gt;{name ? `Welcome back, ${name}` : "Welcome!"}&lt;/p&gt;;
+}</code></pre>
+<p>Server and first client render both show "Welcome!"; the name appears after hydration.</p>
+</details>
+<h3>Intermediate 2</h3>
+<p>Pass the movie list from the server instead of hard-coding it, so both sides use identical data.</p>
+<details><summary>Solution</summary>
+<pre><code>// entry-server.jsx
+export function render(movies) {
+  return renderToString(&lt;App movies={movies} /&gt;);
+}
+// server.js
+const movies = await getMovies();
+const html = template
+  .replace("&lt;!--app-html--&gt;", render(movies))
+  .replace("&lt;/body&gt;",
+    `&lt;script&gt;window.__MOVIES__ = ${JSON.stringify(movies).replace(/&lt;/g, "\\u003c")}&lt;/script&gt;&lt;/body&gt;`);
+// entry-client.jsx
+hydrateRoot(document.getElementById("root"), &lt;App movies={window.__MOVIES__} /&gt;);</code></pre>
+<p>Escaping <code>&lt;</code> prevents a movie title from closing the script tag. Frameworks do this data hand-off for you.</p>
+</details>
+<h3>Challenge</h3>
+<p>Switch <code>entry-server.jsx</code> to streaming with <code>renderToPipeableStream</code> so the shell is sent before slow parts finish.</p>
+<details><summary>Solution</summary>
+<pre><code>// entry-server.jsx
+import { renderToPipeableStream } from "react-dom/server";
+import App from "./App.jsx";
+
+export function render(res, bootstrapModules) {
+  const { pipe } = renderToPipeableStream(&lt;App /&gt;, {
+    bootstrapModules,                 // e.g. ["/src/entry-client.jsx"]
+    onShellReady() {
+      res.setHeader("Content-Type", "text/html");
+      pipe(res);
+    },
+    onShellError() {
+      res.statusCode = 500;
+      res.end("Server error");
+    },
+    onError(err) {
+      console.error(err);
+    },
+  });
+}</code></pre>
+<p>Here React renders the whole document, so <code>App</code> must output <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code> and <code>&lt;body&gt;</code>, and the client hydrates <code>document</code> instead of <code>#root</code>. Parts wrapped in <code>&lt;Suspense&gt;</code> stream in later.</p>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>SSR = server runs components and sends ready HTML.</li>
+<li>Client then calls <code>hydrateRoot</code> to attach handlers to that HTML.</li>
+<li>Fast first content and strong SEO; interactivity waits for JS.</li>
+<li>Server and first client render must match exactly.</li>
+<li>No effects, <code>window</code> or <code>localStorage</code> on the server; use <code>useEffect</code>.</li>
+<li>Streaming (<code>renderToPipeableStream</code>) sends HTML in chunks with Suspense.</li>
+<li>Frameworks (React Router 7 framework mode, Next.js) provide SSR out of the box.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What is server-side rendering?</summary><p>Rendering React components to HTML on the server for each request, so the browser receives ready-to-display content.</p></details>
+<details><summary>Q2. What is hydration?</summary><p>The client-side step where React, via <code>hydrateRoot</code>, attaches event handlers and state to server-rendered HTML instead of recreating the DOM.</p></details>
+<details><summary>Q3. What causes a hydration mismatch?</summary><p>Different output between server and first client render: <code>Date.now()</code>, <code>Math.random()</code>, browser-only checks like <code>typeof window</code> in render output, locale differences, or invalid HTML nesting.</p></details>
+<details><summary>Q4. What are the costs of SSR?</summary><p>Server compute per request, a running server instead of static files, more complex code (two environments), and a delay between seeing and using the page.</p></details>
+<details><summary>Q5. SSR vs static generation?</summary><p>SSR renders on every request (fresh, personalised). Static generation renders once at build time (fastest, cacheable, but data is fixed until rebuild).</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-009.html">INTRO-009 Single Page Applications</a>
+<a href="INTRO-010.html">INTRO-010 Multi Page Applications</a>
+<a href="INTRO-011.html">INTRO-011 Client-side rendering</a>
+<a href="INTRO-011.html#rev">INTRO-011 Revision</a>
+<a href="INTRO-012.html#rev">INTRO-012 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">SSR: the server runs your React components and sends finished HTML, so users and crawlers see content right away. Then the JS loads and <code>hydrateRoot</code> wires up clicks on that same HTML. Server and client must render the same thing.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>// server
+import { renderToString, renderToPipeableStream } from "react-dom/server";
+const html = renderToString(&lt;App /&gt;);
+
+// client
+import { hydrateRoot } from "react-dom/client";
+hydrateRoot(document.getElementById("root"), &lt;App /&gt;);
+
+// stable ids across server and client
+import { useId } from "react";
+const id = useId();</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li>HTML is generated per request on the server.</li>
+<li>First content appears before JS runs.</li>
+<li><code>hydrateRoot</code> reuses DOM; <code>createRoot</code> would replace it.</li>
+<li>Effects (<code>useEffect</code>, <code>useLayoutEffect</code>) do not run on the server.</li>
+<li>Avoid <code>window</code>, <code>document</code>, <code>localStorage</code> during render.</li>
+<li>Mismatch sources: time, random, browser checks, invalid nesting.</li>
+<li>Use <code>useId</code> for ids that must match.</li>
+<li>Streaming + Suspense sends the shell first, slow parts later.</li>
+<li>Needs a server/edge runtime, not just a CDN.</li>
+<li>Frameworks give SSR, routing and data loading together.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Which package holds server rendering APIs?</summary><p><code>react-dom/server</code> (and <code>react-dom/static</code> for prerendering to static HTML).</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why does a button not respond right after an SSR page appears?</summary><p>The HTML is visible but hydration has not attached the click handler yet; the JS is still loading.</p></details>
+<h3>Advanced</h3>
+<details><summary>What does streaming SSR improve over renderToString?</summary><p><code>renderToString</code> waits for everything and cannot wait for data in Suspense (it sends the fallback). Streaming sends the shell immediately and streams each Suspense boundary's HTML as it resolves; parts can hydrate independently.</p></details>
+<h3>Tricky</h3>
+<details><summary>Does SSR make the page interactive faster than CSR?</summary><p>Not necessarily. It shows content faster; interactivity still waits for JS download and hydration, which can be similar to CSR.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>function App() {
+  console.log("render");
+  useEffect(() =&gt; console.log("effect"), []);
+  return &lt;p&gt;Hi&lt;/p&gt;;
+}
+// server: renderToString(&lt;App /&gt;)   (production, no Strict Mode)
+// client: hydrateRoot(root, &lt;App /&gt;)</code></pre>
+<details><summary>Logs?</summary><pre class="output">Server terminal:  render
+Browser console:  render
+                  effect</pre><p>The effect never runs on the server. With Strict Mode in development, the browser shows each line twice.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<pre><code>function Cart() {
+  const isMobile = typeof window !== "undefined" &amp;&amp; window.innerWidth &lt; 600;
+  return &lt;p&gt;{isMobile ? "Tap to order" : "Click to order"}&lt;/p&gt;;
+}
+// Console: hydration error, text did not match</code></pre>
+<details><summary>Fix</summary><p>The server always renders "Click", a phone client renders "Tap". Render the same first, then switch in an effect:</p>
+<pre><code>const [isMobile, setIsMobile] = useState(false);
+useEffect(() =&gt; setIsMobile(window.innerWidth &lt; 600), []);</code></pre>
+<p>Or use a CSS media query for purely visual differences.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>Your shop's product pages rank poorly and show blank previews. The app is a Vite CSR app.</summary><p>Move public pages to SSR or static prerendering, usually by adopting a framework (React Router 7 framework mode or Next.js) rather than hand-rolling SSR.</p></details>
+<details><summary>An SSR page shows a timestamp that "flickers" after load.</summary><p>Server and client times differ, causing a mismatch and re-render. Render a placeholder and set the time in <code>useEffect</code>, or pass the server's timestamp as data.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write a <code>useIsClient()</code> hook that returns <code>false</code> during SSR and the first client render, then <code>true</code> after hydration.</p>
+<details><summary>Solution</summary>
+<pre><code>import { useEffect, useState } from "react";
+
+export function useIsClient() {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() =&gt; setIsClient(true), []);
+  return isClient;
+}
+
+// usage
+function MapWidget() {
+  const isClient = useIsClient();
+  return isClient ? &lt;InteractiveMap /&gt; : &lt;p&gt;Loading map...&lt;/p&gt;;
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Factor</th><th>CSR</th><th>SSR</th><th>Static generation</th></tr>
+<tr><td>HTML made</td><td>In browser</td><td>On server, per request</td><td>At build time</td></tr>
+<tr><td>First content</td><td>Late</td><td>Early</td><td>Earliest (cached)</td></tr>
+<tr><td>Data freshness</td><td>Live</td><td>Live per request</td><td>Fixed until rebuild</td></tr>
+<tr><td>Hosting</td><td>CDN</td><td>Server/edge</td><td>CDN</td></tr>
+<tr><td>Client entry</td><td><code>createRoot</code></td><td><code>hydrateRoot</code></td><td><code>hydrateRoot</code></td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Task</th><th>API / rule</th></tr>
+<tr><td>Render to string</td><td><code>renderToString(&lt;App /&gt;)</code></td></tr>
+<tr><td>Stream (Node)</td><td><code>renderToPipeableStream</code></td></tr>
+<tr><td>Stream (Web)</td><td><code>renderToReadableStream</code></td></tr>
+<tr><td>Make interactive</td><td><code>hydrateRoot(el, &lt;App /&gt;)</code></td></tr>
+<tr><td>Browser-only code</td><td>Inside <code>useEffect</code></td></tr>
+<tr><td>Matching ids</td><td><code>useId()</code></td></tr>
+<tr><td>Production SSR</td><td>Framework feature (React Router 7, Next.js)</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

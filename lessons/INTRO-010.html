@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-010 · Multi Page Applications</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-010</span><span>Module 2: React Introduction</span><span>Lesson 10</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-009</b></span></div>
+<h1>Multi Page Applications</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-010-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<p>An MPA is a shopping mall: every shop is a separate room (page). Walking to a new shop means leaving the old one. An SPA is one big room where the shelves change.</p>
+<pre class="diagram">
+  MULTI PAGE APP (MPA)                 SINGLE PAGE APP (SPA)
+  --------------------                 ---------------------
+  click "Movies"                       click "Movies"
+     |                                    |
+     v                                    v
+  GET /movies   -&gt; full HTML           JS changes URL (pushState)
+     |                                    |
+  page unloads, screen redraws         fetch('/api/movies') -&gt; JSON
+     |                                    |
+  click "Cart"                         React swaps &lt;Movies /&gt; in place
+     |
+     v
+  GET /cart     -&gt; full HTML           one document, many views
+  (another full page)                  state stays in memory
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Not every site needs a JavaScript app. Blogs, news, docs, and shop product pages are mostly reading.</li>
+<li>Search engines and link previews read finished HTML best.</li>
+<li>An MPA works even with JavaScript slow or off, and each page starts fast.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;!-- Recipe blog built as a pure SPA --&gt;
+&lt;body&gt;
+  &lt;div id="root"&gt;&lt;/div&gt;
+  &lt;script type="module" src="/bundle.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;!-- crawler / chat link preview may see an empty page
+     until all JS downloads and runs --&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;!-- Recipe blog as an MPA: HTML is complete --&gt;
+&lt;body&gt;
+  &lt;h1&gt;Masala Dosa Recipe&lt;/h1&gt;
+  &lt;p&gt;Soak rice and urad dal for 6 hours...&lt;/p&gt;
+  &lt;a href="/recipes/idli"&gt;Next: Idli&lt;/a&gt;
+&lt;/body&gt;
+&lt;!-- readable instantly, by people and bots --&gt;</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li>Every URL is its own HTML document, built on the server or stored as a static file (static site).</li>
+<li>Clicking a link makes the browser throw away the page and load a new one (full page load).</li>
+<li>JavaScript memory is reset on every page; shared data must live on the server, in cookies, or in <code>localStorage</code>.</li>
+<li><b>SEO</b> (search ranking): strong by default, because every page arrives as finished HTML with its own title and meta tags.</li>
+<li><b>Speed</b>: fast first view per page; each navigation pays a full reload (browser cache helps for CSS/JS).</li>
+<li><b>Complexity</b>: simple client; no client router, no global client state.</li>
+<li>React can still be used in an MPA: mount small React widgets (islands) on server-made pages.</li>
+<li>Modern frameworks blend both: server HTML first, then SPA-style navigation (framework feature).</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>MPA navigation is just HTML</h3>
+<pre><code>&lt;!-- /index.html --&gt;
+&lt;a href="/cart.html"&gt;Go to cart&lt;/a&gt;   &lt;!-- browser loads a new document --&gt;
+
+&lt;!-- /cart.html --&gt;
+&lt;a href="/index.html"&gt;Back to menu&lt;/a&gt;</code></pre>
+<h3>Carry data between pages</h3>
+<pre><code>// page 1: save
+localStorage.setItem("cart", JSON.stringify(["Pizza"]));
+
+// page 2: read (memory from page 1 is gone)
+const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");</code></pre>
+<h3>A React island on an MPA page</h3>
+<pre><code>import { createRoot } from "react-dom/client";
+import CartBadge from "./CartBadge.jsx";
+
+// mount React only inside one box on a server-made page
+createRoot(document.getElementById("cart-badge")).render(&lt;CartBadge /&gt;);</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>The same pizza shop built two ways. First as an MPA (two plain HTML files), then as a React SPA in a Vite app.</p>
+<h3>MPA version: index.html</h3>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;Menu · PizzaPoint&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Menu&lt;/h1&gt;
+  &lt;p&gt;Margherita - Rs 249 &lt;button id="add"&gt;Add&lt;/button&gt;&lt;/p&gt;
+  &lt;p&gt;Cart items: &lt;span id="count"&gt;0&lt;/span&gt;&lt;/p&gt;
+  &lt;a href="cart.html"&gt;View cart&lt;/a&gt;
+  &lt;script&gt;
+    const read = () =&gt; JSON.parse(localStorage.getItem("cart") ?? "[]");
+    const count = document.getElementById("count");
+    count.textContent = read().length;
+    document.getElementById("add").onclick = () =&gt; {
+      const cart = [...read(), "Margherita"];
+      localStorage.setItem("cart", JSON.stringify(cart));
+      count.textContent = cart.length;
+    };
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>MPA version: cart.html</h3>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;Cart · PizzaPoint&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Cart&lt;/h1&gt;
+  &lt;ul id="list"&gt;&lt;/ul&gt;
+  &lt;a href="index.html"&gt;Back to menu&lt;/a&gt;
+  &lt;script&gt;
+    const cart = JSON.parse(localStorage.getItem("cart") ?? "[]");
+    document.getElementById("list").innerHTML =
+      cart.map((p) =&gt; "&lt;li&gt;" + p + "&lt;/li&gt;").join("") || "&lt;li&gt;Empty&lt;/li&gt;";
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>SPA version: src/App.jsx (Vite + React)</h3>
+<pre><code>// src/App.jsx
+import { useState } from "react";
+
+function Menu({ onAdd, count, onOpenCart }) {
+  return (
+    &lt;section&gt;
+      &lt;h1&gt;Menu&lt;/h1&gt;
+      &lt;p&gt;Margherita - Rs 249 &lt;button onClick={onAdd}&gt;Add&lt;/button&gt;&lt;/p&gt;
+      &lt;p&gt;Cart items: {count}&lt;/p&gt;
+      &lt;button onClick={onOpenCart}&gt;View cart&lt;/button&gt;
+    &lt;/section&gt;
+  );
+}
+
+function Cart({ items, onBack }) {
+  return (
+    &lt;section&gt;
+      &lt;h1&gt;Cart&lt;/h1&gt;
+      &lt;ul&gt;
+        {items.length ? items.map((p, i) =&gt; &lt;li key={i}&gt;{p}&lt;/li&gt;) : &lt;li&gt;Empty&lt;/li&gt;}
+      &lt;/ul&gt;
+      &lt;button onClick={onBack}&gt;Back to menu&lt;/button&gt;
+    &lt;/section&gt;
+  );
+}
+
+export default function App() {
+  const [view, setView] = useState("menu");
+  const [cart, setCart] = useState([]); // lives in memory, no storage needed
+
+  return view === "menu" ? (
+    &lt;Menu
+      count={cart.length}
+      onAdd={() =&gt; setCart([...cart, "Margherita"])}
+      onOpenCart={() =&gt; setView("cart")}
+    /&gt;
+  ) : (
+    &lt;Cart items={cart} onBack={() =&gt; setView("menu")} /&gt;
+  );
+}</code></pre>
+<div class="callout">The SPA version here swaps views with state only (no URL change) to keep the comparison small. Lesson INTRO-009 shows URL-based switching.</div>
+
+<h2>6. Expected Output</h2>
+<p>Click <b>Add</b> twice, then open the cart. Both versions look the same:</p>
+<div class="ui">
+<h3>Cart</h3>
+<ul><li>Margherita</li><li>Margherita</li></ul>
+<p><a href="#">Back to menu</a></p>
+</div>
+<div class="tablewrap"><table>
+<tr><th>Check in DevTools</th><th>MPA</th><th>SPA</th></tr>
+<tr><td>Network → Doc requests after 2 clicks</td><td>2 (index, cart)</td><td>1 (first load only)</td></tr>
+<tr><td>View Source of cart page</td><td>Real <code>&lt;h1&gt;Cart&lt;/h1&gt;</code></td><td>Empty <code>&lt;div id="root"&gt;</code></td></tr>
+<tr><td>Refresh on cart</td><td>Cart still filled (localStorage)</td><td>Cart resets (memory only)</td></tr>
+</table></div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ MPA
+ 1. GET /index.html        -&gt; server sends full HTML
+ 2. Browser paints Menu    -&gt; inline script reads localStorage
+ 3. Click "Add"            -&gt; localStorage = ["Margherita"]
+ 4. Click "View cart"
+        |
+        v
+    index page UNLOADS (JS variables destroyed)
+        |
+        v
+ 5. GET /cart.html         -&gt; new HTML, new script
+ 6. Script reads localStorage -&gt; renders the list
+
+ SPA
+ 1. GET /                  -&gt; index.html + JS bundle
+ 2. createRoot().render(&lt;App /&gt;) -&gt; Menu
+ 3. Click "Add"            -&gt; setCart -&gt; re-render
+ 4. Click "View cart"      -&gt; setView("cart") -&gt; &lt;Cart /&gt; (no request)
+</pre>
+
+<h2>8. Real-World Application</h2>
+<div class="tablewrap"><table>
+<tr><th>Site</th><th>Good fit</th><th>Why</th></tr>
+<tr><td>News / blog / recipes</td><td>MPA</td><td>SEO and fast first read matter most</td></tr>
+<tr><td>Online shop product pages</td><td>MPA or SSR framework</td><td>Each product must rank in search</td></tr>
+<tr><td>Chat, email, music player</td><td>SPA</td><td>Long sessions, state must persist</td></tr>
+<tr><td>Food delivery: marketing pages + order tracker</td><td>Hybrid</td><td>Public pages need SEO, tracker needs live UI</td></tr>
+</table></div>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Expecting JS variables to survive an MPA page change</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// index.html
+window.cart = ["Pizza"];
+// cart.html
+console.log(window.cart); // undefined - new page, new memory</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// index.html
+localStorage.setItem("cart", JSON.stringify(["Pizza"]));
+// cart.html
+JSON.parse(localStorage.getItem("cart") ?? "[]"); // ["Pizza"]</code></pre></div>
+</div>
+<h3>Mistake 2: "SPA is always faster"</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// one-page landing site shipped as a 400 KB SPA bundle
+// user waits for JS before seeing a single word</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// static HTML page + one small React island where needed
+createRoot(document.getElementById("newsletter"))
+  .render(&lt;NewsletterForm /&gt;);</code></pre></div>
+</div>
+<h3>Mistake 3: Same title on every page</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;title&gt;PizzaPoint&lt;/title&gt;   &lt;!-- on menu.html AND cart.html --&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;title&gt;Menu · PizzaPoint&lt;/title&gt;  &lt;!-- menu.html --&gt;
+&lt;title&gt;Cart · PizzaPoint&lt;/title&gt;  &lt;!-- cart.html --&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Which of these is an MPA navigation: (a) <code>&lt;a href="/about.html"&gt;</code> (b) <code>history.pushState({}, "", "/about")</code>?</p>
+<details><summary>Solution</summary><p>(a). The browser requests and loads a new document. (b) only changes the URL inside an SPA.</p></details>
+<h3>Beginner 2</h3>
+<p>Add a "Clear cart" button to cart.html.</p>
+<details><summary>Solution</summary>
+<pre><code>&lt;button id="clear"&gt;Clear cart&lt;/button&gt;
+&lt;script&gt;
+  document.getElementById("clear").onclick = () =&gt; {
+    localStorage.removeItem("cart");
+    location.reload(); // reload this page to redraw
+  };
+&lt;/script&gt;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Make the React SPA cart survive a refresh, like the MPA one.</p>
+<details><summary>Solution</summary>
+<pre><code>import { useEffect, useState } from "react";
+
+const [cart, setCart] = useState(
+  () =&gt; JSON.parse(localStorage.getItem("cart") ?? "[]")
+);
+useEffect(() =&gt; {
+  localStorage.setItem("cart", JSON.stringify(cart));
+}, [cart]);</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>A movie review site has 50,000 movie pages and must rank on search engines. Pick MPA, pure SPA, or SSR framework and justify in 2 bullets.</p>
+<details><summary>Solution</summary><ul><li>MPA or SSR framework: every movie URL arrives as full HTML with its own title/description.</li><li>A pure SPA would send an empty shell; some crawlers and link previews will not run the JS.</li></ul></details>
+<h3>Challenge</h3>
+<p>Build a <code>CartBadge</code> React island that reads the cart from <code>localStorage</code> and updates when another tab changes it.</p>
+<details><summary>Solution</summary>
+<pre><code>// CartBadge.jsx
+import { useEffect, useState } from "react";
+
+const read = () =&gt; JSON.parse(localStorage.getItem("cart") ?? "[]").length;
+
+export default function CartBadge() {
+  const [count, setCount] = useState(read);
+  useEffect(() =&gt; {
+    // "storage" fires in OTHER tabs when localStorage changes
+    const onStorage = (e) =&gt; { if (e.key === "cart") setCount(read()); };
+    window.addEventListener("storage", onStorage);
+    return () =&gt; window.removeEventListener("storage", onStorage);
+  }, []);
+  return &lt;span&gt;Cart ({count})&lt;/span&gt;;
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>MPA = one HTML document per URL; each click = full page load.</li>
+<li>SEO: MPA strong by default; pure SPA needs SSR or prerendering.</li>
+<li>Speed: MPA fast first view; SPA faster later navigation.</li>
+<li>Complexity: MPA simpler client; SPA needs router and client state.</li>
+<li>MPA pages share data via server, cookies or <code>localStorage</code>.</li>
+<li>React fits both: full SPA, or islands inside MPA pages.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What is a Multi Page Application?</summary><p>A site where each URL returns a separate HTML document and every navigation triggers a full page load.</p></details>
+<details><summary>Q2. Why are MPAs better for SEO by default?</summary><p>Crawlers receive complete HTML with unique titles and meta tags without needing to run JavaScript.</p></details>
+<details><summary>Q3. When would you choose an SPA over an MPA?</summary><p>For app-like products with long sessions and rich interaction: chat, email, editors, dashboards behind login.</p></details>
+<details><summary>Q4. Can you use React in an MPA?</summary><p>Yes. Mount React with <code>createRoot</code> into specific elements on each page (islands), or use a framework that renders pages on the server.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-009.html">INTRO-009 Single Page Applications</a>
+<a href="INTRO-011.html">INTRO-011 Client-side rendering</a>
+<a href="INTRO-012.html">INTRO-012 Server-side rendering</a>
+<a href="INTRO-009.html#rev">INTRO-009 Revision</a>
+<a href="INTRO-010.html#rev">INTRO-010 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">MPA: every link loads a new HTML page from the server. Great SEO and fast first view, simple client, but every click reloads and JS memory resets. SPA: one page, smooth navigation, heavier start, more client complexity.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;a href="/cart.html"&gt;Cart&lt;/a&gt;                        // MPA navigation
+localStorage.setItem("k", JSON.stringify(v));      // share data across pages
+JSON.parse(localStorage.getItem("k") ?? "[]");
+createRoot(document.getElementById("box")).render(&lt;Widget /&gt;); // React island</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li>Each URL = its own document; browser does a full load.</li>
+<li>Back/Forward may restore pages instantly from the browser's back-forward cache.</li>
+<li>JS state does not survive page changes.</li>
+<li>Strong SEO and link previews out of the box.</li>
+<li>Less JavaScript sent = better on slow phones.</li>
+<li>Every navigation re-renders header/footer.</li>
+<li>No client-side router needed.</li>
+<li>Hybrid (SSR frameworks) gives server HTML plus SPA navigation.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Name two MPA examples.</summary><p>A news site and a documentation site: each article is its own HTML page.</p></details>
+<h3>Intermediate</h3>
+<details><summary>How do MPA pages keep a logged-in user?</summary><p>The server sets a session cookie; the browser sends it with each page request.</p></details>
+<h3>Advanced</h3>
+<details><summary>What are "islands" in an MPA?</summary><p>Mostly static server HTML with small, independent interactive components mounted only where needed, so most of the page ships no JS.</p></details>
+<h3>Tricky</h3>
+<details><summary>"MPA means no JavaScript." True?</summary><p>False. MPAs can use plenty of JS per page; the difference is how navigation works, not whether JS exists.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>// page1.html
+let visits = 1;
+sessionStorage.setItem("visits", "1");
+// user clicks &lt;a href="page2.html"&gt;
+// page2.html
+console.log(typeof visits, sessionStorage.getItem("visits"));</code></pre>
+<details><summary>Answer</summary><pre class="output">undefined 1</pre><p><code>visits</code> died with page1; <code>sessionStorage</code> lives for the tab.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<pre><code>&lt;!-- cart.html --&gt;
+&lt;script&gt;
+  document.getElementById("list").textContent = "loaded";
+&lt;/script&gt;
+&lt;ul id="list"&gt;&lt;/ul&gt;
+// Error: Cannot set properties of null</code></pre>
+<details><summary>Fix</summary><p>The script runs before <code>&lt;ul&gt;</code> exists. Move the script below the element, or use <code>&lt;script defer src="..."&gt;</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A restaurant wants a menu site that shows up on search and works on cheap phones. Choice?</summary><p>MPA (static pages), maybe with one React island for "add to order".</p></details>
+<details><summary>A team chat tool with live typing indicators. Choice?</summary><p>SPA: persistent connection and in-memory state across views.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write a helper <code>cartStore</code> with <code>get()</code>, <code>add(item)</code>, <code>clear()</code> that any MPA page can use.</p>
+<details><summary>Solution</summary>
+<pre><code>export const cartStore = {
+  get: () =&gt; JSON.parse(localStorage.getItem("cart") ?? "[]"),
+  add(item) {
+    localStorage.setItem("cart", JSON.stringify([...this.get(), item]));
+  },
+  clear: () =&gt; localStorage.removeItem("cart"),
+};</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Factor</th><th>MPA</th><th>SPA (client-rendered)</th></tr>
+<tr><td>SEO</td><td>Strong by default</td><td>Needs SSR/prerender for reliability</td></tr>
+<tr><td>First load</td><td>Fast, small</td><td>Slower, bigger JS</td></tr>
+<tr><td>Next navigation</td><td>Full reload</td><td>Instant view swap</td></tr>
+<tr><td>Client complexity</td><td>Low</td><td>Router, state, code-splitting</td></tr>
+<tr><td>State across pages</td><td>Server/cookies/storage</td><td>In memory</td></tr>
+<tr><td>Works with JS off</td><td>Mostly yes</td><td>No</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Remember</th><th>One-liner</th></tr>
+<tr><td>Definition</td><td>New HTML document per URL</td></tr>
+<tr><td>Best for</td><td>Content sites, SEO pages</td></tr>
+<tr><td>Weak at</td><td>App-like, long sessions</td></tr>
+<tr><td>Share data</td><td>Cookies, localStorage, server</td></tr>
+<tr><td>React in MPA</td><td>Islands via <code>createRoot</code></td></tr>
+<tr><td>Best of both</td><td>SSR framework (framework feature)</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

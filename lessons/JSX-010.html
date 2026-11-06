@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-010 · htmlFor</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-010</span><span>Module 4: JSX Fundamentals</span><span>Lesson 10</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-009</b></span></div>
+<h1>htmlFor</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-010-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a name tag stuck on a parcel at a food-delivery counter. The tag says "Order #42" and points at exactly one bag.</li>
+<li>A <b>label</b> is that tag for a form field. It names the field and points at it by its <code>id</code> (the link is called <b>label association</b>).</li>
+<li>In HTML the pointer is the <code>for</code> attribute. In JSX you write <code>htmlFor</code>, because <code>for</code> is a JavaScript keyword (a <b>reserved word</b>).</li>
+</ul>
+<pre class="diagram">
+   &lt;label htmlFor="email"&gt;Email&lt;/label&gt;          &lt;input id="email" /&gt;
+          ───────┬───────                               ────┬────
+                 │        must be the SAME text             │
+                 └──────────────── "email" ─────────────────┘
+                                     │
+                                     ▼
+   Click the word "Email"  ──►  cursor jumps into the box (focus)
+   Screen reader on box    ──►  reads out "Email, edit text"
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>A label that is not linked is just text sitting next to a box. Screen readers (<b>assistive technology</b>) cannot tell what the box is for.</li>
+<li>Linked labels give a bigger click area: tapping the word "Remember me" ticks the tiny checkbox. Great on phones.</li>
+<li>Browser form tools and automated tests can find fields by their label text.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (unlinked)</span><pre><code>// Looks fine, but the label is not linked
+function Login() {
+  return (
+    &lt;form&gt;
+      &lt;label&gt;Email&lt;/label&gt;
+      &lt;input type="email" /&gt;
+      &lt;input type="checkbox" /&gt;
+      &lt;span&gt;Remember me&lt;/span&gt;
+    &lt;/form&gt;
+  );
+}
+// Click "Remember me" → nothing happens
+// Screen reader: "edit text" (no name)</code></pre></div>
+<div><span class="good">After (htmlFor + id)</span><pre><code>function Login() {
+  return (
+    &lt;form&gt;
+      &lt;label htmlFor="email"&gt;Email&lt;/label&gt;
+      &lt;input id="email" type="email" /&gt;
+      &lt;input id="remember" type="checkbox" /&gt;
+      &lt;label htmlFor="remember"&gt;Remember me&lt;/label&gt;
+    &lt;/form&gt;
+  );
+}
+// Click "Remember me" → checkbox toggles
+// Screen reader: "Email, edit text"</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><code>htmlFor</code> on a <code>&lt;label&gt;</code> becomes the HTML <code>for</code> attribute in the real page (the <b>DOM</b>).</li>
+<li>Its value must exactly match the <code>id</code> of one field (case-sensitive).</li>
+<li>Works with <code>&lt;input&gt;</code>, <code>&lt;select&gt;</code>, <code>&lt;textarea&gt;</code>, <code>&lt;meter&gt;</code>, <code>&lt;progress&gt;</code>, <code>&lt;output&gt;</code> (<b>labelable elements</b>).</li>
+<li>Second way: put the field <b>inside</b> the label (<b>implicit association</b>). No <code>id</code> needed.</li>
+<li>Each <code>id</code> must be unique on the whole page. A reusable component with a fixed <code>id</code> breaks when shown twice.</li>
+<li>Fix that with the <code>useId</code> hook (React 18+): it gives a unique, stable id per component instance.</li>
+<li>Name comes from the DOM itself: in plain JS, <code>labelEl.htmlFor</code> is the property for the <code>for</code> attribute too.</li>
+<li>Writing <code>for</code> in JSX gives a development warning ("Invalid DOM property `for`. Did you mean `htmlFor`?"). Always use <code>htmlFor</code>.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. Explicit: label points at the field's id
+&lt;label htmlFor="city"&gt;City&lt;/label&gt;
+&lt;input id="city" name="city" /&gt;
+
+// 2. Implicit: field nested inside the label (no id needed)
+&lt;label&gt;
+  City &lt;input name="city" /&gt;
+&lt;/label&gt;
+
+// 3. Dynamic id from a variable
+const fieldId = 'pizza-size';
+&lt;label htmlFor={fieldId}&gt;Size&lt;/label&gt;
+&lt;select id={fieldId}&gt;...&lt;/select&gt;
+
+// 4. Unique ids in reusable components
+import { useId } from 'react';
+function Field({ label }) {
+  const id = useId();
+  return (
+    &lt;&gt;
+      &lt;label htmlFor={id}&gt;{label}&lt;/label&gt;
+      &lt;input id={id} /&gt;
+    &lt;/&gt;
+  );
+}
+
+// 5. One useId, several related ids (suffixes)
+const base = useId();
+&lt;input id={base + '-qty'} aria-describedby={base + '-hint'} /&gt;
+&lt;small id={base + '-hint'}&gt;Max 10 per order&lt;/small&gt;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A food-delivery checkout form. The <code>Field</code> component is used three times, and <code>useId</code> keeps every id unique. In a Vite React app, replace <code>src/App.jsx</code>:</p>
+<pre><code>// src/App.jsx
+import { useId, useState } from 'react';
+
+// Reusable labelled input. useId gives each copy its own id.
+function Field({ label, hint, ...inputProps }) {
+  const id = useId();
+  const hintId = id + '-hint';
+  return (
+    &lt;p&gt;
+      &lt;label htmlFor={id}&gt;{label}&lt;/label&gt;
+      &lt;br /&gt;
+      &lt;input id={id} aria-describedby={hint ? hintId : undefined} {...inputProps} /&gt;
+      {hint &amp;&amp; &lt;small id={hintId}&gt; {hint}&lt;/small&gt;}
+    &lt;/p&gt;
+  );
+}
+
+export default function App() {
+  const [contactless, setContactless] = useState(false);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.currentTarget));
+    console.log('Order details:', data);
+  }
+
+  return (
+    &lt;form onSubmit={handleSubmit} style={{ fontFamily: 'sans-serif', padding: 16 }}&gt;
+      &lt;h2&gt;Delivery details&lt;/h2&gt;
+
+      &lt;Field label="Full name" name="name" required /&gt;
+      &lt;Field label="Phone" name="phone" type="tel" hint="10 digits" /&gt;
+      &lt;Field label="Flat / House no." name="flat" /&gt;
+
+      {/* Explicit link with a fixed id: fine because it appears once */}
+      &lt;p&gt;
+        &lt;label htmlFor="slot"&gt;Delivery slot&lt;/label&gt;
+        &lt;br /&gt;
+        &lt;select id="slot" name="slot" defaultValue="asap"&gt;
+          &lt;option value="asap"&gt;As soon as possible&lt;/option&gt;
+          &lt;option value="7pm"&gt;7:00 PM&lt;/option&gt;
+          &lt;option value="8pm"&gt;8:00 PM&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/p&gt;
+
+      {/* Checkbox: clicking the text toggles the box */}
+      &lt;p&gt;
+        &lt;input
+          id="contactless"
+          name="contactless"
+          type="checkbox"
+          checked={contactless}
+          onChange={(e) =&gt; setContactless(e.target.checked)}
+        /&gt;
+        &lt;label htmlFor="contactless"&gt; Contactless delivery&lt;/label&gt;
+      &lt;/p&gt;
+
+      {/* Implicit link: textarea nested inside label */}
+      &lt;p&gt;
+        &lt;label&gt;
+          Note for the rider
+          &lt;br /&gt;
+          &lt;textarea name="note" rows={2} /&gt;
+        &lt;/label&gt;
+      &lt;/p&gt;
+
+      &lt;button type="submit"&gt;Place order&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+<pre><code>// src/main.jsx (Vite default)
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+
+createRoot(document.getElementById('root')).render(
+  &lt;StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/StrictMode&gt;
+);</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3 style="margin-top:0">Delivery details</h3>
+<p><label for="d10a">Full name</label><br><input id="d10a"></p>
+<p><label for="d10b">Phone</label><br><input id="d10b" type="tel" aria-describedby="d10bh"><small id="d10bh"> 10 digits</small></p>
+<p><label for="d10c">Flat / House no.</label><br><input id="d10c"></p>
+<p><label for="d10d">Delivery slot</label><br><select id="d10d"><option>As soon as possible</option><option>7:00 PM</option><option>8:00 PM</option></select></p>
+<p><input id="d10e" type="checkbox"><label for="d10e"> Contactless delivery</label></p>
+<p><label>Note for the rider<br><textarea rows="2"></textarea></label></p>
+<p><button type="button">Place order</button></p>
+</div>
+<ul>
+<li>Click any label text (try "Contactless delivery") → focus moves to its field, the checkbox toggles.</li>
+<li>Fill the form and press <b>Place order</b> → the console shows:</li>
+</ul>
+<pre class="output">Order details: {name: 'Asha', phone: '9876543210', flat: 'B-12', slot: '7pm', contactless: 'on', note: 'Ring twice'}</pre>
+<ul>
+<li>DevTools → Elements: labels show <code>for="..."</code> (not <code>htmlFor</code>). The three <code>Field</code> ids are auto-generated and different from each other.</li>
+<li>The exact text of a <code>useId</code> value is an internal detail and can change between React versions. Never hard-code it or use it in CSS selectors.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. Vite compiles  &lt;label htmlFor={id}&gt;Phone&lt;/label&gt;
+       ──► jsx("label", { htmlFor: id, children: "Phone" })   (react/jsx-runtime)
+        │
+        ▼
+ 2. Field runs → useId() returns a unique id for THIS Field instance
+       Field #1 → idA     Field #2 → idB     Field #3 → idC
+        │
+        ▼
+ 3. react-dom creates the real &lt;label&gt; and maps the prop name:
+       htmlFor  ──►  for          (same as label.htmlFor = idB in plain JS)
+        │
+        ▼
+ 4. Browser links &lt;label for="idB"&gt; ↔ &lt;input id="idB"&gt;
+        │
+        ├──► click on label  → input gets focus / checkbox toggles
+        └──► accessibility tree: input's name = "Phone"
+        │
+        ▼
+ 5. Re-renders keep the same id (useId is stable), so the link never breaks
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Shop checkout</b>: address, pincode and card-holder fields all need labels to pass accessibility checks.</li>
+<li><b>Todo app</b>: each todo row has a checkbox; the todo text is the label, so clicking the text ticks it off.</li>
+<li><b>Weather search</b>: a "City" label linked to the search box; tests use <code>getByLabelText('City')</code> (React Testing Library) to find it.</li>
+<li><b>Design systems</b>: a shared <code>&lt;TextField&gt;</code> uses <code>useId</code> so the same component can appear 20 times on a settings page.</li>
+<li><b>Chat settings</b>: toggle switches like "Mute notifications" are checkboxes with linked labels.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Writing <code>for</code> instead of <code>htmlFor</code></h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;label for="email"&gt;Email&lt;/label&gt;
+&lt;input id="email" /&gt;
+// Dev warning: Invalid DOM property `for`.
+// Did you mean `htmlFor`?</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;label htmlFor="email"&gt;Email&lt;/label&gt;
+&lt;input id="email" /&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Hard-coded id inside a reusable component</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Qty({ label }) {
+  return (
+    &lt;&gt;
+      &lt;label htmlFor="qty"&gt;{label}&lt;/label&gt;
+      &lt;input id="qty" type="number" /&gt;
+    &lt;/&gt;
+  );
+}
+&lt;Qty label="Burgers" /&gt;
+&lt;Qty label="Fries" /&gt;
+// Two id="qty" → clicking "Fries"
+// focuses the Burgers box</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { useId } from 'react';
+function Qty({ label }) {
+  const id = useId();
+  return (
+    &lt;&gt;
+      &lt;label htmlFor={id}&gt;{label}&lt;/label&gt;
+      &lt;input id={id} type="number" /&gt;
+    &lt;/&gt;
+  );
+}</code></pre></div>
+</div>
+<h3>Mistake 3: Mismatched text</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;label htmlFor="userName"&gt;Name&lt;/label&gt;
+&lt;input id="username" /&gt;
+// "userName" ≠ "username" (case-sensitive)</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;label htmlFor="username"&gt;Name&lt;/label&gt;
+&lt;input id="username" /&gt;</code></pre></div>
+</div>
+<h3>Mistake 4: Using useId for list keys</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>todos.map((t) =&gt; {
+  const id = useId(); // hook inside a loop!
+  return &lt;li key={id}&gt;{t.text}&lt;/li&gt;;
+});</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// keys come from your data
+todos.map((t) =&gt; (
+  &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;
+));</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Write a labelled "Search movies" input with id <code>movie-search</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;label htmlFor="movie-search"&gt;Search movies&lt;/label&gt;
+&lt;input id="movie-search" type="search" /&gt;</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Rewrite it using implicit association (no id).</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;label&gt;
+  Search movies &lt;input type="search" /&gt;
+&lt;/label&gt;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Build a <code>TodoItem</code> that takes <code>text</code> and <code>done</code>, renders a checkbox, and makes the text clickable to toggle it. It must work when rendered many times.</p>
+<details><summary>Show solution</summary>
+<pre><code>import { useId } from 'react';
+
+function TodoItem({ text, done, onToggle }) {
+  const id = useId();
+  return (
+    &lt;li&gt;
+      &lt;input id={id} type="checkbox" checked={done} onChange={onToggle} /&gt;
+      &lt;label htmlFor={id}&gt; {text}&lt;/label&gt;
+    &lt;/li&gt;
+  );
+}</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>A pincode field needs a label and a hint "6 digits" that screen readers also read. Use one <code>useId</code> call.</p>
+<details><summary>Show solution</summary>
+<pre><code>function Pincode() {
+  const id = useId();
+  return (
+    &lt;p&gt;
+      &lt;label htmlFor={id + '-pin'}&gt;Pincode&lt;/label&gt;
+      &lt;input id={id + '-pin'} inputMode="numeric"
+             aria-describedby={id + '-hint'} /&gt;
+      &lt;small id={id + '-hint'}&gt;6 digits&lt;/small&gt;
+    &lt;/p&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Build a pizza-size picker: radio buttons Small / Medium / Large from an array, each with a linked label, grouped under a <code>&lt;fieldset&gt;</code> with a <code>&lt;legend&gt;</code>. Show the chosen size below.</p>
+<details><summary>Show solution</summary>
+<pre><code>import { useId, useState } from 'react';
+
+const sizes = ['Small', 'Medium', 'Large'];
+
+export default function SizePicker() {
+  const base = useId();
+  const [size, setSize] = useState('Medium');
+  return (
+    &lt;fieldset&gt;
+      &lt;legend&gt;Pizza size&lt;/legend&gt;
+      {sizes.map((s) =&gt; {
+        const id = `${base}-${s}`;
+        return (
+          &lt;div key={s}&gt;
+            &lt;input
+              type="radio"
+              id={id}
+              name={base + '-size'}
+              value={s}
+              checked={size === s}
+              onChange={() =&gt; setSize(s)}
+            /&gt;
+            &lt;label htmlFor={id}&gt; {s}&lt;/label&gt;
+          &lt;/div&gt;
+        );
+      })}
+      &lt;p&gt;Chosen: {size}&lt;/p&gt;
+    &lt;/fieldset&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>JSX uses <code>htmlFor</code>; the DOM gets <code>for</code>.</li>
+<li>Reason: <code>for</code> is a reserved JavaScript word.</li>
+<li><code>htmlFor</code> value = the field's <code>id</code>, exactly.</li>
+<li>Or nest the field inside the label (no id needed).</li>
+<li>Ids must be unique per page → use <code>useId</code> in reusable components.</li>
+<li>Never use <code>useId</code> for list keys; call it at the top of the component.</li>
+<li>Linked labels = bigger click area + screen-reader names.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why does React use <code>htmlFor</code> instead of <code>for</code>?</summary>
+<p><code>for</code> is a reserved word in JavaScript. React follows the DOM property name, which is also <code>htmlFor</code> (<code>label.htmlFor</code>). React DOM turns it into the <code>for</code> attribute.</p>
+</details>
+<details><summary>What are the two ways to associate a label with an input?</summary>
+<p>Explicit: <code>&lt;label htmlFor="x"&gt;</code> + <code>&lt;input id="x"&gt;</code>. Implicit: put the input inside the <code>&lt;label&gt;</code>. Explicit is more flexible for layouts where the label and field are far apart.</p>
+</details>
+<details><summary>Why not generate ids with <code>Math.random()</code>?</summary>
+<p>A new random value appears on every render, and server-rendered HTML would not match the client (a <b>hydration mismatch</b>). <code>useId</code> is stable across renders and matches between server and client.</p>
+</details>
+<details><summary>Can you use <code>useId</code> as a list key?</summary>
+<p>No. Keys must come from your data. Hooks also cannot be called inside loops.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-008.html">JSX-008 · JSX attributes</a>
+<a href="JSX-009.html">JSX-009 · Previous lesson</a>
+<a href="JSX-011.html">JSX-011 · Inline styles</a>
+<a href="JSX-012.html">JSX-012 · JSX fragments</a>
+<a href="JSX-010.html#rev">JSX-010-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">A label names a form field. Link it with <code>htmlFor</code> (JSX) → <code>for</code> (HTML), matching the field's <code>id</code>, or wrap the field inside the label. In reusable components, make ids with <code>useId</code> so they stay unique.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;label htmlFor="email"&gt;Email&lt;/label&gt;
+&lt;input id="email" /&gt;
+
+&lt;label&gt;Email &lt;input /&gt;&lt;/label&gt;
+
+const id = useId();
+&lt;label htmlFor={id}&gt;Email&lt;/label&gt;
+&lt;input id={id} /&gt;</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li><code>htmlFor</code> → <code>for</code> in the DOM.</li>
+<li><code>for</code> in JSX triggers a dev warning; don't use it.</li>
+<li>Value must match an <code>id</code> exactly (case-sensitive).</li>
+<li>Implicit association: field inside label.</li>
+<li>Ids must be unique on the page.</li>
+<li><code>useId</code> (React 18+) gives stable, unique ids; works with server rendering.</li>
+<li>Derive extra ids from one <code>useId</code> with suffixes.</li>
+<li>Don't use <code>useId</code> for keys or CSS selectors.</li>
+<li>Clicking a linked label focuses the field or toggles a checkbox/radio.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What does <code>htmlFor</code> render as?</summary>
+<p>The HTML <code>for</code> attribute on the <code>&lt;label&gt;</code>.</p>
+</details>
+<details><summary>Which elements can a label point to?</summary>
+<p>Labelable elements: <code>input</code> (not <code>type="hidden"</code>), <code>select</code>, <code>textarea</code>, <code>button</code>, <code>meter</code>, <code>output</code>, <code>progress</code>.</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>When do you need <code>useId</code>?</summary>
+<p>When a component that renders an id may appear more than once, or when you server-render and need ids that match on the client.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>How do you give a field both a label and a description?</summary>
+<p>Label via <code>htmlFor</code>/<code>id</code>; description via <code>aria-describedby</code> pointing at the hint element's id. Both ids can come from one <code>useId</code> plus suffixes.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary>Does implicit association need <code>htmlFor</code>?</summary>
+<p>No. The nested field is associated automatically. Adding <code>htmlFor</code> is allowed, but it must then point at that same field.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary>What attribute appears in DevTools? <code>&lt;label htmlFor="q"&gt;Q&lt;/label&gt;</code></summary>
+<pre class="output">&lt;label for="q"&gt;Q&lt;/label&gt;</pre>
+</details>
+<details><summary>Two <code>&lt;Field /&gt;</code> components each call <code>useId()</code>. Are the ids equal?</summary>
+<p>No. Each component instance gets a different id.</p>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>Clicking "Fries" focuses the "Burgers" box. Why?</summary>
+<p>Both inputs share the same hard-coded <code>id</code>. The browser uses the first match. Use <code>useId</code>.</p>
+</details>
+<details><summary>Clicking the label does nothing. Code: <code>&lt;label htmlFor="Phone"&gt;</code> / <code>&lt;input id="phone"&gt;</code></summary>
+<p>Case mismatch. Ids are case-sensitive — make both <code>phone</code>.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A settings page renders the same <code>Toggle</code> 15 times. How do you link labels?</summary>
+<p>Call <code>useId()</code> inside <code>Toggle</code>; use it as both the checkbox <code>id</code> and the label's <code>htmlFor</code>.</p>
+</details>
+<details><summary>Design puts the label in one grid column and the input in another. Which association?</summary>
+<p>Explicit (<code>htmlFor</code> + <code>id</code>), because the elements cannot be nested.</p>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Labelled weather search</h3>
+<details><summary>Show solution</summary>
+<pre><code>export default function App() {
+  return (
+    &lt;form&gt;
+      &lt;label htmlFor="city"&gt;City&lt;/label&gt;
+      &lt;input id="city" name="city" placeholder="e.g. Pune" /&gt;
+      &lt;button&gt;Get weather&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge 2: Reusable <code>Checkbox</code></h3>
+<details><summary>Show solution</summary>
+<pre><code>import { useId } from 'react';
+
+function Checkbox({ label, ...rest }) {
+  const id = useId();
+  return (
+    &lt;div&gt;
+      &lt;input id={id} type="checkbox" {...rest} /&gt;
+      &lt;label htmlFor={id}&gt; {label}&lt;/label&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td><code>for</code> vs <code>htmlFor</code></td><td>HTML attribute vs JSX/DOM property name</td></tr>
+<tr><td>Explicit vs implicit</td><td>Linked by id vs field nested inside label</td></tr>
+<tr><td><code>useId</code> vs <code>Math.random()</code></td><td>Stable + SSR-safe vs changes every render</td></tr>
+<tr><td><code>useId</code> vs list key</td><td>Accessibility ids vs data identity for lists</td></tr>
+<tr><td><code>aria-label</code> vs <code>&lt;label&gt;</code></td><td>Invisible name vs visible, clickable name</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Goal</th><th>Write</th></tr>
+<tr><td>Link label</td><td><code>&lt;label htmlFor="x"&gt;</code> + <code>id="x"</code></td></tr>
+<tr><td>No id needed</td><td><code>&lt;label&gt;Name &lt;input /&gt;&lt;/label&gt;</code></td></tr>
+<tr><td>Unique id</td><td><code>const id = useId();</code></td></tr>
+<tr><td>Several ids</td><td><code>id + '-hint'</code></td></tr>
+<tr><td>Description</td><td><code>aria-describedby={hintId}</code></td></tr>
+<tr><td>Group radios</td><td><code>&lt;fieldset&gt;&lt;legend&gt;</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

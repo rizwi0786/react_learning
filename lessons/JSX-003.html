@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-003 · JSX vs HTML</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-003</span><span>Module 4: JSX Fundamentals</span><span>Lesson 3</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-002</b></span></div>
+<h1>JSX vs HTML</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-003-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>JSX and HTML are like <b>British vs American English</b>: 95% the same words, but a few spellings differ (<i>colour</i> vs <i>color</i>).</li>
+<li>Copy-paste HTML into JSX and most of it works — the few differences cause most beginner errors.</li>
+</ul>
+<pre class="diagram">
+      HTML                               JSX
+ ┌──────────────────────────┐      ┌──────────────────────────────────┐
+ │ class="card"             │ ───► │ className="card"                 │
+ │ for="email"              │ ───► │ htmlFor="email"                  │
+ │ onclick="buy()"          │ ───► │ onClick={buy}                    │
+ │ tabindex="0"             │ ───► │ tabIndex={0}                     │
+ │ style="color:red"        │ ───► │ style={{ color: 'red' }}         │
+ │ &lt;img src="a.png"&gt;        │ ───► │ &lt;img src="a.png" /&gt;              │
+ │ &lt;br&gt;                     │ ───► │ &lt;br /&gt;                           │
+ │ &lt;!-- note --&gt;            │ ───► │ {/* note */}                     │
+ │ aria-label / data-id     │ ───► │ aria-label / data-id (unchanged) │
+ └──────────────────────────┘      └──────────────────────────────────┘
+</pre>
+<div class="callout">Why the changes? JSX is <b>JavaScript</b>. <code>class</code> and <code>for</code> are reserved JS words, and React props follow the JS/DOM property names (<code>element.className</code>, <code>element.tabIndex</code>).</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Pasting HTML from a design mock straight into a component often throws errors or warnings.</li>
+<li>Knowing the rules lets you convert HTML in seconds and read React warnings correctly.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Raw HTML pasted into App.jsx
+return (
+  &lt;div class="login"&gt;
+    &lt;label for="email"&gt;Email&lt;/label&gt;
+    &lt;input id="email" type="email"&gt;
+    &lt;button onclick="login()"
+            style="color: white"&gt;Login&lt;/button&gt;
+  &lt;/div&gt;
+);
+// ✗ Syntax error: &lt;input&gt; not closed</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>return (
+  &lt;div className="login"&gt;
+    &lt;label htmlFor="email"&gt;Email&lt;/label&gt;
+    &lt;input id="email" type="email" /&gt;
+    &lt;button onClick={login}
+            style={{ color: 'white' }}&gt;Login&lt;/button&gt;
+  &lt;/div&gt;
+);</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>className</b> instead of <code>class</code>; <b>htmlFor</b> instead of <code>for</code>.</li>
+<li><b>camelCase</b> for multi-word attributes and all events: <code>onClick</code>, <code>onChange</code>, <code>tabIndex</code>, <code>maxLength</code>, <code>autoComplete</code>.</li>
+<li>Exceptions: <code>aria-*</code> and <code>data-*</code> keep their dashes.</li>
+<li><b>Every tag must close</b>: <code>&lt;img /&gt;</code>, <code>&lt;input /&gt;</code>, <code>&lt;br /&gt;</code>, <code>&lt;hr /&gt;</code>. Any element may self-close: <code>&lt;div /&gt;</code>.</li>
+<li><b>style</b> takes an object, keys in camelCase: <code>style={{ backgroundColor: 'teal', fontSize: 18 }}</code> (numbers → <code>px</code> for most properties).</li>
+<li>Events take a <b>function</b>, not a string: <code>onClick={addToCart}</code>.</li>
+<li><b>One parent</b> per returned JSX (use a Fragment <code>&lt;&gt;…&lt;/&gt;</code> if no wrapper is wanted).</li>
+<li>Dynamic values go in <code>{ }</code>; comments are <code>{/* … */}</code>.</li>
+<li>Form defaults: <code>defaultValue</code> / <code>defaultChecked</code> for uncontrolled inputs; <code>value</code> needs an <code>onChange</code> (or <code>readOnly</code>).</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// Attributes
+&lt;div className="cart" id="cart-1" data-items="3" aria-live="polite" /&gt;
+
+// Label linked to input
+&lt;label htmlFor="qty"&gt;Qty&lt;/label&gt;
+&lt;input id="qty" type="number" maxLength={2} autoFocus /&gt;
+
+// Boolean attributes
+&lt;button disabled&gt;Sold out&lt;/button&gt;          // disabled={true}
+&lt;button disabled={!inStock}&gt;Buy&lt;/button&gt;
+
+// Inline style (object, camelCase)
+&lt;p style={{ color: 'green', marginTop: 8 }}&gt;Delivered&lt;/p&gt;
+
+// Events
+&lt;button onClick={() =&gt; setQty(qty + 1)}&gt;+&lt;/button&gt;
+
+// Comment
+{/* only inside braces */}
+
+// Fragment (no extra DOM node)
+&lt;&gt;
+  &lt;h2&gt;Title&lt;/h2&gt;
+  &lt;p&gt;Body&lt;/p&gt;
+&lt;/&gt;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A newsletter sign-up for a movie site, converted from HTML to JSX. Vite React app, replace <code>src/App.jsx</code>.</p>
+<pre><code>// src/App.jsx
+import { useState } from 'react';
+
+export default function App() {
+  const [email, setEmail] = useState('');
+  const [agree, setAgree] = useState(false);
+  const [done, setDone] = useState(false);
+
+  function handleSubmit(e) {
+    e.preventDefault();          // stop page reload
+    setDone(true);
+  }
+
+  const boxStyle = {
+    maxWidth: 320,               // → 320px
+    padding: 16,
+    border: '1px solid #ccc',
+    borderRadius: 8,
+  };
+
+  return (
+    &lt;&gt;
+      {/* HTML: &lt;h1 class="title"&gt; */}
+      &lt;h1 className="title"&gt;🎬 CineWeekly&lt;/h1&gt;
+
+      &lt;form style={boxStyle} onSubmit={handleSubmit}&gt;
+        &lt;label htmlFor="email"&gt;Email&lt;/label&gt;
+        &lt;br /&gt;
+        &lt;input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) =&gt; setEmail(e.target.value)}
+          autoComplete="email"
+          aria-describedby="hint"
+        /&gt;
+        &lt;p id="hint" style={{ fontSize: 12, color: 'gray' }}&gt;
+          One email per week. No spam.
+        &lt;/p&gt;
+
+        &lt;label&gt;
+          &lt;input
+            type="checkbox"
+            checked={agree}
+            onChange={(e) =&gt; setAgree(e.target.checked)}
+          /&gt;{' '}
+          I agree
+        &lt;/label&gt;
+        &lt;br /&gt;
+
+        &lt;button type="submit" disabled={!agree || email === ''} tabIndex={0}&gt;
+          Subscribe
+        &lt;/button&gt;
+      &lt;/form&gt;
+
+      {done &amp;&amp; &lt;p data-testid="thanks"&gt;Thanks, {email}! 🍿&lt;/p&gt;}
+    &lt;/&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3 style="margin-top:0">🎬 CineWeekly</h3>
+<div style="max-width:320px;padding:16px;border:1px solid var(--line);border-radius:8px">
+<label>Email</label><br>
+<input type="email" value="riya@mail.com" readonly aria-label="Email sample">
+<p style="font-size:12px;color:var(--muted)">One email per week. No spam.</p>
+<label><input type="checkbox" checked disabled aria-label="Agree sample"> I agree</label><br>
+<button type="button">Subscribe</button>
+</div>
+<p>Thanks, riya@mail.com! 🍿</p>
+</div>
+<ul>
+<li>The button stays <b>disabled</b> until an email is typed and the box is ticked.</li>
+<li>After submit, the thank-you line appears. In DevTools &gt; Elements you see <code>class="title"</code> and <code>for="email"</code> — React writes normal HTML attributes to the DOM.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ &lt;label htmlFor="email"&gt;          JSX prop name (JS style)
+        │ compile
+        ▼
+ jsx("label", { htmlFor: "email", children: "Email" })
+        │ React DOM reads props
+        ▼
+ htmlFor  ──map──►  DOM attribute "for"
+ className ─map──►  DOM attribute "class"
+ style {fontSize:12} ─► style="font-size: 12px;"
+ onChange fn ──────►  React's event system (not an HTML attribute)
+        │
+        ▼
+ &lt;label for="email"&gt;Email&lt;/label&gt;   ← what the browser shows in Elements
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Converting design templates</b>: shop landing pages often start as HTML/CSS from a designer — you rename attributes and close tags.</li>
+<li><b>Accessible forms</b>: <code>htmlFor</code> + <code>id</code> and <code>aria-*</code> keep sign-up and checkout forms screen-reader friendly.</li>
+<li><b>Testing</b>: <code>data-testid</code> stays dashed and is used by testing tools.</li>
+<li><b>Dynamic styling</b>: a delivery tracker changes <code>style={{ width: progress + '%' }}</code> as the order moves.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Unclosed void tags</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;img src="/pizza.jpg" alt="Pizza"&gt;
+&lt;br&gt;
+// ✗ Expected corresponding JSX closing tag</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;img src="/pizza.jpg" alt="Pizza" /&gt;
+&lt;br /&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Style as a string</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;p style="color: red; font-size: 20px"&gt;Sale!&lt;/p&gt;
+// ✗ Error: The `style` prop expects a mapping
+//   from style properties to values, not a string.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;p style={{ color: 'red', fontSize: 20 }}&gt;Sale!&lt;/p&gt;</code></pre></div>
+</div>
+<h3>Mistake 3: Event as a string, or calling it immediately</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;button onclick="addTodo()"&gt;Add&lt;/button&gt;  // wrong case + string
+&lt;button onClick={addTodo()}&gt;Add&lt;/button&gt;  // runs during render!</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;button onClick={addTodo}&gt;Add&lt;/button&gt;
+&lt;button onClick={() =&gt; addTodo('Milk')}&gt;Add&lt;/button&gt;</code></pre></div>
+</div>
+<h3>Mistake 4: Using <code>class</code> / <code>for</code></h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;div class="menu"&gt;...&lt;/div&gt;
+// Dev console warning:
+// Invalid DOM property `class`. Did you mean `className`?</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;div className="menu"&gt;...&lt;/div&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Convert: <code>&lt;div class="price" style="color:green"&gt;₹99&lt;/div&gt;</code></p>
+<details><summary>Show solution</summary><pre><code>&lt;div className="price" style={{ color: 'green' }}&gt;₹99&lt;/div&gt;</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Convert: <code>&lt;label for="city"&gt;City&lt;/label&gt;&lt;input id="city" tabindex="1"&gt;</code></p>
+<details><summary>Show solution</summary><pre><code>&lt;&gt;
+  &lt;label htmlFor="city"&gt;City&lt;/label&gt;
+  &lt;input id="city" tabIndex={1} /&gt;
+&lt;/&gt;</code></pre></details>
+<h3>Intermediate 1</h3>
+<p>Convert this HTML chat input:</p>
+<pre><code>&lt;!-- send message --&gt;
+&lt;textarea maxlength="200" readonly&gt;Hi!&lt;/textarea&gt;
+&lt;button onclick="send()" disabled&gt;Send&lt;/button&gt;</code></pre>
+<details><summary>Show solution</summary><pre><code>&lt;&gt;
+  {/* send message */}
+  &lt;textarea maxLength={200} readOnly defaultValue="Hi!" /&gt;
+  &lt;button onClick={send} disabled&gt;Send&lt;/button&gt;
+&lt;/&gt;</code></pre><p>In React, a textarea's text goes in <code>value</code>/<code>defaultValue</code>, not children.</p></details>
+<h3>Intermediate 2</h3>
+<p>Build a progress bar for a food order where <code>progress</code> (0–100) sets the inner bar width and colour turns green at 100.</p>
+<details><summary>Show solution</summary><pre><code>function OrderProgress({ progress }) {
+  return (
+    &lt;div style={{ background: '#eee', height: 10, borderRadius: 5 }}&gt;
+      &lt;div
+        style={{
+          width: progress + '%',
+          height: '100%',
+          borderRadius: 5,
+          backgroundColor: progress === 100 ? 'green' : 'orange',
+        }}
+        aria-valuenow={progress}
+        role="progressbar"
+      /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+<h3>Challenge</h3>
+<p>Convert this whole weather card. Keep accessibility attributes.</p>
+<pre><code>&lt;div class="weather" data-city="pune"&gt;
+  &lt;img src="sun.svg" alt="Sunny"&gt;
+  &lt;h3 style="margin-bottom:4px;text-transform:uppercase"&gt;Pune&lt;/h3&gt;
+  &lt;span aria-label="temperature"&gt;31°C&lt;/span&gt;&lt;br&gt;
+  &lt;button onclick="refresh()" tabindex="0"&gt;Refresh&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+<details><summary>Show solution</summary><pre><code>function WeatherCard({ refresh }) {
+  return (
+    &lt;div className="weather" data-city="pune"&gt;
+      &lt;img src="sun.svg" alt="Sunny" /&gt;
+      &lt;h3 style={{ marginBottom: 4, textTransform: 'uppercase' }}&gt;Pune&lt;/h3&gt;
+      &lt;span aria-label="temperature"&gt;31°C&lt;/span&gt;
+      &lt;br /&gt;
+      &lt;button onClick={refresh} tabIndex={0}&gt;Refresh&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li><code>class</code> → <code>className</code>, <code>for</code> → <code>htmlFor</code>.</li>
+<li>camelCase attributes and events; <code>aria-*</code> / <code>data-*</code> stay dashed.</li>
+<li>Close every tag: <code>&lt;img /&gt;</code>, <code>&lt;input /&gt;</code>, <code>&lt;br /&gt;</code>.</li>
+<li><code>style</code> = object with camelCase keys; numbers mean <code>px</code> for most properties.</li>
+<li>Pass functions to events, don't call them: <code>onClick={fn}</code>.</li>
+<li>Comments: <code>{/* … */}</code>. One parent or a Fragment.</li>
+<li>Textarea / select use <code>value</code> or <code>defaultValue</code>.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why <code>className</code> and not <code>class</code>?</summary><p><code>class</code> is a reserved word in JavaScript, and React follows the DOM property name <code>element.className</code>.</p></details>
+<details><summary>Why must <code>&lt;img&gt;</code> be self-closed in JSX?</summary><p>JSX follows XML rules: every element must be explicitly closed. HTML's "void elements" don't exist as a concept in JSX's parser.</p></details>
+<details><summary>How does <code>style</code> differ from HTML?</summary><p>It's a JavaScript object with camelCase keys and string/number values, e.g. <code>{{ backgroundColor: 'red', padding: 8 }}</code>. Outer braces = JSX expression, inner = object literal.</p></details>
+<details><summary>Which attributes keep dashes?</summary><p><code>aria-*</code> and <code>data-*</code>. (Custom elements / web components also receive attributes as you write them.)</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-002.html">JSX-002 · Why JSX?</a>
+<a href="JSX-004.html">JSX-004 · JSX transformation</a>
+<a href="JSX-005.html">JSX-005 · Babel &amp; compilers</a>
+<a href="JSX-001.html">JSX-001 · What is JSX?</a>
+<a href="INTRO-004.html">INTRO-004 · React vs Vanilla JS</a>
+<a href="JSX-003.html#rev">JSX-003 · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">JSX looks like HTML but follows JavaScript rules: <code>className</code>, <code>htmlFor</code>, camelCase names, function event handlers, style objects, and every tag closed.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;div className="row" data-id={id} aria-hidden={false}&gt;
+  &lt;label htmlFor="q"&gt;Search&lt;/label&gt;
+  &lt;input id="q" autoComplete="off" maxLength={40} /&gt;
+  &lt;button onClick={search} style={{ fontWeight: 600 }}&gt;Go&lt;/button&gt;
+  {/* comment */}
+&lt;/div&gt;</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li><code>className</code>, <code>htmlFor</code>.</li>
+<li>Events are camelCase and take functions.</li>
+<li>Multi-word attributes are camelCase: <code>tabIndex</code>, <code>readOnly</code>, <code>autoFocus</code>.</li>
+<li><code>aria-*</code>, <code>data-*</code> keep hyphens.</li>
+<li>All tags close; any tag can self-close.</li>
+<li><code>style={{ }}</code> object; unitless numbers → px (except unitless props like <code>lineHeight</code>, <code>opacity</code>, <code>zIndex</code>).</li>
+<li>Return one parent or a Fragment.</li>
+<li>Use <code>{ }</code> for JS values and <code>{/* */}</code> for comments.</li>
+<li><code>value</code> without <code>onChange</code> → read-only warning; use <code>defaultValue</code> for uncontrolled.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Convert <code>onclick</code> to JSX.</summary><p><code>onClick={handler}</code> — camelCase, function reference.</p></details>
+<details><summary>How do you write a comment in JSX?</summary><p><code>{/* comment */}</code> inside the markup.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why double braces in <code>style={{ color: 'red' }}</code>?</summary><p>Outer braces open a JS expression; inner braces are the object literal.</p></details>
+<details><summary>What does <code>&lt;input value="x" /&gt;</code> without onChange do?</summary><p>It renders a read-only field and React warns in development. Add <code>onChange</code>, <code>readOnly</code>, or use <code>defaultValue</code>.</p></details>
+<h3>Advanced</h3>
+<details><summary>What happens if you use <code>class</code> in React 19?</summary><p>React DOM warns in development (“Invalid DOM property `class`. Did you mean `className`?”). Use <code>className</code> — it is the supported prop.</p></details>
+<h3>Tricky</h3>
+<details><summary>Does <code>&lt;div /&gt;</code> work in JSX even though it doesn't in HTML?</summary><p>Yes. In JSX any element can self-close; React renders an empty <code>&lt;div&gt;&lt;/div&gt;</code>.</p></details>
+<details><summary>Is <code>style={{ zIndex: 2 }}</code> rendered as 2px?</summary><p>No. <code>zIndex</code> is unitless, so it stays <code>z-index: 2</code>.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<p>What HTML appears in DevTools?</p>
+<pre><code>&lt;p className="tag" style={{ marginTop: 4, opacity: 0.5 }}&gt;New&lt;/p&gt;</code></pre>
+<details><summary>Answer</summary><pre class="output">&lt;p class="tag" style="margin-top: 4px; opacity: 0.5;"&gt;New&lt;/p&gt;</pre></details>
+<p>What shows on screen?</p>
+<pre><code>&lt;p&gt;Total {/* hidden note */} ₹{2 * 50}&lt;/p&gt;</code></pre>
+<details><summary>Answer</summary><pre class="output">Total ₹100</pre><p>The comment renders nothing. The DOM text has two spaces ("Total " + " ₹"), but the browser collapses them into one.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<p>Why does the alert fire on page load, not on click?</p>
+<pre><code>&lt;button onClick={alert('Ordered!')}&gt;Order&lt;/button&gt;</code></pre>
+<details><summary>Answer</summary><p><code>alert(...)</code> is called during render. Wrap it: <code>onClick={() =&gt; alert('Ordered!')}</code>.</p></details>
+<p>Why is clicking the label not focusing the input?</p>
+<pre><code>&lt;label for="name"&gt;Name&lt;/label&gt;&lt;input id="nm" /&gt;</code></pre>
+<details><summary>Answer</summary><p>Two bugs: use <code>htmlFor</code>, and the ids don't match (<code>name</code> vs <code>nm</code>).</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A designer sends a 200-line HTML checkout page. Fastest safe conversion?</summary><p>Rename <code>class</code>/<code>for</code>, close void tags, convert inline styles to objects, replace <code>onclick</code> strings with handlers, wrap in one parent. Editor HTML-to-JSX converters help, but review the output.</p></details>
+<details><summary>A grocery list needs a test hook on each row. Which attribute?</summary><p><code>data-testid="row-milk"</code> — <code>data-*</code> stays dashed in JSX.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Convert to JSX:</p>
+<pre><code>&lt;select id="size" onchange="pick()"&gt;
+  &lt;option value="s"&gt;Small&lt;/option&gt;
+  &lt;option value="l" selected&gt;Large&lt;/option&gt;
+&lt;/select&gt;</code></pre>
+<details><summary>Solution</summary><pre><code>&lt;select id="size" defaultValue="l" onChange={pick}&gt;
+  &lt;option value="s"&gt;Small&lt;/option&gt;
+  &lt;option value="l"&gt;Large&lt;/option&gt;
+&lt;/select&gt;</code></pre><p>React uses <code>value</code>/<code>defaultValue</code> on <code>&lt;select&gt;</code> instead of <code>selected</code> on options.</p></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Feature</th><th>HTML</th><th>JSX</th></tr>
+<tr><td>CSS class</td><td><code>class</code></td><td><code>className</code></td></tr>
+<tr><td>Label target</td><td><code>for</code></td><td><code>htmlFor</code></td></tr>
+<tr><td>Events</td><td><code>onclick="fn()"</code> string</td><td><code>onClick={fn}</code> function</td></tr>
+<tr><td>Style</td><td>string</td><td>object</td></tr>
+<tr><td>Void tags</td><td><code>&lt;br&gt;</code> OK</td><td>must be <code>&lt;br /&gt;</code></td></tr>
+<tr><td>Comments</td><td><code>&lt;!-- --&gt;</code></td><td><code>{/* */}</code></td></tr>
+<tr><td>Select default</td><td><code>selected</code> on option</td><td><code>value</code>/<code>defaultValue</code> on select</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>HTML</th><th>JSX</th></tr>
+<tr><td><code>class</code></td><td><code>className</code></td></tr>
+<tr><td><code>for</code></td><td><code>htmlFor</code></td></tr>
+<tr><td><code>tabindex</code>, <code>maxlength</code>, <code>readonly</code></td><td><code>tabIndex</code>, <code>maxLength</code>, <code>readOnly</code></td></tr>
+<tr><td><code>onclick</code>, <code>onchange</code>, <code>onsubmit</code></td><td><code>onClick</code>, <code>onChange</code>, <code>onSubmit</code></td></tr>
+<tr><td><code>style="font-size:14px"</code></td><td><code>style={{ fontSize: 14 }}</code></td></tr>
+<tr><td><code>&lt;img&gt;</code> <code>&lt;input&gt;</code> <code>&lt;br&gt;</code></td><td><code>&lt;img /&gt;</code> <code>&lt;input /&gt;</code> <code>&lt;br /&gt;</code></td></tr>
+<tr><td><code>aria-label</code>, <code>data-id</code></td><td>same</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

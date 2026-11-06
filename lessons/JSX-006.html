@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-006 · Embedding JavaScript in JSX</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-006</span><span>Module 4: JSX Fundamentals</span><span>Lesson 6</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-005</b></span></div>
+<h1>Embedding JavaScript in JSX</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-006-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a shop price tag with a <b>blank slot</b>: "Price: ____". The tag is fixed; the number in the slot changes every day.</li>
+<li>In JSX, the blank slot is a pair of <b>curly braces</b> <code>{ }</code>. Whatever JavaScript you put inside is worked out, and the result is shown on screen.</li>
+<li>Outside the braces = fixed text (static markup). Inside the braces = live JavaScript (embedded expression).</li>
+</ul>
+<pre class="diagram">
+   JSX you write                         What appears on screen
+ ┌──────────────────────────────┐      ┌──────────────────────────┐
+ │ &lt;p&gt;                          │      │                          │
+ │   Hello, {user.name}!        │ ───► │  Hello, Priya!           │
+ │   Cart: {items.length} items │      │  Cart: 3 items           │
+ │   Total: ₹{getTotal()}       │      │  Total: ₹747             │
+ │ &lt;/p&gt;                         │      │                          │
+ └──────────────────────────────┘      └──────────────────────────┘
+        ▲ fixed text                 ▲ { } = "run this JS, show the result"
+</pre>
+<div class="callout">One rule to remember: <b>curly braces switch you from "HTML mode" back into "JavaScript mode"</b> for one value.</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Real apps show <b>changing data</b>: user names, prices, weather, chat messages.</li>
+<li>Without braces you would have to hard-code every value, or build HTML strings by hand (string concatenation) and inject them — slow and unsafe.</li>
+<li>With braces, the value comes straight from your variables, and React escapes it for you (protects against script injection, called XSS).</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (vanilla JS)</span><pre><code>// Vanilla JS: build a string, inject HTML
+const user = { name: 'Priya' };
+const items = ['Tea', 'Bread', 'Milk'];
+
+document.getElementById('app').innerHTML =
+  '&lt;p&gt;Hello, ' + user.name + '!&lt;/p&gt;' +
+  '&lt;p&gt;Cart: ' + items.length + ' items&lt;/p&gt;';
+// Easy to break quotes, and unsafe
+// if user.name contains &lt;script&gt;</code></pre></div>
+<div><span class="good">After (JSX)</span><pre><code>// React + JSX: drop values into { }
+const user = { name: 'Priya' };
+const items = ['Tea', 'Bread', 'Milk'];
+
+function Greeting() {
+  return (
+    &lt;&gt;
+      &lt;p&gt;Hello, {user.name}!&lt;/p&gt;
+      &lt;p&gt;Cart: {items.length} items&lt;/p&gt;
+    &lt;/&gt;
+  );
+}
+// React escapes text automatically</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><code>{ }</code> holds <b>one JavaScript expression</b> (a piece of code that produces a value).</li>
+<li>You can use braces in two places: <b>between tags</b> (children) and <b>as an attribute value</b> (props): <code>&lt;img src={url} /&gt;</code>.</li>
+<li>Allowed inside: variables, maths <code>{a + b}</code>, object properties <code>{user.name}</code>, function calls <code>{format(price)}</code>, template literals, ternaries.</li>
+<li><b>Strings and numbers</b> are shown as text. <code>0</code> shows as "0".</li>
+<li><code>true</code>, <code>false</code>, <code>null</code>, <code>undefined</code> show <b>nothing</b> (render empty).</li>
+<li><b>Arrays</b> are shown item by item (each item must be renderable).</li>
+<li><b>Plain objects</b> cannot be shown — React throws "Objects are not valid as a React child".</li>
+<li>Write a function <b>call</b> <code>{getTotal()}</code> to show its result. <code>{getTotal}</code> (no brackets) passes the function itself, which is not renderable as a child.</li>
+<li>Comments inside JSX use braces too: <code>{/* note */}</code>.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. Variable
+&lt;h1&gt;{title}&lt;/h1&gt;
+
+// 2. Maths / string joining
+&lt;p&gt;Total: {price * qty}&lt;/p&gt;
+&lt;p&gt;{firstName + ' ' + lastName}&lt;/p&gt;
+
+// 3. Object property and array item
+&lt;p&gt;{movie.title} ({movie.year})&lt;/p&gt;
+&lt;p&gt;First topping: {toppings[0]}&lt;/p&gt;
+
+// 4. Function call — note the ()
+&lt;p&gt;{formatPrice(249)}&lt;/p&gt;
+&lt;p&gt;{new Date().getFullYear()}&lt;/p&gt;
+
+// 5. Template literal (backtick string)
+&lt;p&gt;{`${city}: ${temp}°C`}&lt;/p&gt;
+
+// 6. In an attribute (no quotes around the braces)
+&lt;img src={poster} alt={movie.title} /&gt;
+
+// 7. A comment inside JSX
+{/* this is ignored */}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A food-order summary card. Create the app with <code>npm create vite@latest food-app -- --template react</code>, then replace <code>src/App.jsx</code>.</p>
+<pre><code>// src/App.jsx
+const restaurant = {
+  name: 'Spice Garden',
+  rating: 4.4,
+  logo: 'https://placehold.co/64x64?text=SG',
+};
+
+const order = [
+  { id: 1, dish: 'Paneer Tikka', price: 249, qty: 1 },
+  { id: 2, dish: 'Butter Naan', price: 49, qty: 4 },
+  { id: 3, dish: 'Mango Lassi', price: 99, qty: 2 },
+];
+
+const DELIVERY_FEE = 30;
+
+// Helper functions — called from inside JSX
+function formatPrice(amount) {
+  return '₹' + amount.toFixed(2);
+}
+
+function getSubtotal(items) {
+  return items.reduce((sum, item) =&gt; sum + item.price * item.qty, 0);
+}
+
+export default function App() {
+  const subtotal = getSubtotal(order);
+  const itemCount = order.reduce((n, item) =&gt; n + item.qty, 0);
+
+  return (
+    &lt;main&gt;
+      {/* Attribute values from JS */}
+      &lt;img src={restaurant.logo} alt={restaurant.name} width={64} /&gt;
+
+      {/* Object properties */}
+      &lt;h1&gt;{restaurant.name}&lt;/h1&gt;
+      &lt;p&gt;Rating: {restaurant.rating} / 5&lt;/p&gt;
+
+      {/* Maths and a template literal */}
+      &lt;p&gt;{`You ordered ${itemCount} items`}&lt;/p&gt;
+
+      {/* Function calls */}
+      &lt;p&gt;Subtotal: {formatPrice(subtotal)}&lt;/p&gt;
+      &lt;p&gt;Delivery: {formatPrice(DELIVERY_FEE)}&lt;/p&gt;
+      &lt;h2&gt;Total: {formatPrice(subtotal + DELIVERY_FEE)}&lt;/h2&gt;
+
+      {/* A method call on a built-in object */}
+      &lt;small&gt;Ordered at {new Date().toLocaleTimeString()}&lt;/small&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<div class="callout">Everything inside <code>{ }</code> runs <b>every time the component renders</b>. Keep it quick — heavy work belongs in a variable above the <code>return</code> (or later, in <code>useMemo</code>).</div>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<div style="display:flex;gap:10px;align-items:center"><div style="width:64px;height:64px;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">SG</div><h3 style="margin:0">Spice Garden</h3></div>
+<p style="margin:8px 0 0">Rating: 4.4 / 5</p>
+<p style="margin:4px 0 0">You ordered 7 items</p>
+<p style="margin:4px 0 0">Subtotal: ₹643.00</p>
+<p style="margin:4px 0 0">Delivery: ₹30.00</p>
+<p style="margin:6px 0 0;font-size:20px"><b>Total: ₹673.00</b></p>
+<small style="color:var(--muted)">Ordered at 7:42:15 PM</small>
+</div>
+<ul>
+<li>Subtotal = 249×1 + 49×4 + 99×2 = 249 + 196 + 198 = <b>643</b>.</li>
+<li>The time line shows your current local time, so it will differ. Its format depends on your browser locale.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. Vite compiles the JSX. Each { } becomes a normal JS value in props:
+      &lt;p&gt;Subtotal: {formatPrice(subtotal)}&lt;/p&gt;
+        ──►  jsxs("p", { children: ["Subtotal: ", formatPrice(subtotal)] })
+        │
+        ▼
+ 2. App() runs. JS evaluates the arguments first:
+      getSubtotal(order)    → 643
+      formatPrice(643)      → "₹643.00"
+        │
+        ▼
+ 3. jsxs(...) returns a React element (plain object):
+      { type: "p", props: { children: ["Subtotal: ", "₹643.00"] } }
+        │
+        ▼
+ 4. react-dom turns the element tree into real DOM
+      text nodes are escaped (no HTML injection)
+        │
+        ▼
+ 5. Screen shows:  Subtotal: ₹643.00
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Shopping app</b>: <code>{product.name}</code>, <code>{formatPrice(product.price)}</code>, <code>{cart.length}</code> badge on the cart icon.</li>
+<li><b>Weather app</b>: <code>{Math.round(temp)}°C</code> and an icon chosen by a function: <code>&lt;img src={iconFor(condition)} /&gt;</code>.</li>
+<li><b>Chat app</b>: <code>{message.sender}</code> and <code>{timeAgo(message.sentAt)}</code> next to each message.</li>
+<li><b>Movie site</b>: poster <code>src={movie.posterUrl}</code>, title, and <code>{movie.runtime / 60}</code> style calculations.</li>
+<li><b>Safety</b>: user-typed text (a chat message) shown via <code>{text}</code> is escaped, so <code>&lt;script&gt;</code> appears as plain text.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Trying to render a whole object</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const user = { name: 'Priya', city: 'Pune' };
+
+function Profile() {
+  return &lt;p&gt;{user}&lt;/p&gt;;
+}
+// Error: Objects are not valid
+// as a React child</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const user = { name: 'Priya', city: 'Pune' };
+
+function Profile() {
+  return &lt;p&gt;{user.name} from {user.city}&lt;/p&gt;;
+}
+// Or for debugging:
+// &lt;pre&gt;{JSON.stringify(user, null, 2)}&lt;/pre&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Forgetting to call the function</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function getGreeting() {
+  return 'Good morning!';
+}
+
+&lt;h1&gt;{getGreeting}&lt;/h1&gt;
+// Shows nothing; React logs
+// "Functions are not valid as a React child"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function getGreeting() {
+  return 'Good morning!';
+}
+
+&lt;h1&gt;{getGreeting()}&lt;/h1&gt;
+// Good morning!</code></pre></div>
+</div>
+<h3>Mistake 3: Putting quotes around the braces</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;img src="{movie.poster}" alt="poster" /&gt;
+// src is literally the text "{movie.poster}"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;img src={movie.poster} alt="poster" /&gt;
+// src is the variable's value</code></pre></div>
+</div>
+<h3>Mistake 4: Rendering a Date object directly</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;p&gt;Delivered: {new Date()}&lt;/p&gt;
+// Error: Objects are not valid
+// as a React child</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;p&gt;Delivered: {new Date().toLocaleDateString()}&lt;/p&gt;
+// e.g. Delivered: 11/5/2026 (en-US; format depends on locale)</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Show "Welcome back, Ravi!" using a variable <code>name = 'Ravi'</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>const name = 'Ravi';
+export default function App() {
+  return &lt;h1&gt;Welcome back, {name}!&lt;/h1&gt;;
+}</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Given <code>const pizza = { name: 'Margherita', price: 299 }</code>, render "Margherita costs ₹299".</p>
+<details><summary>Show solution</summary>
+<pre><code>const pizza = { name: 'Margherita', price: 299 };
+export default function App() {
+  return &lt;p&gt;{pizza.name} costs ₹{pizza.price}&lt;/p&gt;;
+}</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Write <code>toFahrenheit(c)</code> and show "30°C is 86°F" using a function call inside JSX.</p>
+<details><summary>Show solution</summary>
+<pre><code>function toFahrenheit(c) {
+  return c * 9 / 5 + 32;
+}
+const celsius = 30;
+export default function App() {
+  return &lt;p&gt;{celsius}°C is {toFahrenheit(celsius)}°F&lt;/p&gt;;
+}</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Show a movie poster with <code>src</code> and <code>alt</code> from an object, plus the runtime as "2h 46m" from <code>runtime = 166</code> minutes.</p>
+<details><summary>Show solution</summary>
+<pre><code>const movie = { title: 'Dune: Part Two', poster: '/dune.jpg', runtime: 166 };
+export default function App() {
+  return (
+    &lt;div&gt;
+      &lt;img src={movie.poster} alt={movie.title} /&gt;
+      &lt;p&gt;{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m&lt;/p&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>A chat header: given <code>messages</code> (array of <code>{ from, text }</code>) and <code>me = 'Asha'</code>, show "Asha · 5 messages · last from Karan". Use only braces and helper functions — no <code>if</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>const me = 'Asha';
+const messages = [
+  { from: 'Karan', text: 'Hi' },
+  { from: 'Asha', text: 'Hey!' },
+  { from: 'Karan', text: 'Movie tonight?' },
+  { from: 'Asha', text: 'Sure' },
+  { from: 'Karan', text: '7 pm?' },
+];
+
+function lastSender(list) {
+  return list[list.length - 1]?.from ?? 'nobody';
+}
+
+export default function App() {
+  return (
+    &lt;header&gt;
+      {me} · {messages.length} messages · last from {lastSender(messages)}
+    &lt;/header&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li><code>{ }</code> = "evaluate this JavaScript and show the result".</li>
+<li>Works in children <code>&lt;p&gt;{x}&lt;/p&gt;</code> and attributes <code>&lt;img src={x} /&gt;</code>.</li>
+<li>Strings and numbers show; <code>true/false/null/undefined</code> show nothing; <code>0</code> shows "0".</li>
+<li>Objects (including <code>Date</code>) cannot be shown directly — pick a property or convert to a string.</li>
+<li>Call functions with <code>()</code>: <code>{getTotal()}</code>, not <code>{getTotal}</code>.</li>
+<li>No quotes around braces: <code>src={url}</code>, not <code>src="{url}"</code>.</li>
+<li>React escapes text from <code>{ }</code>, which protects against XSS.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>What do curly braces do in JSX?</summary>
+<p>They let you insert the value of a JavaScript expression into the markup, either as a child (text/elements) or as an attribute value.</p>
+</details>
+<details><summary>Why does <code>&lt;p&gt;{user}&lt;/p&gt;</code> crash when <code>user</code> is an object?</summary>
+<p>React does not know how to display a plain object. Valid children are strings, numbers, elements, arrays/iterables of those, and empty values (<code>null</code>, <code>undefined</code>, booleans). An object throws "Objects are not valid as a React child".</p>
+</details>
+<details><summary>Is it safe to show user-typed text with <code>{text}</code>?</summary>
+<p>Yes. React escapes strings before inserting them as text, so <code>&lt;script&gt;</code> shows as literal characters. Only <code>dangerouslySetInnerHTML</code> bypasses this.</p>
+</details>
+<details><summary>What is the difference between <code>{format()}</code> and <code>{format}</code>?</summary>
+<p><code>{format()}</code> calls the function and renders its return value. <code>{format}</code> passes the function object itself — fine as an event handler (<code>onClick={format}</code>), but not renderable as a child.</p>
+</details>
+<details><summary>Does the code inside braces run once or every render?</summary>
+<p>Every render. The component function runs again, so every expression in its JSX is evaluated again.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-005.html">JSX-005 · Previous lesson</a>
+<a href="JSX-007.html">JSX-007 · JSX expressions</a>
+<a href="JSX-008.html">JSX-008 · JSX attributes</a>
+<a href="JSX-009.html">JSX-009 · className</a>
+<a href="JSX-002.html">JSX-002 · Why JSX?</a>
+<a href="JSX-006.html#rev">JSX-006-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">Curly braces <code>{ }</code> in JSX are a window back into JavaScript. Put any single expression inside — variable, maths, property, function call — and React shows the result. Strings/numbers show, booleans/null/undefined show nothing, plain objects crash.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;p&gt;{name}&lt;/p&gt;                  // variable
+&lt;p&gt;{price * qty}&lt;/p&gt;           // maths
+&lt;p&gt;{user.address.city}&lt;/p&gt;     // nested property
+&lt;p&gt;{formatPrice(total)}&lt;/p&gt;    // function call
+&lt;p&gt;{`${n} items`}&lt;/p&gt;          // template literal
+&lt;img src={url} alt={title} /&gt;  // attribute values
+{/* comment */}                // JSX comment</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Braces hold exactly <b>one expression</b>.</li>
+<li>Use braces in <b>children</b> and in <b>attribute values</b>.</li>
+<li>Do not wrap braces in quotes in attributes.</li>
+<li><code>0</code> and <code>NaN</code> render as text; <code>true</code>, <code>false</code>, <code>null</code>, <code>undefined</code> render nothing.</li>
+<li>Plain objects and <code>Date</code> objects throw when rendered as children.</li>
+<li>Arrays render each item in order (give list items a <code>key</code> — covered in the lists lessons).</li>
+<li>Functions are not valid children — call them.</li>
+<li>Expressions run on every render.</li>
+<li>Text from braces is auto-escaped (XSS protection).</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What can go inside JSX curly braces?</summary>
+<p>Any JavaScript expression: variables, literals, operators, property access, function calls, ternaries, template literals, arrow functions, other JSX.</p>
+</details>
+<details><summary>How do you write a comment inside JSX?</summary>
+<p><code>{/* comment */}</code> — braces with a block comment inside.</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>What renders for <code>{['a', 'b', 3]}</code>?</summary>
+<p>"ab3" — arrays render each item. (React only warns about missing keys when the items are elements, not plain strings.)</p>
+</details>
+<details><summary>Why does <code>{new Date()}</code> throw but <code>{Date.now()}</code> work?</summary>
+<p><code>new Date()</code> is an object. <code>Date.now()</code> returns a number, which renders as text.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>How does <code>{formatPrice(total)}</code> look after compilation?</summary>
+<p>It becomes part of the <code>children</code> prop: <code>jsxs("p", { children: ["Total: ", formatPrice(total)] })</code> from <code>react/jsx-runtime</code>. The function runs while building the arguments.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary>What shows for <code>&lt;p&gt;{undefined}{null}{false}{0}&lt;/p&gt;</code>?</summary>
+<p>Just <code>0</code>. The first three render nothing.</p>
+</details>
+<details><summary>What does <code>&lt;img src="{url}" /&gt;</code> produce?</summary>
+<p>An <code>&lt;img&gt;</code> whose <code>src</code> attribute is the literal text <code>{url}</code> — a broken image.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<h3>Q1</h3>
+<pre><code>const qty = 3, price = 40;
+&lt;p&gt;Total: {qty * price}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">Total: 120</pre>
+</details>
+<h3>Q2</h3>
+<pre><code>const city = 'Goa';
+&lt;p&gt;{city.toUpperCase()} · {city.length}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">GOA · 3</pre>
+</details>
+<h3>Q3</h3>
+<pre><code>&lt;p&gt;Likes: {0}{false}{null}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">Likes: 0</pre>
+</details>
+<h3>Q4</h3>
+<pre><code>&lt;p&gt;{'2' + 2} and {2 + 2}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">22 and 4</pre>
+<p>String + number joins as text.</p>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<h3>Bug 1</h3>
+<pre><code>const movie = { title: 'Inception', year: 2010 };
+return &lt;h2&gt;{movie}&lt;/h2&gt;;</code></pre>
+<details><summary>Show answer</summary>
+<p>Objects are not valid children. Fix: <code>&lt;h2&gt;{movie.title} ({movie.year})&lt;/h2&gt;</code>.</p>
+</details>
+<h3>Bug 2</h3>
+<pre><code>function todayLabel() { return 'Today'; }
+return &lt;span&gt;{todayLabel}&lt;/span&gt;;</code></pre>
+<details><summary>Show answer</summary>
+<p>Function not called — nothing renders and React logs an error. Fix: <code>{todayLabel()}</code>.</p>
+</details>
+<h3>Bug 3</h3>
+<pre><code>&lt;a href="{shop.url}"&gt;Visit&lt;/a&gt;</code></pre>
+<details><summary>Show answer</summary>
+<p>Quotes make it a literal string. Fix: <code>href={shop.url}</code>.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<h3>Scenario 1</h3>
+<p>Your weather card shows "Temp: 23.456789°C". How do you show "23°C"?</p>
+<details><summary>Show answer</summary>
+<p><code>{Math.round(temp)}°C</code>, or <code>{temp.toFixed(0)}°C</code>.</p>
+</details>
+<h3>Scenario 2</h3>
+<p>A chat message from a user contains <code>&lt;b&gt;hi&lt;/b&gt;</code>. A teammate fears it will render bold. Will it?</p>
+<details><summary>Show answer</summary>
+<p>No. <code>{message.text}</code> is escaped and shows the tags as plain text. Only <code>dangerouslySetInnerHTML</code> would interpret it as HTML — avoid it for user content.</p>
+</details>
+<h3>Scenario 3</h3>
+<p>A product's price calculation is long (tax, discount, rounding). Where should it go?</p>
+<details><summary>Show answer</summary>
+<p>In a named helper function or a variable above <code>return</code>, then insert with <code>{finalPrice}</code>. Keeps JSX readable.</p>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Order line</h3>
+<p>Given <code>{ dish: 'Biryani', price: 220, qty: 2 }</code>, render "2 × Biryani = ₹440".</p>
+<details><summary>Show solution</summary>
+<pre><code>const line = { dish: 'Biryani', price: 220, qty: 2 };
+export default function App() {
+  return &lt;p&gt;{line.qty} × {line.dish} = ₹{line.qty * line.price}&lt;/p&gt;;
+}</code></pre>
+</details>
+<h3>Challenge 2: Greeting by hour</h3>
+<p>Write <code>greeting(hour)</code> returning "Good morning" (before 12) or "Good evening", and render it with the current hour.</p>
+<details><summary>Show solution</summary>
+<pre><code>function greeting(hour) {
+  return hour &lt; 12 ? 'Good morning' : 'Good evening';
+}
+export default function App() {
+  return &lt;h1&gt;{greeting(new Date().getHours())}, Meera!&lt;/h1&gt;;
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Question</th><th>Answer</th></tr>
+<tr><td><code>{fn()}</code> vs <code>{fn}</code></td><td>Call result vs the function itself (not renderable as a child)</td></tr>
+<tr><td><code>src={url}</code> vs <code>src="{url}"</code></td><td>Variable value vs literal text</td></tr>
+<tr><td><code>{x}</code> vs <code>innerHTML</code></td><td>Escaped text vs raw HTML (unsafe)</td></tr>
+<tr><td><code>{0}</code> vs <code>{false}</code></td><td>Shows "0" vs shows nothing</td></tr>
+<tr><td><code>{date}</code> vs <code>{date.toLocaleDateString()}</code></td><td>Crash (object) vs readable string</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>You want to show</th><th>Write</th></tr>
+<tr><td>A variable</td><td><code>{name}</code></td></tr>
+<tr><td>A calculation</td><td><code>{price * qty}</code></td></tr>
+<tr><td>A nested value</td><td><code>{user.address.city}</code></td></tr>
+<tr><td>A function result</td><td><code>{formatPrice(x)}</code></td></tr>
+<tr><td>A mixed string</td><td><code>{`${n} items`}</code></td></tr>
+<tr><td>An attribute value</td><td><code>src={url}</code></td></tr>
+<tr><td>A comment</td><td><code>{/* ... */}</code></td></tr>
+<tr><td>An object (debug)</td><td><code>{JSON.stringify(obj)}</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

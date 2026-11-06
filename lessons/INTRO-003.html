@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-003 · Problems with traditional DOM manipulation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-003</span><span>Module 2: React Introduction</span><span>Lesson 3</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-002</b></span></div>
+<h1>Problems with traditional DOM manipulation</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-003-REV</button></div>
+
+<main id="det">
+<h2>1 · Visual Introduction</h2>
+<p>Imagine a restaurant with a <b>kitchen order book</b> (data) and a <b>wall board</b> (screen). With manual DOM updates, a waiter must rewrite the board by hand after every order. Miss one rewrite and the board lies.</p>
+<pre class="diagram">
+  DATA (JS variables)            SCREEN (DOM)
+ todos = 3 items       ---X---   "2 items left"   &lt;-- forgot to update
+ done  = 1             ---ok--   strike-through on item 1
+ filter = "active"     ---X---   still shows completed items
+
+ Every arrow is code YOU must write and remember.
+ Miss one  ==&gt;  UI drifts out of sync with data (stale UI)
+</pre>
+
+<h2>2 · Why Do We Need It?</h2>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>// Imperative (step-by-step) updates in many places
+function addTodo(text) {
+  todos.push(text);
+  const li = document.createElement('li');
+  li.textContent = text;
+  list.appendChild(li);
+  // counter not updated -&gt; shows old number
+}
+function deleteTodo(i) {
+  todos.splice(i, 1);
+  list.children[i].remove();
+  counter.textContent = todos.length + ' left';
+}</pre></div>
+<div><span class="good">Fixed</span><pre>// Declarative: describe the screen from data
+function TodoApp() {
+  const [todos, setTodos] = useState([]);
+  return (
+    &lt;&gt;
+      &lt;ul&gt;{todos.map(t =&gt; &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;)}&lt;/ul&gt;
+      &lt;p&gt;{todos.length} left&lt;/p&gt;
+    &lt;/&gt;
+  );
+}
+// add/delete only change todos; screen follows</pre></div>
+</div>
+
+<h2>3 · Core Concept</h2>
+<ul>
+<li><b>Imperative code</b> (giving step-by-step instructions) — you tell the browser each change: create, append, remove, set text.</li>
+<li><b>State drift</b> (UI out of sync) — data and DOM are two copies; any missed update leaves them different.</li>
+<li><b>Update paths explode</b> — N actions x M places on screen = N x M bits of update code.</li>
+<li><b>innerHTML rebuild problems</b> — wipes input text, focus and listeners; unsafe with user text (XSS, script injection).</li>
+<li><b>Event listener leaks</b> — re-adding listeners on every render causes double clicks firing twice.</li>
+<li><b>DOM as storage</b> — reading values back from the DOM (<code>li.textContent</code>) mixes data and display.</li>
+<li>React fixes these by making the DOM an <b>output</b> of state, not a second copy you maintain.</li>
+</ul>
+
+<h2>4 · Syntax</h2>
+<pre><code>// Typical vanilla DOM API calls (imperative)
+const el = document.querySelector('#list');
+const li = document.createElement('li');
+li.textContent = 'Buy milk';
+el.appendChild(li);
+el.innerHTML = '';                       // clear
+btn.addEventListener('click', handler);  // listen
+
+// React equivalent (declarative)
+&lt;ul&gt;{todos.map(t =&gt; &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;)}&lt;/ul&gt;
+&lt;button onClick={handler}&gt;Add&lt;/button&gt;</code></pre>
+
+<h2>5 · Practical Example</h2>
+<h3>Vanilla version with a hidden drift bug (index.html)</h3>
+<pre><code>&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;input id="text" placeholder="New todo" /&gt;
+    &lt;button id="add"&gt;Add&lt;/button&gt;
+    &lt;ul id="list"&gt;&lt;/ul&gt;
+    &lt;p id="count"&gt;0 left&lt;/p&gt;
+    &lt;script&gt;
+      const todos = [];
+      const list = document.getElementById('list');
+      const count = document.getElementById('count');
+      const input = document.getElementById('text');
+
+      document.getElementById('add').addEventListener('click', () =&gt; {
+        const text = input.value.trim();
+        if (!text) return;
+        todos.push({ text, done: false });
+
+        const li = document.createElement('li');
+        li.textContent = text;
+        li.addEventListener('click', () =&gt; {
+          const t = todos.find((x) =&gt; x.text === text);
+          t.done = !t.done;
+          li.style.textDecoration = t.done ? 'line-through' : 'none';
+          // BUG: forgot to update count here
+        });
+        list.appendChild(li);
+        count.textContent = todos.filter((t) =&gt; !t.done).length + ' left';
+        input.value = '';
+      });
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>React version — src/App.jsx (Vite)</h3>
+<pre><code>import { useState } from 'react';
+
+export default function App() {
+  const [todos, setTodos] = useState([]);
+  const [text, setText] = useState('');
+
+  function add() {
+    if (!text.trim()) return;
+    setTodos([...todos, { id: crypto.randomUUID(), text, done: false }]);
+    setText('');
+  }
+
+  function toggle(id) {
+    setTodos(todos.map((t) =&gt; (t.id === id ? { ...t, done: !t.done } : t)));
+  }
+
+  const left = todos.filter((t) =&gt; !t.done).length; // derived, never stale
+
+  return (
+    &lt;div&gt;
+      &lt;input value={text} onChange={(e) =&gt; setText(e.target.value)} placeholder="New todo" /&gt;
+      &lt;button onClick={add}&gt;Add&lt;/button&gt;
+      &lt;ul&gt;
+        {todos.map((t) =&gt; (
+          &lt;li
+            key={t.id}
+            onClick={() =&gt; toggle(t.id)}
+            style={{ textDecoration: t.done ? 'line-through' : 'none' }}
+          &gt;
+            {t.text}
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+      &lt;p&gt;{left} left&lt;/p&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+<h2>6 · Expected Output</h2>
+<p>Add "Buy milk" and "Call mom", then click "Buy milk".</p>
+<div class="cmp">
+<div><span class="bad">Wrong</span>
+<div class="ui"><p>[New todo] <button>Add</button></p><ul><li style="text-decoration:line-through">Buy milk</li><li>Call mom</li></ul><p>2 left <i>(stale: should be 1)</i></p></div></div>
+<div><span class="good">Fixed</span>
+<div class="ui"><p>[New todo] <button>Add</button></p><ul><li style="text-decoration:line-through">Buy milk</li><li>Call mom</li></ul><p>1 left</p></div></div>
+</div>
+
+<h2>7 · Execution Flow</h2>
+<pre class="diagram">
+ VANILLA: click "Buy milk"
+   listener -&gt; t.done = true -&gt; set li style
+                               (count line never touched)  ==&gt; "2 left"  STALE
+
+ REACT: click "Buy milk"
+   onClick -&gt; toggle(id) -&gt; setTodos(newArray)
+        |
+   React re-runs App()
+        |
+   left = todos.filter(!done).length  ==&gt; 1
+        |
+   diff: li style changed, &lt;p&gt; text changed
+        |
+   DOM patched  ==&gt; "1 left"  CORRECT
+</pre>
+
+<h2>8 · Real-World Application</h2>
+<ul>
+<li><b>Shopping cart</b> — badge, mini-cart, checkout total: classic drift bug when one is forgotten.</li>
+<li><b>Chat</b> — unread counts that stay "3" after you read the messages.</li>
+<li><b>Movie filters</b> — "Showing 12 results" not matching the visible grid.</li>
+<li><b>Forms</b> — <code>innerHTML</code> re-render erasing what the user was typing.</li>
+</ul>
+
+<h2>9 · Common Mistakes</h2>
+<h3>Mistake 1: innerHTML with user text (XSS risk)</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>// user types: &lt;img src=x onerror=alert(1)&gt;
+list.innerHTML += '&lt;li&gt;' + input.value + '&lt;/li&gt;';
+// the browser runs the injected code</pre></div>
+<div><span class="good">Fixed</span><pre>// vanilla: use textContent
+const li = document.createElement('li');
+li.textContent = input.value;
+list.appendChild(li);
+// React: {text} in JSX is escaped automatically
+&lt;li&gt;{text}&lt;/li&gt;</pre></div>
+</div>
+<h3>Mistake 2: adding listeners again on every redraw</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>function render() {
+  list.innerHTML = todos.map(t =&gt; '&lt;li&gt;' + t + '&lt;/li&gt;').join('');
+  btn.addEventListener('click', () =&gt; add()); // new listener each time
+}
+// after 3 renders, one click runs add() 3 times</pre></div>
+<div><span class="good">Fixed</span><pre>btn.addEventListener('click', add); // once, outside render
+function render() {
+  list.innerHTML = '';
+  todos.forEach(t =&gt; {
+    const li = document.createElement('li');
+    li.textContent = t;
+    list.appendChild(li);
+  });
+}</pre></div>
+</div>
+<h3>Mistake 3: carrying vanilla habits into React</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>function App() {
+  function add() {
+    document.getElementById('count').textContent = '5';
+  }
+  return &lt;p id="count"&gt;0&lt;/p&gt;;
+}
+// React doesn't know; its view and the DOM now disagree
+// and the next update to that node can overwrite it</pre></div>
+<div><span class="good">Fixed</span><pre>function App() {
+  const [count, setCount] = useState(0);
+  return &lt;p onClick={() =&gt; setCount(5)}&gt;{count}&lt;/p&gt;;
+}</pre></div>
+</div>
+
+<h2>10 · Practice</h2>
+<h3>Beginner 1</h3>
+<p>List the DOM calls needed in vanilla JS to show a new chat message.</p>
+<details><summary>Solution</summary><pre><code>const p = document.createElement('p');
+p.textContent = 'Hi!';
+document.getElementById('chat').appendChild(p);</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Why is <code>innerHTML = userText</code> dangerous?</p>
+<details><summary>Solution</summary><p>The browser parses it as HTML, so attacker-written tags and event attributes can run code (XSS). Use <code>textContent</code> or JSX <code>{text}</code>.</p></details>
+<h3>Intermediate 1</h3>
+<p>Find the drift bug: a weather widget updates the temperature but not the "feels like" line.</p>
+<details><summary>Solution</summary><pre><code>function setTemp(t) {
+  data.temp = t;
+  tempEl.textContent = t + '°C';
+  feelsEl.textContent = (t - 2) + '°C'; // the missing line
+}</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Rewrite it in React so the bug cannot happen.</p>
+<details><summary>Solution</summary><pre><code>function Weather() {
+  const [temp, setTemp] = useState(30);
+  return (
+    &lt;&gt;
+      &lt;p&gt;{temp}°C&lt;/p&gt;
+      &lt;p&gt;Feels like {temp - 2}°C&lt;/p&gt;
+      &lt;button onClick={() =&gt; setTemp(temp + 1)}&gt;Warmer&lt;/button&gt;
+    &lt;/&gt;
+  );
+}</code></pre></details>
+<h3>Challenge</h3>
+<p>Add a delete button to each todo in the React example; the "left" count must stay right.</p>
+<details><summary>Solution</summary><pre><code>function remove(id) {
+  setTodos(todos.filter((t) =&gt; t.id !== id));
+}
+
+// inside map:
+&lt;li key={t.id}&gt;
+  &lt;span onClick={() =&gt; toggle(t.id)}&gt;{t.text}&lt;/span&gt;
+  &lt;button onClick={() =&gt; remove(t.id)}&gt;x&lt;/button&gt;
+&lt;/li&gt;
+// left is derived, so it is correct automatically</code></pre></details>
+
+<h2>11 · Quick Revision</h2>
+<ul>
+<li>Manual DOM code = two copies of truth (data + DOM).</li>
+<li>Every action must update every affected spot; easy to miss one.</li>
+<li><code>innerHTML</code> rebuilds lose input/focus and risk XSS.</li>
+<li>Listeners added repeatedly fire multiple times.</li>
+<li>React makes the DOM a result of state, so drift disappears.</li>
+<li>In React, don't edit the DOM by hand for things React renders.</li>
+</ul>
+
+<h2>12 · Interview Corner</h2>
+<details><summary>What is "imperative" UI code?</summary><p>Code that lists the exact steps to change the screen (create, append, set text). Declarative code describes the final screen instead.</p></details>
+<details><summary>Why does manual DOM code get buggy as apps grow?</summary><p>The number of update paths grows with actions x places. Each must be remembered, so some are missed and the UI shows stale data.</p></details>
+<details><summary>Does React escape text in JSX?</summary><p>Yes. Values in <code>{}</code> are inserted as text, not HTML. Only <code>dangerouslySetInnerHTML</code> bypasses this.</p></details>
+<details><summary>Is direct DOM access ever okay in React?</summary><p>Yes, through refs (<code>useRef</code>) for things React doesn't manage: focusing an input, measuring size, third-party widgets.</p></details>
+
+<h2>13 · Related Lessons</h2>
+<div class="related"><a href="INTRO-001.html">INTRO-001 · What is React?</a><a href="INTRO-002.html">INTRO-002 · Why React?</a><a href="INTRO-004.html">INTRO-004 · React vs Vanilla JS</a><a href="INTRO-003.html#rev">INTRO-003 · Revision</a></div>
+</main>
+
+<main id="rev" class="rev" hidden>
+<h2>A · Concept in 30 Seconds</h2>
+<div class="callout">Manual DOM updates keep two copies of the truth: your data and the page. Every change must be copied by hand to every spot. Miss one and the UI drifts. React removes the second copy by computing the page from state.</div>
+
+<h2>B · Important Syntax</h2>
+<pre><code>// vanilla
+document.createElement('li'); el.appendChild(li);
+el.textContent = 'safe text';
+el.innerHTML = '&lt;b&gt;parsed as HTML&lt;/b&gt;';   // risky with user input
+el.addEventListener('click', fn);
+
+// React
+&lt;li&gt;{text}&lt;/li&gt;               // auto-escaped
+&lt;button onClick={fn}&gt;Go&lt;/button&gt;</code></pre>
+
+<h2>C · Must-Know Points</h2>
+<ul>
+<li>Imperative = steps; declarative = final result.</li>
+<li>Stale UI happens when one update path is forgotten.</li>
+<li>Derived values (counts, totals) should be computed, never stored twice.</li>
+<li><code>innerHTML</code> rebuilds destroy focus, typed text and old listeners.</li>
+<li><code>innerHTML</code> with user text is an XSS risk.</li>
+<li>JSX escapes text by default.</li>
+<li>In React, use state for display data and refs for rare direct DOM needs.</li>
+</ul>
+
+<h2>D · Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What is DOM manipulation?</summary><p>Using browser APIs (<code>createElement</code>, <code>appendChild</code>, <code>textContent</code>) to change the page from JavaScript.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why not just re-set innerHTML of the whole app on every change?</summary><p>It throws away and rebuilds every node: loses input values, focus, scroll, listeners, and is slow for big pages.</p></details>
+<h3>Advanced</h3>
+<details><summary>How does React avoid the "rebuild everything" cost?</summary><p>It re-runs components to get a new element tree, diffs it with the previous one, and patches only changed DOM nodes, keeping the rest (including input focus).</p></details>
+<h3>Tricky</h3>
+<details><summary>Is the real DOM "slow"?</summary><p>Not inherently. The costly part is unnecessary work and layout thrashing. React's benefit is mainly correctness and simpler code; efficiency is a bonus.</p></details>
+
+<h2>E · Output-Based Questions</h2>
+<pre><code>const items = ['Tea'];
+list.innerHTML = '&lt;li&gt;Tea&lt;/li&gt;';
+items.push('Coffee');
+console.log(list.children.length);</code></pre>
+<details><summary>Answer</summary><pre class="output">1</pre><p>Changing the array does not touch the DOM. Data and screen are now out of sync.</p></details>
+
+<h2>F · Debugging Questions</h2>
+<pre><code>function render() {
+  app.innerHTML = '&lt;input id="q"&gt;&lt;p&gt;' + results.length + '&lt;/p&gt;';
+}
+input.addEventListener('input', () =&gt; { search(); render(); });
+// user loses focus after each key. Why?</code></pre>
+<details><summary>Answer</summary><p><code>innerHTML</code> replaces the input with a brand-new element, so focus and the listener are lost. Update only the <code>&lt;p&gt;</code>, or use React, which keeps the same input node.</p></details>
+
+<h2>G · Scenario-Based Questions</h2>
+<details><summary>A food app's cart badge shows 3 after checkout clears the cart. What's the root cause and fix?</summary><p>The checkout code cleared the array but didn't update the badge DOM. Fix by making the badge read from one cart state (React <code>{cart.length}</code>).</p></details>
+
+<h2>H · Coding Challenges</h2>
+<p>Convert this vanilla code to React: a "Follow" button toggling text and a follower count.</p>
+<pre><code>let following = false, followers = 10;
+btn.onclick = () =&gt; {
+  following = !following;
+  followers += following ? 1 : -1;
+  btn.textContent = following ? 'Unfollow' : 'Follow';
+  countEl.textContent = followers;
+};</code></pre>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+
+export default function Follow() {
+  const [following, setFollowing] = useState(false);
+  const followers = 10 + (following ? 1 : 0); // derived
+  return (
+    &lt;&gt;
+      &lt;button onClick={() =&gt; setFollowing(!following)}&gt;
+        {following ? 'Unfollow' : 'Follow'}
+      &lt;/button&gt;
+      &lt;span&gt; {followers} followers&lt;/span&gt;
+    &lt;/&gt;
+  );
+}</code></pre></details>
+
+<h2>I · Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Aspect</th><th>textContent</th><th>innerHTML</th><th>JSX {value}</th></tr>
+<tr><td>Parses HTML</td><td>No</td><td>Yes</td><td>No</td></tr>
+<tr><td>XSS safe with user text</td><td>Yes</td><td>No</td><td>Yes</td></tr>
+<tr><td>Keeps other nodes</td><td>Replaces children</td><td>Replaces children</td><td>Patches only changes</td></tr>
+</table></div>
+
+<h2>J · Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Problem</th><th>Vanilla symptom</th><th>React answer</th></tr>
+<tr><td>Drift</td><td>Stale counters</td><td>UI computed from state</td></tr>
+<tr><td>Update paths</td><td>N x M code</td><td>One render function</td></tr>
+<tr><td>innerHTML rebuild</td><td>Lost focus/input</td><td>Diff and patch</td></tr>
+<tr><td>XSS</td><td>Injected HTML runs</td><td>Text auto-escaped</td></tr>
+<tr><td>Listener leaks</td><td>Handler runs twice</td><td><code>onClick</code> managed by React</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

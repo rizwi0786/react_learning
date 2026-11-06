@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-014 · Rendering lists</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-014</span><span>Module 4: JSX Fundamentals</span><span>Lesson 14</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-013</b></span></div>
+<h1>Rendering lists</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-014-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a food-delivery menu. The kitchen has a list of dishes (data). The menu card prints one row per dish (UI).</li>
+<li>In React you turn an array of data into an array of elements with <code>.map()</code> (the <b>array map method</b>).</li>
+<li>Each row gets a name tag so React can tell rows apart when the list changes (the <b>key prop</b>).</li>
+</ul>
+<pre class="diagram">
+  DATA (array of objects)                 UI (array of elements)
+  ┌──────────────────────────┐            ┌──────────────────────────────┐
+  │ { id: 'p1', name: Pizza }│ ──map──►   │ &lt;li key="p1"&gt;Pizza&lt;/li&gt;      │
+  │ { id: 'b2', name: Burger}│ ──map──►   │ &lt;li key="b2"&gt;Burger&lt;/li&gt;     │
+  │ { id: 'd3', name: Dosa  }│ ──map──►   │ &lt;li key="d3"&gt;Dosa&lt;/li&gt;       │
+  └──────────────────────────┘            └──────────────────────────────┘
+                                                    │
+         key = name tag React uses to match ────────┘
+         "same row before" with "same row after"
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Real data comes as arrays: products, messages, movies, todos.</li>
+<li>Writing one <code>&lt;li&gt;</code> by hand per item does not scale, and the count changes at runtime.</li>
+<li>Keys let React update only the changed rows (the <b>reconciliation</b> step) and keep each row's state with the right item.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (hard-coded)</span><pre><code>function Menu() {
+  return (
+    &lt;ul&gt;
+      &lt;li&gt;Pizza - ₹299&lt;/li&gt;
+      &lt;li&gt;Burger - ₹149&lt;/li&gt;
+      &lt;li&gt;Dosa - ₹99&lt;/li&gt;
+    &lt;/ul&gt;
+  );
+}
+// New dish? Edit the JSX by hand.
+// 200 dishes from an API? Impossible.</code></pre></div>
+<div><span class="good">After (map + key)</span><pre><code>const dishes = [
+  { id: 'p1', name: 'Pizza', price: 299 },
+  { id: 'b2', name: 'Burger', price: 149 },
+  { id: 'd3', name: 'Dosa', price: 99 },
+];
+
+function Menu() {
+  return (
+    &lt;ul&gt;
+      {dishes.map((d) =&gt; (
+        &lt;li key={d.id}&gt;{d.name} - ₹{d.price}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}
+// Any number of dishes, zero JSX changes.</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li>JSX can render an array of elements placed inside <code>{ }</code>.</li>
+<li><code>array.map(item =&gt; &lt;Row /&gt;)</code> returns a <b>new array of elements</b>.</li>
+<li>Every element in that array needs a <code>key</code> prop.</li>
+<li>Key must be <b>unique among siblings</b> (same list), not across the whole app.</li>
+<li>Key must be <b>stable</b>: the same item gets the same key on every render. Best source: an id from your data.</li>
+<li>Array index as key is OK only for a list that never reorders, filters, or inserts.</li>
+<li>Never use <code>Math.random()</code> or <code>crypto.randomUUID()</code> during render as a key: new key each render = React throws away and rebuilds every row.</li>
+<li><code>key</code> is read by React, not passed to your component (<code>props.key</code> is <code>undefined</code>). Pass the id again as another prop if the child needs it.</li>
+<li>The key goes on the outermost element returned from <code>map</code>.</li>
+<li>Need several elements per item? Use <code>&lt;Fragment key={...}&gt;</code>. The short <code>&lt;&gt;</code> syntax cannot take a key.</li>
+<li>Filter first, then map: <code>items.filter(...).map(...)</code>.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. Basic map with key
+&lt;ul&gt;
+  {todos.map((todo) =&gt; (
+    &lt;li key={todo.id}&gt;{todo.text}&lt;/li&gt;
+  ))}
+&lt;/ul&gt;
+
+// 2. Map to a component (key on the component)
+{movies.map((m) =&gt; &lt;MovieCard key={m.id} movie={m} /&gt;)}
+
+// 3. Build the array first, then render it
+const rows = products.map((p) =&gt; &lt;tr key={p.sku}&gt;&lt;td&gt;{p.name}&lt;/td&gt;&lt;/tr&gt;);
+return &lt;tbody&gt;{rows}&lt;/tbody&gt;;
+
+// 4. Filter, then map
+{orders
+  .filter((o) =&gt; o.status === 'delivered')
+  .map((o) =&gt; &lt;li key={o.id}&gt;{o.dish}&lt;/li&gt;)}
+
+// 5. Several elements per item: keyed Fragment
+import { Fragment } from 'react';
+{glossary.map((g) =&gt; (
+  &lt;Fragment key={g.term}&gt;
+    &lt;dt&gt;{g.term}&lt;/dt&gt;
+    &lt;dd&gt;{g.meaning}&lt;/dd&gt;
+  &lt;/Fragment&gt;
+))}
+
+// 6. Index as key (static list only)
+{['Mon', 'Tue', 'Wed'].map((day, i) =&gt; &lt;th key={i}&gt;{day}&lt;/th&gt;)}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A tiny todo list: add items, tick them off, and remove them. Each row keeps its own checkbox state correctly because keys come from ids.</p>
+<pre><code>// src/App.jsx  (Vite + React 19)
+import { useState } from 'react';
+
+let nextId = 4;
+
+const starterTodos = [
+  { id: 1, text: 'Order groceries', done: false },
+  { id: 2, text: 'Book movie tickets', done: true },
+  { id: 3, text: 'Check weather for trip', done: false },
+];
+
+function TodoItem({ todo, onToggle, onRemove }) {
+  return (
+    &lt;li&gt;
+      &lt;label&gt;
+        &lt;input
+          type="checkbox"
+          checked={todo.done}
+          onChange={() =&gt; onToggle(todo.id)}
+        /&gt;{' '}
+        {todo.done ? &lt;s&gt;{todo.text}&lt;/s&gt; : todo.text}
+      &lt;/label&gt;{' '}
+      &lt;button onClick={() =&gt; onRemove(todo.id)}&gt;Remove&lt;/button&gt;
+    &lt;/li&gt;
+  );
+}
+
+export default function App() {
+  const [todos, setTodos] = useState(starterTodos);
+  const [text, setText] = useState('');
+
+  function addTodo(e) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setTodos([{ id: nextId++, text, done: false }, ...todos]);
+    setText('');
+  }
+
+  function toggle(id) {
+    setTodos(todos.map((t) =&gt; (t.id === id ? { ...t, done: !t.done } : t)));
+  }
+
+  function remove(id) {
+    setTodos(todos.filter((t) =&gt; t.id !== id));
+  }
+
+  const left = todos.filter((t) =&gt; !t.done).length;
+
+  return (
+    &lt;main&gt;
+      &lt;h1&gt;My Todos&lt;/h1&gt;
+      &lt;form onSubmit={addTodo}&gt;
+        &lt;input value={text} onChange={(e) =&gt; setText(e.target.value)} /&gt;
+        &lt;button&gt;Add&lt;/button&gt;
+      &lt;/form&gt;
+
+      {todos.length === 0 ? (
+        &lt;p&gt;Nothing to do. Enjoy your day!&lt;/p&gt;
+      ) : (
+        &lt;ul&gt;
+          {todos.map((todo) =&gt; (
+            &lt;TodoItem
+              key={todo.id}
+              todo={todo}
+              onToggle={toggle}
+              onRemove={remove}
+            /&gt;
+          ))}
+        &lt;/ul&gt;
+      )}
+
+      &lt;p&gt;{left} of {todos.length} left&lt;/p&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<div class="callout">Run with <code>npm create vite@latest my-app -- --template react</code>, replace <code>src/App.jsx</code>, then <code>npm run dev</code>.</div>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3>My Todos</h3>
+<p>[ ________________ ] <button>Add</button></p>
+<ul>
+<li>☐ Order groceries <button>Remove</button></li>
+<li>☑ <s>Book movie tickets</s> <button>Remove</button></li>
+<li>☐ Check weather for trip <button>Remove</button></li>
+</ul>
+<p>2 of 3 left</p>
+</div>
+<p>Type "Pay electricity bill" and click Add:</p>
+<div class="ui">
+<ul>
+<li>☐ Pay electricity bill <button>Remove</button></li>
+<li>☐ Order groceries <button>Remove</button></li>
+<li>☑ <s>Book movie tickets</s> <button>Remove</button></li>
+<li>☐ Check weather for trip <button>Remove</button></li>
+</ul>
+<p>3 of 4 left</p>
+</div>
+<p>Console (development build) if you delete <code>key={todo.id}</code>:</p>
+<pre class="output">Each child in a list should have a unique "key" prop.
+Check the render method of `App`. ...</pre>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. App renders → todos = [1, 2, 3]
+        │
+ 2. todos.map(...) → [ &lt;TodoItem key=1/&gt;, &lt;TodoItem key=2/&gt;, &lt;TodoItem key=3/&gt; ]
+        │
+ 3. React mounts 3 &lt;li&gt; rows in the DOM
+        │
+ 4. User adds "Pay bill" → setTodos([4, 1, 2, 3])
+        │
+ 5. App re-renders → map gives keys [4, 1, 2, 3]
+        │
+ 6. React compares OLD keys vs NEW keys
+        │   old: 1  2  3
+        │   new: 4  1  2  3
+        │   key 4 → new   → CREATE one &lt;li&gt;
+        │   keys 1,2,3   → SAME rows, just moved down → keep DOM + state
+        ▼
+ 7. DOM: one &lt;li&gt; inserted at top. Nothing else rebuilt.
+
+ With index keys instead:  old 0 1 2  →  new 0 1 2 3
+ React thinks row 0 changed text, row 1 changed text ... and a NEW row 3.
+ Any state inside rows (typed text, focus) stays at the OLD position → wrong item.
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Shopping cart</b>: <code>cart.map(item =&gt; &lt;CartRow key={item.sku} /&gt;)</code>.</li>
+<li><b>Chat app</b>: messages keyed by message id; new messages append without re-drawing old ones.</li>
+<li><b>Movie search</b>: results keyed by movie id; sorting by rating moves rows instead of rebuilding them.</li>
+<li><b>Weather</b>: 7-day forecast keyed by date string (<code>"2026-11-05"</code>).</li>
+<li><b>Food delivery</b>: restaurant list → each restaurant card → its own dish list (nested maps, each with its own keys).</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: No key</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{movies.map((m) =&gt; (
+  &lt;li&gt;{m.title}&lt;/li&gt;
+))}
+// Dev warning: Each child in a list
+// should have a unique "key" prop.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{movies.map((m) =&gt; (
+  &lt;li key={m.id}&gt;{m.title}&lt;/li&gt;
+))}</code></pre></div>
+</div>
+<h3>Mistake 2: Key on the wrong element</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Row({ dish }) {
+  return &lt;li key={dish.id}&gt;{dish.name}&lt;/li&gt;;
+}
+{dishes.map((d) =&gt; &lt;Row dish={d} /&gt;)}
+// Key inside Row is useless here;
+// the array element is &lt;Row&gt;.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Row({ dish }) {
+  return &lt;li&gt;{dish.name}&lt;/li&gt;;
+}
+{dishes.map((d) =&gt; &lt;Row key={d.id} dish={d} /&gt;)}</code></pre></div>
+</div>
+<h3>Mistake 3: Curly braces with no return</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{todos.map((t) =&gt; {
+  &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;;
+})}
+// Renders nothing: block body
+// returns undefined.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{todos.map((t) =&gt; (
+  &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;
+))}
+// or: (t) =&gt; { return &lt;li ...&gt;; }</code></pre></div>
+</div>
+<h3>Mistake 4: Random key</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{chats.map((c) =&gt; (
+  &lt;ChatRow key={Math.random()} chat={c} /&gt;
+))}
+// Every render: new keys → every row
+// unmounts + remounts, state lost.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{chats.map((c) =&gt; (
+  &lt;ChatRow key={c.id} chat={c} /&gt;
+))}
+// No id in data? Add one when the data
+// is created, not during render.</code></pre></div>
+</div>
+<h3>Mistake 5: Reading <code>props.key</code></h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Card(props) {
+  return &lt;p&gt;#{props.key}&lt;/p&gt;; // undefined
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;Card key={p.id} id={p.id} /&gt;
+function Card({ id }) {
+  return &lt;p&gt;#{id}&lt;/p&gt;;
+}</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Render <code>['Apple', 'Banana', 'Mango']</code> as a <code>&lt;ul&gt;</code>. The list never changes.</p>
+<details><summary>Show solution</summary>
+<pre><code>const fruits = ['Apple', 'Banana', 'Mango'];
+
+export default function Fruits() {
+  return (
+    &lt;ul&gt;
+      {fruits.map((f) =&gt; &lt;li key={f}&gt;{f}&lt;/li&gt;)}
+    &lt;/ul&gt;
+  );
+}
+// The strings are unique, so they make fine keys.</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Given <code>movies = [{ id, title, year }]</code>, render "Title (Year)" for each.</p>
+<details><summary>Show solution</summary>
+<pre><code>{movies.map((m) =&gt; (
+  &lt;li key={m.id}&gt;{m.title} ({m.year})&lt;/li&gt;
+))}</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Show only products in stock, as a table with name and price. Show "Sold out" text if none are in stock.</p>
+<details><summary>Show solution</summary>
+<pre><code>function StockTable({ products }) {
+  const inStock = products.filter((p) =&gt; p.stock &gt; 0);
+  if (inStock.length === 0) return &lt;p&gt;Sold out&lt;/p&gt;;
+  return (
+    &lt;table&gt;
+      &lt;tbody&gt;
+        {inStock.map((p) =&gt; (
+          &lt;tr key={p.sku}&gt;
+            &lt;td&gt;{p.name}&lt;/td&gt;
+            &lt;td&gt;₹{p.price}&lt;/td&gt;
+          &lt;/tr&gt;
+        ))}
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  );
+}</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Render a nested menu: each restaurant (with <code>id</code>, <code>name</code>, <code>dishes</code>) shows a heading and its dish list.</p>
+<details><summary>Show solution</summary>
+<pre><code>{restaurants.map((r) =&gt; (
+  &lt;section key={r.id}&gt;
+    &lt;h2&gt;{r.name}&lt;/h2&gt;
+    &lt;ul&gt;
+      {r.dishes.map((d) =&gt; (
+        &lt;li key={d.id}&gt;{d.name}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  &lt;/section&gt;
+))}
+// Inner keys only need to be unique inside one restaurant.</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Build a chat box: a list of messages and an input. Each message row has its own "Reply" text box. Add a "Reverse order" button. Prove (by typing in a reply box, then reversing) that id keys keep the typed text with the right message and index keys do not.</p>
+<details><summary>Show solution</summary>
+<pre><code>import { useState } from 'react';
+
+function MessageRow({ msg }) {
+  const [reply, setReply] = useState('');
+  return (
+    &lt;li&gt;
+      &lt;b&gt;{msg.from}:&lt;/b&gt; {msg.text}{' '}
+      &lt;input
+        placeholder="Reply..."
+        value={reply}
+        onChange={(e) =&gt; setReply(e.target.value)}
+      /&gt;
+    &lt;/li&gt;
+  );
+}
+
+const start = [
+  { id: 'm1', from: 'Asha', text: 'Lunch at 1?' },
+  { id: 'm2', from: 'Ravi', text: 'Pizza or biryani?' },
+  { id: 'm3', from: 'Meera', text: 'Running late' },
+];
+
+export default function App() {
+  const [messages, setMessages] = useState(start);
+  const [useIndex, setUseIndex] = useState(false);
+
+  return (
+    &lt;div&gt;
+      &lt;button onClick={() =&gt; setMessages([...messages].reverse())}&gt;
+        Reverse order
+      &lt;/button&gt;
+      &lt;label&gt;
+        &lt;input
+          type="checkbox"
+          checked={useIndex}
+          onChange={(e) =&gt; setUseIndex(e.target.checked)}
+        /&gt;
+        Use index as key (buggy)
+      &lt;/label&gt;
+      &lt;ul&gt;
+        {messages.map((m, i) =&gt; (
+          &lt;MessageRow key={useIndex ? i : m.id} msg={m} /&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  );
+}
+// Type "Yes!" next to Asha, click Reverse.
+// id keys:    "Yes!" moves with Asha's message (now at bottom).
+// index keys: "Yes!" stays in row 0, now next to Meera's message.</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Lists: <code>{items.map(item =&gt; &lt;El key={item.id} /&gt;)}</code>.</li>
+<li>Keys: unique among siblings, stable across renders.</li>
+<li>Best key = id from data. Index only for static lists.</li>
+<li>Never generate keys during render (<code>Math.random()</code>).</li>
+<li>Key goes on the outermost element in the map callback.</li>
+<li><code>key</code> is not a readable prop; pass ids separately.</li>
+<li>Multiple elements per item → <code>&lt;Fragment key&gt;</code>.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why does React need keys in lists?</summary>
+<p>To match each element from the previous render with the same item in the next render. With a stable key, React can move, insert, or remove only the rows that changed and keep each row's state and DOM attached to the right item.</p>
+</details>
+<details><summary>When is the array index acceptable as a key?</summary>
+<p>When the list is static: never reordered, filtered, or inserted into, and rows hold no state. It is also React's fallback when you give no key, which is why missing keys and index keys behave the same.</p>
+</details>
+<details><summary>Do keys need to be globally unique?</summary>
+<p>No. Only unique among siblings in the same array. Two different lists can both use key <code>1</code>.</p>
+</details>
+<details><summary>What happens if you change an element's key?</summary>
+<p>React treats it as a different element: the old one unmounts (state lost) and a new one mounts. This is sometimes used on purpose to reset a component, e.g. <code>&lt;Profile key={userId} /&gt;</code>.</p>
+</details>
+<details><summary>Can a component read its own key?</summary>
+<p>No. <code>key</code> is consumed by React and not passed in props. Pass the value again under another prop name.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-013.html">JSX-013 · Previous lesson</a>
+<a href="JSX-012.html">JSX-012 · JSX fragments</a>
+<a href="JSX-007.html">JSX-007 · JSX expressions</a>
+<a href="JSX-015.html">JSX-015 · JSX restrictions</a>
+<a href="JSX-016.html">JSX-016 · Common JSX errors</a>
+<a href="JSX-014.html#rev">JSX-014-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<ul>
+<li>Turn an array of data into UI with <code>.map()</code>.</li>
+<li>Give each element a <code>key</code>: a stable, sibling-unique id (the <b>key prop</b>).</li>
+<li>Keys let React match old and new rows (<b>reconciliation</b>) so updates are fast and state stays with the right item.</li>
+</ul>
+<div class="callout">One line: <code>{list.map(x =&gt; &lt;Row key={x.id} {...x} /&gt;)}</code></div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>{items.map((it) =&gt; &lt;li key={it.id}&gt;{it.name}&lt;/li&gt;)}
+{items.map((it) =&gt; &lt;Card key={it.id} item={it} /&gt;)}
+{items.filter(f).map((it) =&gt; &lt;li key={it.id}&gt;...&lt;/li&gt;)}
+{items.map((it) =&gt; &lt;Fragment key={it.id}&gt;&lt;dt/&gt;&lt;dd/&gt;&lt;/Fragment&gt;)}
+{days.map((d, i) =&gt; &lt;th key={i}&gt;{d}&lt;/th&gt;)}   // static only</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>JSX renders arrays of elements directly.</li>
+<li><code>map</code> returns a new array; <code>forEach</code> returns <code>undefined</code> (renders nothing).</li>
+<li>Missing key → dev-only console warning; app still renders.</li>
+<li>Duplicate keys → dev warning "Encountered two children with the same key"; rows may duplicate or vanish on update.</li>
+<li>Keys unique among siblings only.</li>
+<li>Keys must be stable: no <code>Math.random()</code>, no <code>Date.now()</code> in render.</li>
+<li>Index keys break when the list is reordered, filtered or prepended and rows have state.</li>
+<li><code>key</code> is not available as <code>props.key</code>.</li>
+<li><code>&lt;&gt;</code> cannot take a key; use <code>&lt;Fragment key&gt;</code>.</li>
+<li>Changing a key forces a remount (useful to reset state).</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>How do you render a list in React?</summary><p>Call <code>.map()</code> on the array inside JSX braces and return an element per item with a <code>key</code>.</p></details>
+<details><summary>What is a key?</summary><p>A special string or number prop that identifies an element among its siblings so React can track it between renders.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why are index keys risky?</summary><p>The index describes position, not identity. After insert/reorder, the same index points to a different item, so React reuses the wrong component instance and its state (e.g. typed input) shows next to the wrong data.</p></details>
+<details><summary>Where should the key go when mapping to a component?</summary><p>On the component element in the map: <code>&lt;Row key={x.id} /&gt;</code>, not on the element inside <code>Row</code>.</p></details>
+<h3>Advanced</h3>
+<details><summary>How can keys reset a component's state on purpose?</summary><p>Render <code>&lt;ChatWindow key={contactId} /&gt;</code>. When <code>contactId</code> changes, React unmounts the old instance and mounts a fresh one, clearing its state (e.g. a draft message).</p></details>
+<details><summary>Your data has no id. What do you do?</summary><p>Create ids when the data is created or loaded (e.g. <code>crypto.randomUUID()</code> when adding the item, or a counter) and store them with the item. Do not create them during render.</p></details>
+<h3>Tricky</h3>
+<details><summary>Does a missing key throw an error?</summary><p>No. It logs a warning in development only and falls back to index behaviour. Production builds print nothing.</p></details>
+<details><summary>Can two separate lists in the same component share keys?</summary><p>Yes. Uniqueness is only required among siblings of one array.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<p><b>Q1. What renders?</b></p>
+<pre><code>const nums = [1, 2, 3];
+return &lt;ul&gt;{nums.forEach((n) =&gt; &lt;li key={n}&gt;{n}&lt;/li&gt;)}&lt;/ul&gt;;</code></pre>
+<details><summary>Show answer</summary><p>An empty <code>&lt;ul&gt;</code>. <code>forEach</code> returns <code>undefined</code>, which renders nothing.</p></details>
+<p><b>Q2. What renders?</b></p>
+<pre><code>return &lt;p&gt;{['a', 'b', 'c']}&lt;/p&gt;;</code></pre>
+<details><summary>Show answer</summary><p><code>abc</code>. Arrays of strings render as text. Only elements need keys; plain strings in an array do not trigger the warning.</p></details>
+<p><b>Q3. How many times is "row" logged on first load?</b></p>
+<pre><code>{[1, 2, 3].map((n) =&gt; { console.log('row'); return &lt;li key={n}&gt;{n}&lt;/li&gt;; })}</code></pre>
+<details><summary>Show answer</summary><p>3 in production. In development with <code>&lt;StrictMode&gt;</code> the component renders twice, so the logs run twice (React 19 dims the second set in the console).</p></details>
+
+<h2>F. Debugging Questions</h2>
+<p><b>Q1. The list shows nothing. Why?</b></p>
+<pre><code>{cart.map((item) =&gt; {
+  &lt;CartRow key={item.sku} item={item} /&gt;
+})}</code></pre>
+<details><summary>Show answer</summary><p>Block body with no <code>return</code>. Use <code>(item) =&gt; (&lt;CartRow ... /&gt;)</code> or add <code>return</code>.</p></details>
+<details><summary>Q2. After deleting the first todo, the checkbox ticks jump to the wrong row.</summary>
+<p>Keys are the index and checkbox state lives inside each row. Use <code>key={todo.id}</code>.</p></details>
+<details><summary>Q3. Error: "Cannot read properties of undefined (reading 'map')".</summary>
+<p>The array is <code>undefined</code> (data not loaded yet, or wrong field name). Default it: <code>useState([])</code>, or guard with <code>(items ?? []).map(...)</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A movie list can be sorted by rating or year. What key do you use?</summary><p>The movie's id from the API. Sorting reorders, so index keys would mis-match rows.</p></details>
+<details><summary>A weather app shows 7 days. No ids from the API.</summary><p>The date string (e.g. <code>"2026-11-05"</code>) is unique per day and stable: use it.</p></details>
+<details><summary>Chat messages: duplicate key warning appears.</summary><p>Two messages share an id (e.g. message sent optimistically and then received from the server). De-duplicate by id before rendering or use a temporary client id until the server id arrives.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<h3>1. Price list with total</h3>
+<p>Render a cart and its total price.</p>
+<details><summary>Solution</summary>
+<pre><code>function Cart({ items }) {
+  const total = items.reduce((sum, i) =&gt; sum + i.price * i.qty, 0);
+  return (
+    &lt;&gt;
+      &lt;ul&gt;
+        {items.map((i) =&gt; (
+          &lt;li key={i.id}&gt;{i.name} × {i.qty} = ₹{i.price * i.qty}&lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+      &lt;p&gt;Total: ₹{total}&lt;/p&gt;
+    &lt;/&gt;
+  );
+}</code></pre></details>
+<h3>2. Group by category</h3>
+<p>Given dishes with <code>category</code>, render one heading per category with its dishes.</p>
+<details><summary>Solution</summary>
+<pre><code>function GroupedMenu({ dishes }) {
+  const groups = Object.groupBy(dishes, (d) =&gt; d.category);
+  return Object.entries(groups).map(([cat, list]) =&gt; (
+    &lt;section key={cat}&gt;
+      &lt;h3&gt;{cat}&lt;/h3&gt;
+      &lt;ul&gt;
+        {list.map((d) =&gt; &lt;li key={d.id}&gt;{d.name}&lt;/li&gt;)}
+      &lt;/ul&gt;
+    &lt;/section&gt;
+  ));
+}
+// Object.groupBy is ES2024 (modern browsers). Older targets: use reduce.</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td><code>map</code> vs <code>forEach</code></td><td><code>map</code> returns an array to render; <code>forEach</code> returns <code>undefined</code></td></tr>
+<tr><td>id key vs index key</td><td>id follows the item; index follows the position</td></tr>
+<tr><td><code>&lt;&gt;</code> vs <code>&lt;Fragment&gt;</code></td><td>Only <code>&lt;Fragment&gt;</code> accepts <code>key</code></td></tr>
+<tr><td>Key vs <code>id</code> attribute</td><td>Key is for React (not in DOM); <code>id</code> is a DOM attribute</td></tr>
+<tr><td>Missing key vs duplicate key</td><td>Both dev warnings; duplicates can also cause wrong rows on update</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Goal</th><th>Write</th></tr>
+<tr><td>Render list</td><td><code>{a.map(x =&gt; &lt;li key={x.id}&gt;{x.name}&lt;/li&gt;)}</code></td></tr>
+<tr><td>List of components</td><td><code>&lt;Row key={x.id} data={x} /&gt;</code></td></tr>
+<tr><td>Filtered list</td><td><code>a.filter(f).map(...)</code></td></tr>
+<tr><td>Multiple tags per item</td><td><code>&lt;Fragment key={x.id}&gt;</code></td></tr>
+<tr><td>Empty state</td><td><code>a.length === 0 ? &lt;Empty /&gt; : &lt;ul&gt;...&lt;/ul&gt;</code></td></tr>
+<tr><td>Reset component</td><td><code>&lt;Form key={userId} /&gt;</code></td></tr>
+<tr><td>Static list</td><td><code>key={index}</code> is OK</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

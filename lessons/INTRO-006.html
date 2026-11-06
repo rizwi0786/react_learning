@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-006 · Library vs framework</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-006</span><span>Module 2: React Introduction</span><span>Lesson 6</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-005</b></span></div>
+<h1>Library vs framework</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-006-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li><b>Library</b> = ordering from a food app. <i>You</i> decide when to order, what, and where to eat. You call it.</li>
+<li><b>Framework</b> = a fixed-menu restaurant. The restaurant decides the courses and timing; you only fill in your choices when asked. It calls you.</li>
+</ul>
+<pre class="diagram">
+  LIBRARY                               FRAMEWORK
+  (you are in control)                  (it is in control)
+
+  your code                             framework
+     |                                     |
+     |  calls when YOU want                |  calls when IT wants
+     v                                     v
+  library function                      your code (hooks / callbacks)
+     |                                     |
+     +--&gt; returns result to you            +--&gt; returns to framework
+
+  "Don't call us, we'll call you"  =  Inversion of Control (IoC)
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Explains why React feels “small” yet still runs your components for you.</li>
+<li>Explains why you add React Router, a data library, or a full framework later.</li>
+<li>A classic interview question: “Is React a library or a framework?”</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>"React is a framework, so it must have
+ routing, data fetching and SSR built in."
+-&gt; searches for react's router for hours</pre></div>
+<div><span class="good">Fixed</span><pre>"React is a UI library.
+ Routing: React Router 7.
+ SSR + routing + data: a framework built on
+ React (Next.js, React Router framework mode)."</pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Library</b> (library): a set of functions you call. You own the flow.</li>
+<li><b>Framework</b> (framework): a skeleton that calls your code at set points. It owns the flow.</li>
+<li><b>Inversion of control</b> (IoC): the control flow is flipped — the tool calls you.</li>
+<li><b>React sits in between</b>: you call React once (<code>createRoot(...).render(...)</code>), then React decides <i>when</i> to call your components (rendering).</li>
+<li>So React has IoC <b>for rendering only</b>; routing, data and project structure are your choice → React calls itself a library.</li>
+<li><b>Frameworks on top of React</b>: Next.js, React Router framework mode — they add IoC for routing, data loading and server rendering.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>Library style: you call it</h3>
+<pre><code>// Intl is a built-in JS library-style API
+const price = new Intl.NumberFormat('en-IN', {
+  style: 'currency', currency: 'INR'
+}).format(250);   // you decide when this runs</code></pre>
+<h3>React: you call it once, then it calls you</h3>
+<pre><code>import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+
+createRoot(document.getElementById('root')).render(&lt;App /&gt;);
+// From here, React calls App() whenever it needs to render.</code></pre>
+<h3>Framework style (React Router framework mode, framework-only)</h3>
+<pre><code>// app/routes/menu.jsx — the framework calls these exports
+export async function loader() {
+  return { dishes: ['Biryani', 'Dosa'] };
+}
+export default function Menu({ loaderData }) {
+  return &lt;ul&gt;{loaderData.dishes.map((d) =&gt; &lt;li key={d}&gt;{d}&lt;/li&gt;)}&lt;/ul&gt;;
+}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>See who is in control. Log messages show the order in which code runs.</p>
+<h3>src/main.jsx</h3>
+<pre><code>import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+
+console.log('1. main.jsx: I call React');
+createRoot(document.getElementById('root')).render(
+  &lt;StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/StrictMode&gt;
+);
+console.log('2. main.jsx: render() returned');</code></pre>
+<h3>src/App.jsx</h3>
+<pre><code>import { useState } from 'react';
+
+// "Library" part: a plain helper YOU call
+function formatPrice(amount) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+  }).format(amount);
+}
+
+export default function App() {
+  const [qty, setQty] = useState(1);
+  console.log('3. App(): React called me, qty =', qty);
+
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;Pizza order&lt;/h1&gt;
+      &lt;p&gt;Quantity: {qty}&lt;/p&gt;
+      &lt;p&gt;Total: {formatPrice(qty * 299)}&lt;/p&gt;
+      &lt;button onClick={() =&gt; setQty(qty + 1)}&gt;Add one more&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+<div class="callout">You never write <code>App()</code> yourself. You hand <code>&lt;App /&gt;</code> to React and React decides when to run it. That is inversion of control.</div>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3>Pizza order</h3>
+<p>Quantity: 2</p>
+<p>Total: ₹598.00</p>
+<button type="button">Add one more</button>
+</div>
+<p>Console (development, after one click):</p>
+<pre class="output">1. main.jsx: I call React
+2. main.jsx: render() returned
+3. App(): React called me, qty = 1
+3. App(): React called me, qty = 1     &lt;- Strict Mode dev double render
+3. App(): React called me, qty = 2
+3. App(): React called me, qty = 2     &lt;- Strict Mode dev double render</pre>
+<ul>
+<li>Log 2 appears <b>before</b> log 3: <code>render()</code> only schedules the work; React runs <code>App</code> later.</li>
+<li>Duplicate lines appear only in development with <code>&lt;StrictMode&gt;</code> (React DevTools may show them dimmed). In a production build each line appears once.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ Browser loads main.jsx
+        |
+        v
+ [YOU]   console.log 1
+ [YOU]   createRoot(root).render(&lt;App /&gt;)  --- hand over control
+ [YOU]   console.log 2
+        |
+        v
+ [REACT] scheduled work runs
+ [REACT] calls App()  -&gt;  log 3, returns JSX
+ [REACT] creates DOM nodes, inserts into #root
+        |
+ user clicks "Add one more"
+        |
+        v
+ [REACT] onClick handler -&gt; setQty(2)
+ [REACT] decides to re-render -&gt; calls App() again
+ [YOU]   App calls formatPrice()   &lt;- library-style call
+ [REACT] updates only changed text in the DOM
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Small widget</b> (weather card on a blog): use React as a library, mount it into one <code>div</code>.</li>
+<li><b>Single-page shop</b>: React + React Router 7 (library/declarative mode) + Vite.</li>
+<li><b>SEO-heavy movie site</b>: a React framework (Next.js or React Router framework mode) controls routing, data loading and server rendering.</li>
+<li><b>Utility libraries you call</b>: date formatting, <code>fetch</code>, validation helpers — classic library calls inside components.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Calling the component yourself</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>root.render(App());
+// App runs outside React's render, so its
+// useState call fails ("Invalid hook call").</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>root.render(&lt;App /&gt;);
+// React calls App when it wants.</code></pre></div>
+</div>
+<h3>Mistake 2: Editing DOM that React controls</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// React owns #root's children
+document.getElementById('root').innerHTML =
+  '&lt;p&gt;Order placed&lt;/p&gt;';</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const [placed, setPlaced] = useState(false);
+// ...
+{placed &amp;&amp; &lt;p&gt;Order placed&lt;/p&gt;}</code></pre></div>
+</div>
+<h3>Mistake 3: Calling createRoot on every update</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function refresh() {
+  createRoot(document.getElementById('root'))
+    .render(&lt;App /&gt;);
+} // warns: container already passed to createRoot</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const root = createRoot(document.getElementById('root'));
+root.render(&lt;App /&gt;);
+// update via state inside App, not new roots</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Library or framework control? <code>const total = sum([10, 20]);</code></p>
+<details><summary>Solution</summary><p>Library style: you call <code>sum</code> and get the result immediately.</p></details>
+<h3>Beginner 2</h3>
+<p>Who calls <code>App</code> in a Vite React project?</p>
+<details><summary>Solution</summary><p>React does, after you pass <code>&lt;App /&gt;</code> to <code>root.render()</code>.</p></details>
+<h3>Intermediate 1</h3>
+<p>Predict the order: <code>console.log('A'); root.render(&lt;Hi /&gt;); console.log('B');</code> where <code>Hi</code> logs <code>'C'</code>.</p>
+<details><summary>Solution</summary><pre class="output">A
+B
+C</pre><p><code>render()</code> schedules work; <code>Hi</code> runs afterwards. In dev Strict Mode, C may appear twice.</p></details>
+<h3>Intermediate 2</h3>
+<p>Name two things a React framework controls that plain React does not.</p>
+<details><summary>Solution</summary><ul><li>Routing from files/route config</li><li>Data loading before render (loaders) and server rendering</li></ul></details>
+<h3>Challenge</h3>
+<p>Write a vanilla JS “like” button (you control every step) and the React version (React controls rendering). Count the lines that touch the DOM.</p>
+<details><summary>Solution</summary><pre><code>// Vanilla: you call DOM APIs directly
+let likes = 0;
+const btn = document.createElement('button');
+btn.textContent = 'Likes: 0';
+btn.addEventListener('click', () =&gt; {
+  likes++;
+  btn.textContent = 'Likes: ' + likes; // you update DOM
+});
+document.body.appendChild(btn);
+
+// React: you describe, React updates DOM
+import { useState } from 'react';
+export default function App() {
+  const [likes, setLikes] = useState(0);
+  return &lt;button onClick={() =&gt; setLikes(likes + 1)}&gt;Likes: {likes}&lt;/button&gt;;
+}
+// Vanilla: 4 DOM-touching lines. React: 0.</code></pre></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Library: you call it. Framework: it calls you.</li>
+<li>Inversion of control (IoC) = the tool owns the flow.</li>
+<li>React has IoC for rendering only → officially a library.</li>
+<li>You call <code>createRoot().render()</code> once; React calls components after that.</li>
+<li>Frameworks on React (Next.js, React Router framework mode) add routing, data and SSR.</li>
+<li>Never call components as plain functions; never edit React-owned DOM.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What is inversion of control?</summary><p>Instead of your code calling the tool, the tool calls your code at defined points. “Don’t call us, we’ll call you.”</p></details>
+<details><summary>Q2. Is React a library or framework?</summary><p>A library for user interfaces. It applies IoC to rendering, but leaves routing, data fetching and app structure to you or to a framework.</p></details>
+<details><summary>Q3. Why does React feel framework-like?</summary><p>Because React, not you, decides when components run and re-run, and hooks only work inside that React-controlled flow.</p></details>
+<details><summary>Q4. When would you choose a React framework?</summary><p>When you need server rendering, file-based or config routing with data loading, or SEO — e.g., a public movie catalogue.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-005.html">INTRO-005 React vs Angular vs Vue</a>
+<a href="INTRO-005.html#rev">INTRO-005 Revision</a>
+<a href="INTRO-007.html">INTRO-007 Features of React</a>
+<a href="INTRO-008.html">INTRO-008 Declarative vs imperative</a>
+<a href="INTRO-006.html#rev">INTRO-006 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">You call a library; a framework calls you (inversion of control). React is a UI library: you call <code>render()</code> once, then React calls your components. Routing, data and SSR come from other libraries or frameworks built on React.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>import { createRoot } from 'react-dom/client';
+const root = createRoot(document.getElementById('root'));
+root.render(&lt;App /&gt;);      // hand control to React
+
+function App() { return &lt;h1&gt;Menu&lt;/h1&gt;; } // React calls this</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Library = you control the flow.</li>
+<li>Framework = it controls the flow and calls your code.</li>
+<li>IoC = Inversion of Control.</li>
+<li>React applies IoC only to rendering.</li>
+<li><code>root.render()</code> schedules rendering; it does not run components synchronously in your script.</li>
+<li>Write <code>&lt;App /&gt;</code>, not <code>App()</code>.</li>
+<li>Do not manually change DOM React manages.</li>
+<li>Next.js and React Router framework mode are frameworks built on React.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Give an everyday analogy for library vs framework.</summary><p>Library: ordering any dish from an app when you want. Framework: fixed-menu restaurant serving courses on its schedule.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Where exactly does IoC happen in React?</summary><p>In rendering: React calls components, runs effects, and calls event handlers you pass. You never call them directly.</p></details>
+<h3>Advanced</h3>
+<details><summary>Why do hooks require React to call the component?</summary><p>Hooks store state in React’s internal record for the component being rendered. If you call the function yourself, there is no such record for it, so the hooks attach to whatever component called it (or fail).</p></details>
+<h3>Tricky</h3>
+<details><summary>Is React Router a library or framework?</summary><p>Both: React Router 7 can be used as a library (declarative/data mode) or as a framework (framework mode with loaders, file-based route config and SSR).</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary><code>console.log('x'); root.render(&lt;A /&gt;); console.log('y');</code> — A logs 'a'. Production order?</summary><pre class="output">x
+y
+a</pre></details>
+<details><summary>Same code in development with StrictMode?</summary><pre class="output">x
+y
+a
+a   (second render, may be dimmed)</pre></details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>Warning: “You are calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot() before.”</summary><p>You create a new root repeatedly. Create it once, store it, update with state.</p></details>
+<details><summary>Text you set with <code>innerHTML</code> disappears after a click.</summary><p>React re-rendered and overwrote it. Put the text in state and render it with JSX.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>You need a React chat widget inside an old PHP site page.</summary><p>Use React as a library: mount it into one <code>&lt;div id="chat"&gt;</code> with <code>createRoot</code>.</p></details>
+<details><summary>New public recipe site that must rank on Google.</summary><p>Use a React framework with server rendering (Next.js or React Router framework mode).</p></details>
+
+<h2>H. Coding Challenges</h2>
+<details><summary>Mount two separate React widgets (cart and weather) into two divs.</summary><pre><code>import { createRoot } from 'react-dom/client';
+import Cart from './Cart.jsx';
+import Weather from './Weather.jsx';
+
+createRoot(document.getElementById('cart')).render(&lt;Cart /&gt;);
+createRoot(document.getElementById('weather')).render(&lt;Weather /&gt;);</code></pre></details>
+<details><summary>Write a library-style helper and use it in a component.</summary><pre><code>function minutesLabel(m) {
+  return m &lt; 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+}
+export default function Eta() {
+  return &lt;p&gt;Delivery in {minutesLabel(75)}&lt;/p&gt;; // "Delivery in 1 h 15 min"
+}</code></pre></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Aspect</th><th>Library</th><th>Framework</th><th>React</th></tr>
+<tr><td>Who controls flow</td><td>You</td><td>Framework</td><td>You, except rendering</td></tr>
+<tr><td>Structure rules</td><td>None</td><td>Strong conventions</td><td>Few</td></tr>
+<tr><td>Swap pieces</td><td>Easy</td><td>Hard</td><td>Easy</td></tr>
+<tr><td>Examples</td><td>Intl, date helpers</td><td>Angular, Next.js</td><td>react + react-dom</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Library</td><td>You call it</td></tr>
+<tr><td>Framework</td><td>It calls you</td></tr>
+<tr><td>IoC</td><td>Control flow flipped to the tool</td></tr>
+<tr><td>React</td><td>UI library; IoC for rendering</td></tr>
+<tr><td>Entry</td><td><code>createRoot(el).render(&lt;App /&gt;)</code></td></tr>
+<tr><td>React frameworks</td><td>Next.js, React Router framework mode</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

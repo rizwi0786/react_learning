@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-014 · React ecosystem overview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-014</span><span>Module 2: React Introduction</span><span>Lesson 14</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-013</b></span></div>
+<h1>React ecosystem overview</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-014-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>React itself is just the <b>engine</b> of a car: it turns data into UI.</li>
+<li>The <b>ecosystem</b> is everything else you bolt on: GPS (routing), fuel line (data fetching), dashboard memory (state), paint (styling), crash tests (testing), and the factory that builds the whole car (frameworks).</li>
+</ul>
+<pre class="diagram">
+                     ┌───────────────────────────┐
+                     │  FRAMEWORKS (full car)    │
+                     │  React Router 7 framework │
+                     │  Next.js · Expo (mobile)  │
+                     └─────────────┬─────────────┘
+                                   │ bundle these for you
+     ┌──────────┬──────────┬───────┴──┬──────────┬──────────┐
+     │ ROUTING  │  DATA    │  STATE   │ STYLING  │ TESTING  │
+     │ React    │ TanStack │ useState │ CSS      │ Vitest   │
+     │ Router 7 │ Query    │ Context  │ Modules  │ Testing  │
+     │ TanStack │ SWR      │ Zustand  │ Tailwind │ Library  │
+     │ Router   │ RTK Query│ Redux TK │ CSS      │Playwright│
+     └──────────┴──────────┴─────┬────┴──────────┴──────────┘
+                                 │
+                     ┌───────────┴───────────┐
+                     │ REACT (react +        │
+                     │ react-dom) — the engine│
+                     └───────────┬───────────┘
+                                 │
+                     ┌───────────┴───────────┐
+                     │ BUILD TOOL: Vite 8    │
+                     └───────────────────────┘
+</pre>
+<div class="callout">React is a <b>library</b> (library), not a full framework. It only renders UI. You pick the other parts — or let a framework pick them for you.</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>A real app needs more than components: several pages, server data, shared state, styles, tests.</li>
+<li>Building each piece yourself = more bugs, more code, re-inventing solved problems.</li>
+<li>Knowing the “map” tells you which tool solves which problem — and which one you do <b>not</b> need yet.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// DIY "router" + DIY fetching
+const [page, setPage] = useState('home');
+const [menu, setMenu] = useState(null);
+const [loading, setLoading] = useState(true);
+useEffect(() =&gt; {
+  fetch('/api/menu')
+    .then((r) =&gt; r.json())
+    .then((d) =&gt; { setMenu(d); setLoading(false); });
+}, []);
+// no URLs, no back button, no caching,
+// no retry, no error state, refetch on every mount</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// Routing: real URLs + back button
+&lt;Route path="/menu" element={&lt;Menu /&gt;} /&gt;
+
+// Data: caching, loading, errors, retries
+const { data, isPending, error } = useQuery({
+  queryKey: ['menu'],
+  queryFn: fetchMenu,
+});</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Build tool</b> (bundler / dev server): <b>Vite</b> — fast dev server, production build. Create React App is deprecated (Feb 2025); don’t use it.</li>
+<li><b>Routing</b> (client-side routing): map URLs to components. <b>React Router 7</b> (package <code>react-router</code>), TanStack Router.</li>
+<li><b>Server data</b> (server-state / data fetching): load, cache, refetch API data. <b>TanStack Query</b>, SWR, RTK Query. React 19 also has <code>use()</code> + Suspense.</li>
+<li><b>App state</b> (client state): data that lives only in the browser. Start with <code>useState</code>, <code>useReducer</code>, Context; add <b>Zustand</b> or <b>Redux Toolkit</b> when it grows.</li>
+<li><b>Forms</b>: React 19 form Actions + <code>useActionState</code>; libraries like React Hook Form; validation with Zod.</li>
+<li><b>Styling</b>: plain CSS, <b>CSS Modules</b> (built into Vite), <b>Tailwind CSS</b>, component kits (MUI, Chakra, shadcn/ui on Radix).</li>
+<li><b>Testing</b>: <b>Vitest</b> (test runner), <b>React Testing Library</b> (component tests), <b>Playwright</b> (end-to-end, E2E).</li>
+<li><b>Frameworks</b> (meta-frameworks): React Router 7 framework mode, Next.js — add SSR/SSG, file routing, data loading. <b>Expo</b> / React Native for mobile.</li>
+<li><b>Tooling</b>: ESLint (with <code>eslint-plugin-react-hooks</code>), TypeScript, React DevTools, React Compiler (automatic memoization).</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>Install the common pieces into a Vite app</h3>
+<pre><code>npm create vite@latest food-app -- --template react
+cd food-app
+npm install react-router @tanstack/react-query zustand
+npm install -D vitest @testing-library/react @testing-library/dom jsdom</code></pre>
+<h3>Routing (React Router 7, declarative mode)</h3>
+<pre><code>import { BrowserRouter, Routes, Route, Link } from 'react-router';
+
+&lt;BrowserRouter&gt;
+  &lt;Link to="/menu"&gt;Menu&lt;/Link&gt;
+  &lt;Routes&gt;
+    &lt;Route path="/" element={&lt;Home /&gt;} /&gt;
+    &lt;Route path="/menu" element={&lt;Menu /&gt;} /&gt;
+  &lt;/Routes&gt;
+&lt;/BrowserRouter&gt;</code></pre>
+<h3>Server data (TanStack Query v5)</h3>
+<pre><code>const { data, isPending, error } = useQuery({
+  queryKey: ['menu'],
+  queryFn: fetchMenu,
+});</code></pre>
+<h3>Global client state (Zustand)</h3>
+<pre><code>import { create } from 'zustand';
+
+const useCart = create((set) =&gt; ({
+  items: [],
+  add: (item) =&gt; set((s) =&gt; ({ items: [...s.items, item] })),
+}));</code></pre>
+<h3>Styling (CSS Modules — no install needed in Vite)</h3>
+<pre><code>import styles from './Menu.module.css';
+&lt;li className={styles.dish}&gt;Paneer Tikka&lt;/li&gt;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A tiny food-delivery app using three ecosystem pieces: React Router (pages), TanStack Query (menu data), Zustand (cart). The “API” is a fake async function so it runs offline.</p>
+<h3>src/App.jsx</h3>
+<pre><code>import { BrowserRouter, Routes, Route, Link } from 'react-router';
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from '@tanstack/react-query';
+import { create } from 'zustand';
+
+// ---------- fake API (pretend this is fetch('/api/menu')) ----------
+function fetchMenu() {
+  return new Promise((resolve) =&gt;
+    setTimeout(
+      () =&gt;
+        resolve([
+          { id: 1, name: 'Margherita Pizza', price: 249 },
+          { id: 2, name: 'Masala Dosa', price: 120 },
+          { id: 3, name: 'Veg Burger', price: 149 },
+        ]),
+      800
+    )
+  );
+}
+
+// ---------- client state: the cart (Zustand) ----------
+const useCart = create((set) =&gt; ({
+  items: [],
+  add: (dish) =&gt; set((s) =&gt; ({ items: [...s.items, dish] })),
+  clear: () =&gt; set({ items: [] }),
+}));
+
+// ---------- server state: the menu (TanStack Query) ----------
+function Menu() {
+  const { data, isPending, error } = useQuery({
+    queryKey: ['menu'],
+    queryFn: fetchMenu,
+  });
+  const add = useCart((s) =&gt; s.add);
+
+  if (isPending) return &lt;p&gt;Loading menu…&lt;/p&gt;;
+  if (error) return &lt;p&gt;Could not load menu.&lt;/p&gt;;
+
+  return (
+    &lt;ul&gt;
+      {data.map((dish) =&gt; (
+        &lt;li key={dish.id}&gt;
+          {dish.name} – ₹{dish.price}{' '}
+          &lt;button onClick={() =&gt; add(dish)}&gt;Add&lt;/button&gt;
+        &lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}
+
+function Cart() {
+  const items = useCart((s) =&gt; s.items);
+  const clear = useCart((s) =&gt; s.clear);
+  const total = items.reduce((sum, d) =&gt; sum + d.price, 0);
+
+  return (
+    &lt;section&gt;
+      &lt;p&gt;{items.length} item(s) · Total ₹{total}&lt;/p&gt;
+      &lt;button onClick={clear} disabled={items.length === 0}&gt;
+        Clear cart
+      &lt;/button&gt;
+    &lt;/section&gt;
+  );
+}
+
+function Home() {
+  return &lt;p&gt;Hungry? Open the menu and add something tasty.&lt;/p&gt;;
+}
+
+// ---------- app shell: providers + routes ----------
+const queryClient = new QueryClient();
+
+export default function App() {
+  const count = useCart((s) =&gt; s.items.length);
+
+  return (
+    &lt;QueryClientProvider client={queryClient}&gt;
+      &lt;BrowserRouter&gt;
+        &lt;nav&gt;
+          &lt;Link to="/"&gt;Home&lt;/Link&gt; | &lt;Link to="/menu"&gt;Menu&lt;/Link&gt; |{' '}
+          &lt;Link to="/cart"&gt;Cart ({count})&lt;/Link&gt;
+        &lt;/nav&gt;
+        &lt;Routes&gt;
+          &lt;Route path="/" element={&lt;Home /&gt;} /&gt;
+          &lt;Route path="/menu" element={&lt;Menu /&gt;} /&gt;
+          &lt;Route path="/cart" element={&lt;Cart /&gt;} /&gt;
+        &lt;/Routes&gt;
+      &lt;/BrowserRouter&gt;
+    &lt;/QueryClientProvider&gt;
+  );
+}</code></pre>
+<h3>src/main.jsx (unchanged from the Vite template)</h3>
+<pre><code>import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+
+createRoot(document.getElementById('root')).render(
+  &lt;StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/StrictMode&gt;
+);</code></pre>
+
+<h2>6. Expected Output</h2>
+<p>At <code>/menu</code>, first 0.8 s:</p>
+<div class="ui">
+<p><a href="#det">Home</a> | <a href="#det">Menu</a> | <a href="#det">Cart (0)</a></p>
+<p>Loading menu…</p>
+</div>
+<p>After loading, and after clicking “Add” on Pizza and Dosa:</p>
+<div class="ui">
+<p><a href="#det">Home</a> | <a href="#det">Menu</a> | <a href="#det">Cart (2)</a></p>
+<ul>
+<li>Margherita Pizza – ₹249 <button type="button">Add</button></li>
+<li>Masala Dosa – ₹120 <button type="button">Add</button></li>
+<li>Veg Burger – ₹149 <button type="button">Add</button></li>
+</ul>
+</div>
+<p>At <code>/cart</code>:</p>
+<div class="ui">
+<p><a href="#det">Home</a> | <a href="#det">Menu</a> | <a href="#det">Cart (2)</a></p>
+<p>2 item(s) · Total ₹369</p>
+<button type="button">Clear cart</button>
+</div>
+<div class="callout">Go back to <code>/menu</code>: the list appears instantly, no “Loading…”. TanStack Query served it from its cache (and refetches quietly in the background when the data is considered stale).</div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ user opens /menu
+     │
+ BrowserRouter reads URL "/menu"
+     │
+ Routes picks &lt;Menu /&gt;
+     │
+ useQuery(['menu']) → cache empty → calls fetchMenu()
+     │                              returns isPending = true
+ Menu renders "Loading menu…"
+     │
+  … 800 ms …  fetchMenu resolves
+     │
+ Query cache stores data → Menu re-renders → list of dishes
+     │
+ click "Add" on Pizza
+     │
+ Zustand add(dish) → store.items = [pizza]
+     │
+ components subscribed to that slice re-render:
+   App reads items.length → nav shows "Cart (1)"
+     │
+ click Link "Cart"
+     │
+ URL → /cart (no page reload) → Routes picks &lt;Cart /&gt;
+     │
+ Cart reads items from Zustand → "1 item(s) · Total ₹249"
+</pre>
+
+<h2>8. Real-World Application</h2>
+<div class="tablewrap"><table>
+<tr><th>App</th><th>Typical pick</th><th>Why</th></tr>
+<tr><td>Todo app (learning)</td><td>Vite + useState + CSS</td><td>No extra libraries needed</td></tr>
+<tr><td>Shop SPA with login</td><td>Vite + React Router + TanStack Query + Tailwind</td><td>Many pages, lots of API data</td></tr>
+<tr><td>Recipe blog</td><td>React Router 7 framework mode or Next.js (SSG)</td><td>SEO, pre-rendered pages</td></tr>
+<tr><td>Chat app</td><td>Vite + Zustand + WebSocket + Vitest</td><td>Lots of live client state</td></tr>
+<tr><td>Food-delivery mobile app</td><td>Expo (React Native)</td><td>Same React skills, native iOS/Android UI</td></tr>
+</table></div>
+<ul>
+<li><b>Rule of thumb</b>: add a library only when you feel the pain it solves.</li>
+<li><b>Server state ≠ client state</b>: API data → TanStack Query; UI toggles/cart → useState/Zustand.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Starting a new project with Create React App</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>npx create-react-app my-shop
+# deprecated since Feb 2025, unmaintained</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>npm create vite@latest my-shop -- --template react
+# or a framework, e.g.:
+npx create-react-router@latest my-shop</code></pre></div>
+</div>
+<h3>Mistake 2: Putting server data into a global store by hand</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// re-implementing caching, loading and refetch
+const useStore = create((set) =&gt; ({
+  movies: [], loading: false,
+  load: async () =&gt; {
+    set({ loading: true });
+    const res = await fetch('/api/movies');
+    set({ movies: await res.json(), loading: false });
+  },
+}));</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// server data belongs in a data library
+const { data: movies, isPending } = useQuery({
+  queryKey: ['movies'],
+  queryFn: () =&gt; fetch('/api/movies').then((r) =&gt; r.json()),
+});</code></pre></div>
+</div>
+<h3>Mistake 3: Mixing old React Router imports</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// v5 API — Switch does not exist in v6/v7
+import { Switch, Route } from 'react-router-dom';
+&lt;Switch&gt;&lt;Route path="/" component={Home} /&gt;&lt;/Switch&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// v7: import from 'react-router'
+import { Routes, Route } from 'react-router';
+&lt;Routes&gt;&lt;Route path="/" element={&lt;Home /&gt;} /&gt;&lt;/Routes&gt;</code></pre></div>
+</div>
+<h3>Mistake 4: Forgetting the provider</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Error: No QueryClient set,
+// use QueryClientProvider to set one
+export default function App() {
+  return &lt;Menu /&gt;;   // Menu calls useQuery
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const queryClient = new QueryClient();
+export default function App() {
+  return (
+    &lt;QueryClientProvider client={queryClient}&gt;
+      &lt;Menu /&gt;
+    &lt;/QueryClientProvider&gt;
+  );
+}</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Match each need to a category: (a) “/movies/42” shows one movie, (b) unit-test a button, (c) load weather from an API with caching.</p>
+<details><summary>Solution</summary><ul><li>(a) Routing — React Router.</li><li>(b) Testing — Vitest + React Testing Library.</li><li>(c) Data fetching — TanStack Query (or SWR).</li></ul></details>
+<h3>Beginner 2</h3>
+<p>Which of these ships with React itself: <code>useState</code>, <code>Link</code>, <code>useQuery</code>, <code>createRoot</code>?</p>
+<details><summary>Solution</summary><p><code>useState</code> (package <code>react</code>) and <code>createRoot</code> (package <code>react-dom/client</code>). <code>Link</code> is React Router; <code>useQuery</code> is TanStack Query.</p></details>
+<h3>Intermediate 1</h3>
+<p>Add a <code>/dish/:id</code> route to the example that shows one dish name using <code>useParams</code>.</p>
+<details><summary>Solution</summary>
+<pre><code>import { useParams } from 'react-router';
+
+function Dish() {
+  const { id } = useParams();
+  const { data } = useQuery({ queryKey: ['menu'], queryFn: fetchMenu });
+  const dish = data?.find((d) =&gt; d.id === Number(id));
+  return &lt;p&gt;{dish ? dish.name : 'Loading…'}&lt;/p&gt;;
+}
+
+// inside &lt;Routes&gt;
+&lt;Route path="/dish/:id" element={&lt;Dish /&gt;} /&gt;</code></pre>
+<p>Both components share the <code>['menu']</code> key, so the second one reuses the cache.</p>
+</details>
+<h3>Intermediate 2</h3>
+<p>Write a Vitest + React Testing Library test that checks <code>Home</code> shows the word “Hungry”.</p>
+<details><summary>Solution</summary>
+<pre><code>// Home.test.jsx  (vite.config: test: { environment: 'jsdom' })
+import { render, screen } from '@testing-library/react';
+import { test, expect } from 'vitest';
+import Home from './Home.jsx';
+
+test('shows greeting', () =&gt; {
+  render(&lt;Home /&gt;);
+  expect(screen.getByText(/hungry/i)).toBeTruthy();
+});</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Pick a stack for a movie-ticket site: public film pages (SEO), seat picker (lots of UI state), logged-in booking history, mobile app later.</p>
+<details><summary>Solution</summary>
+<ul>
+<li>Framework with pre-rendering/SSR for film pages: React Router 7 framework mode or Next.js.</li>
+<li>Seat picker state: <code>useReducer</code> locally; Zustand if many components share it.</li>
+<li>Booking history: loader data (framework) or TanStack Query.</li>
+<li>Testing: Vitest + Testing Library for components, Playwright for the booking flow.</li>
+<li>Mobile later: Expo / React Native, sharing business logic and API code.</li>
+</ul>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>React = UI library only; ecosystem fills the gaps.</li>
+<li>Build: Vite. Never Create React App for new projects.</li>
+<li>Routing: React Router 7 (<code>react-router</code> package).</li>
+<li>Server data: TanStack Query / SWR. Client state: useState → Context → Zustand/Redux Toolkit.</li>
+<li>Styling: CSS Modules (built-in), Tailwind, component kits.</li>
+<li>Testing: Vitest + React Testing Library + Playwright.</li>
+<li>Frameworks (React Router 7 framework mode, Next.js) add SSR/SSG and file-based routing.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. Is React a framework or a library?</summary><p>A library for building UI. Frameworks like Next.js or React Router 7 framework mode are built on top of it.</p></details>
+<details><summary>Q2. Server state vs client state?</summary><p>Server state lives on a backend and can go stale (menu, orders) — use a data library. Client state lives only in the browser (modal open, form input, cart before checkout).</p></details>
+<details><summary>Q3. Why is Create React App not recommended?</summary><p>It was officially deprecated in February 2025 — no active maintenance. The React docs recommend a framework, or a build tool like Vite for a plain SPA.</p></details>
+<details><summary>Q4. When would you add Redux Toolkit or Zustand?</summary><p>When many distant components share and update the same client state and Context causes too many re-renders or too much prop wiring.</p></details>
+<details><summary>Q5. What does React Router 7 framework mode add over declarative mode?</summary><p>Route modules with <code>loader</code>/<code>action</code>, type-safe route config, code splitting, and SSR/pre-rendering via its Vite plugin.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-013.html">INTRO-013 · Static site generation</a>
+<a href="INTRO-013.html#rev">INTRO-013 · Revision</a>
+<a href="INTRO-015.html">INTRO-015 · React architecture</a>
+<a href="INTRO-012.html">INTRO-012</a>
+<a href="INTRO-014.html#rev">INTRO-014 · Revision tab</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">React only renders UI. Real apps add: <b>Vite</b> (build), <b>React Router</b> (pages), <b>TanStack Query</b> (API data), <b>useState/Context/Zustand</b> (app state), <b>CSS Modules/Tailwind</b> (styling), <b>Vitest + Testing Library + Playwright</b> (testing). <b>Frameworks</b> like React Router 7 framework mode and Next.js bundle many of these and add SSR/SSG.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>// Router
+import { BrowserRouter, Routes, Route, Link, useParams } from 'react-router';
+
+// Server data
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+useQuery({ queryKey: ['todos'], queryFn: getTodos });
+
+// Client store
+import { create } from 'zustand';
+const useStore = create((set) =&gt; ({ n: 0, inc: () =&gt; set((s) =&gt; ({ n: s.n + 1 })) }));
+
+// Test
+import { render, screen } from '@testing-library/react';
+render(&lt;App /&gt;); screen.getByRole('button', { name: /add/i });</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>React = library; you choose routing, data, styling.</li>
+<li>Vite is the default build tool for SPAs; CRA is deprecated (Feb 2025).</li>
+<li>React Router 7 imports from <code>react-router</code> (<code>react-router-dom</code> still works as a re-export).</li>
+<li>React Router 7 has declarative, data, and framework modes.</li>
+<li>TanStack Query v5 uses a single object: <code>useQuery({ queryKey, queryFn })</code>.</li>
+<li>Most libraries need a Provider near the root.</li>
+<li>Start with built-in hooks; add state libraries only when needed.</li>
+<li>CSS Modules work in Vite with zero config (<code>*.module.css</code>).</li>
+<li>Server Components / Server Functions are framework-only features.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Name a routing library for React.</summary><p>React Router (v7) or TanStack Router.</p></details>
+<details><summary>What is Vite?</summary><p>A build tool: fast dev server with hot module replacement (HMR) and an optimised production build.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why use TanStack Query instead of <code>useEffect</code> + <code>fetch</code>?</summary><p>It handles caching, deduping, background refetch, retries, loading/error state and race conditions for you.</p></details>
+<details><summary>Context vs Zustand?</summary><p>Context passes a value down; every consumer re-renders when it changes. Zustand lets components subscribe to a slice, so only those using that slice re-render.</p></details>
+<h3>Advanced</h3>
+<details><summary>What is the React Compiler?</summary><p>A build-time tool (stable v1.0, 2025) that automatically memoizes components and values, reducing the need for manual <code>useMemo</code>/<code>useCallback</code>/<code>memo</code>.</p></details>
+<details><summary>When choose a framework over Vite SPA?</summary><p>When you need SEO, SSR/SSG, server data loading close to routes, or Server Components.</p></details>
+<h3>Tricky</h3>
+<details><summary>Is Redux required to use React?</summary><p>No. Many apps never need it; built-in hooks plus a data library cover most cases.</p></details>
+<details><summary>Can React Router do SSR?</summary><p>Yes — in framework mode (React Router 7, successor to Remix). Declarative mode is client-only.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>// URL is /cart
+&lt;Routes&gt;
+  &lt;Route path="/" element={&lt;p&gt;Home&lt;/p&gt;} /&gt;
+  &lt;Route path="/menu" element={&lt;p&gt;Menu&lt;/p&gt;} /&gt;
+  &lt;Route path="*" element={&lt;p&gt;Not found&lt;/p&gt;} /&gt;
+&lt;/Routes&gt;</code></pre>
+<details><summary>Answer</summary><pre class="output">Not found</pre><p><code>*</code> matches anything not matched by other routes.</p></details>
+<pre><code>const { data, isPending } = useQuery({ queryKey: ['w'], queryFn: getWeather });
+return &lt;p&gt;{isPending ? 'Loading' : data.temp}&lt;/p&gt;;
+// first render, cache empty</code></pre>
+<details><summary>Answer</summary><pre class="output">Loading</pre><p>Then the temperature once <code>getWeather</code> resolves.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>“useNavigate() may be used only in the context of a &lt;Router&gt; component.”</summary><p>The component is rendered outside <code>&lt;BrowserRouter&gt;</code>. Wrap the app (or the test) in a router, e.g. <code>&lt;MemoryRouter&gt;</code> in tests.</p></details>
+<details><summary>Two components use <code>useQuery</code> for the same data but fetch twice.</summary><p>Different <code>queryKey</code>s (e.g. <code>['menu']</code> vs <code>['Menu']</code>). Use the same key to share the cache.</p></details>
+<details><summary>Clicking a link reloads the whole page.</summary><p>Using <code>&lt;a href&gt;</code> instead of <code>&lt;Link to&gt;</code>. <code>Link</code> changes the URL without a full reload.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A weekend todo app for yourself.</summary><p>Vite + useState + plain CSS. No routing or state library needed.</p></details>
+<details><summary>An online grocery shop needing Google ranking for product pages.</summary><p>A framework with SSR/SSG (React Router 7 framework mode or Next.js), TanStack Query or loaders for data, Tailwind for styling.</p></details>
+<details><summary>A team keeps breaking the checkout flow.</summary><p>Add Playwright end-to-end tests for checkout, and Testing Library tests for key components; run them in CI.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Create a Zustand store for a movie watchlist with <code>add</code>, <code>remove</code>, and a component that shows the count.</p>
+<details><summary>Solution</summary>
+<pre><code>import { create } from 'zustand';
+
+const useWatchlist = create((set) =&gt; ({
+  movies: [],
+  add: (m) =&gt; set((s) =&gt; ({ movies: [...s.movies, m] })),
+  remove: (id) =&gt; set((s) =&gt; ({ movies: s.movies.filter((m) =&gt; m.id !== id) })),
+}));
+
+export function WatchCount() {
+  const count = useWatchlist((s) =&gt; s.movies.length);
+  return &lt;span&gt;Watchlist: {count}&lt;/span&gt;;
+}</code></pre>
+</details>
+<p>Add a 404 page and a nav to a React Router 7 app with Home and Weather pages.</p>
+<details><summary>Solution</summary>
+<pre><code>import { BrowserRouter, Routes, Route, Link } from 'react-router';
+
+export default function App() {
+  return (
+    &lt;BrowserRouter&gt;
+      &lt;nav&gt;&lt;Link to="/"&gt;Home&lt;/Link&gt; | &lt;Link to="/weather"&gt;Weather&lt;/Link&gt;&lt;/nav&gt;
+      &lt;Routes&gt;
+        &lt;Route path="/" element={&lt;h1&gt;Home&lt;/h1&gt;} /&gt;
+        &lt;Route path="/weather" element={&lt;h1&gt;Weather&lt;/h1&gt;} /&gt;
+        &lt;Route path="*" element={&lt;h1&gt;Page not found&lt;/h1&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/BrowserRouter&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Need</th><th>Built-in React</th><th>Ecosystem tool</th></tr>
+<tr><td>Local state</td><td><code>useState</code>, <code>useReducer</code></td><td>—</td></tr>
+<tr><td>Shared state</td><td>Context</td><td>Zustand, Redux Toolkit, Jotai</td></tr>
+<tr><td>API data</td><td><code>use()</code> + Suspense, <code>useEffect</code></td><td>TanStack Query, SWR</td></tr>
+<tr><td>Forms</td><td>Actions, <code>useActionState</code></td><td>React Hook Form + Zod</td></tr>
+<tr><td>Pages/URLs</td><td>—</td><td>React Router, TanStack Router</td></tr>
+<tr><td>SSR/SSG</td><td><code>react-dom/server</code>, <code>react-dom/static</code></td><td>React Router 7 framework, Next.js</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Category</th><th>Go-to choice</th></tr>
+<tr><td>Build</td><td>Vite 8</td></tr>
+<tr><td>Routing</td><td>React Router 7</td></tr>
+<tr><td>Server data</td><td>TanStack Query</td></tr>
+<tr><td>Client state</td><td>useState → Context → Zustand / Redux Toolkit</td></tr>
+<tr><td>Styling</td><td>CSS Modules, Tailwind CSS</td></tr>
+<tr><td>Unit/component tests</td><td>Vitest + React Testing Library</td></tr>
+<tr><td>E2E tests</td><td>Playwright</td></tr>
+<tr><td>Frameworks</td><td>React Router 7 framework mode, Next.js</td></tr>
+<tr><td>Mobile</td><td>Expo / React Native</td></tr>
+<tr><td>Avoid</td><td>Create React App (deprecated)</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

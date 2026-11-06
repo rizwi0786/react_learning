@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-002 · Why React?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-002</span><span>Module 2: React Introduction</span><span>Lesson 2</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-001</b></span></div>
+<h1>Why React?</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-002-REV</button></div>
+
+<main id="det">
+<h2>1 · Visual Introduction</h2>
+<p>Picture a <b>shop window display</b>. When stock changes, a good shop has one rule: "the display always matches the stockroom". React gives your page that rule: <b>UI = function(data)</b> (UI is computed from state).</p>
+<pre class="diagram">
+   DATA (state)                         SCREEN (UI)
+ +------------------+     React      +--------------------------+
+ | cart = [         |  ==========&gt;   | Cart (2)                 |
+ |   'Pizza',       |   re-renders   |  - Pizza                 |
+ |   'Coke'         |   for you      |  - Coke                  |
+ | ]                |                |  Total items: 2          |
+ +------------------+                +--------------------------+
+        |  add 'Fries'                         ^
+        v                                      |
+ cart = ['Pizza','Coke','Fries']  ---- React ---+  badge, list, total all update
+</pre>
+<p>Three problems React solves:</p>
+<ol><li><b>Sync</b> — the screen always matches the data.</li><li><b>Reuse</b> — build a piece once, use it everywhere.</li><li><b>Scale</b> — big apps stay organised as a tree of small parts.</li></ol>
+
+<h2>2 · Why Do We Need It?</h2>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>// Vanilla: 3 places show the cart; update each by hand
+let cart = ['Pizza', 'Coke'];
+function addItem(item) {
+  cart.push(item);
+  document.getElementById('badge').textContent = cart.length;
+  document.getElementById('list').innerHTML +=
+    '&lt;li&gt;' + item + '&lt;/li&gt;';
+  // Forgot the total line? It is now wrong.
+}</pre></div>
+<div><span class="good">Fixed</span><pre>// React: change data once, every view follows
+const [cart, setCart] = useState(['Pizza', 'Coke']);
+function addItem(item) {
+  setCart([...cart, item]);
+}
+// badge, list and total all read from cart
+&lt;Badge count={cart.length} /&gt;
+&lt;CartList items={cart} /&gt;
+&lt;Total count={cart.length} /&gt;</pre></div>
+</div>
+
+<h2>3 · Core Concept</h2>
+<ul>
+<li><b>Single source of truth</b> (state) — data lives in one place; the UI reads from it.</li>
+<li><b>Automatic re-render</b> — calling a state setter tells React to run the component again.</li>
+<li><b>Reconciliation</b> (diffing) — React compares the new output with the old and changes only what differs in the real DOM.</li>
+<li><b>Reusable components</b> — one <code>ProductCard</code>, many products.</li>
+<li><b>Composition</b> (building big from small) — components nest inside components.</li>
+<li><b>One-way data flow</b> — data goes down via props, events go up via callback functions. Easier to trace bugs.</li>
+<li><b>Huge ecosystem</b> — routing (React Router), frameworks (Next.js), mobile (React Native).</li>
+</ul>
+
+<h2>4 · Syntax</h2>
+<pre><code>import { useState } from 'react';
+
+// state: [currentValue, setterFunction]
+const [items, setItems] = useState([]);
+
+// update by giving a NEW value (do not mutate)
+setItems([...items, 'Fries']);
+
+// pass data down as props
+&lt;CartList items={items} /&gt;
+
+// pass a callback down so the child can ask for changes
+&lt;AddButton onAdd={() =&gt; setItems([...items, 'Fries'])} /&gt;</code></pre>
+
+<h2>5 · Practical Example</h2>
+<p>A food cart where the badge, list and total stay in sync automatically. Vite app, <code>src/App.jsx</code> (<code>main.jsx</code> is the default Vite one using <code>createRoot</code>):</p>
+<pre><code>import { useState } from 'react';
+
+const menu = ['Pizza', 'Burger', 'Fries', 'Coke'];
+
+function Badge({ count }) {
+  return &lt;span&gt;Cart ({count})&lt;/span&gt;;
+}
+
+function CartList({ items }) {
+  if (items.length === 0) return &lt;p&gt;Your cart is empty&lt;/p&gt;;
+  return (
+    &lt;ul&gt;
+      {items.map((item, i) =&gt; (
+        &lt;li key={i}&gt;{item}&lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}
+
+function MenuButton({ item, onAdd }) {
+  return &lt;button onClick={() =&gt; onAdd(item)}&gt;Add {item}&lt;/button&gt;;
+}
+
+export default function App() {
+  const [cart, setCart] = useState([]);
+
+  function handleAdd(item) {
+    setCart([...cart, item]);
+  }
+
+  return (
+    &lt;main&gt;
+      &lt;header&gt;
+        &lt;h1&gt;QuickBite&lt;/h1&gt;
+        &lt;Badge count={cart.length} /&gt;
+      &lt;/header&gt;
+      &lt;div&gt;
+        {menu.map((m) =&gt; (
+          &lt;MenuButton key={m} item={m} onAdd={handleAdd} /&gt;
+        ))}
+      &lt;/div&gt;
+      &lt;CartList items={cart} /&gt;
+      &lt;p&gt;Total items: {cart.length}&lt;/p&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6 · Expected Output</h2>
+<p>After clicking "Add Pizza" then "Add Coke":</p>
+<div class="ui">
+<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">QuickBite</b><span>Cart (2)</span></div>
+<p><button>Add Pizza</button> <button>Add Burger</button> <button>Add Fries</button> <button>Add Coke</button></p>
+<ul><li>Pizza</li><li>Coke</li></ul>
+<p>Total items: 2</p>
+</div>
+
+<h2>7 · Execution Flow</h2>
+<pre class="diagram">
+ User clicks "Add Pizza"
+        |
+ onClick -&gt; onAdd('Pizza') -&gt; handleAdd('Pizza')
+        |
+ setCart([...cart, 'Pizza'])     (schedules an update)
+        |
+ React re-runs App() with cart = ['Pizza']
+        |
+ New output: Badge count=1, CartList items=['Pizza'], Total 1
+        |
+ React diffs old vs new output
+        |
+ Only changed DOM bits update: "Cart (1)", new &lt;li&gt;, "Total items: 1"
+</pre>
+
+<h2>8 · Real-World Application</h2>
+<ul>
+<li><b>Food delivery</b> — cart badge, checkout page and order summary all read the same cart state.</li>
+<li><b>Chat</b> — unread count in the tab, sidebar and title stay equal.</li>
+<li><b>Weather app</b> — switch °C/°F once; every temperature on screen updates.</li>
+<li><b>Large teams</b> — each team owns components (search, player, profile) without stepping on each other.</li>
+</ul>
+
+<h2>9 · Common Mistakes</h2>
+<h3>Mistake 1: mutating state directly</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>function handleAdd(item) {
+  cart.push(item);   // same array object
+  setCart(cart);     // React sees no change, may skip render
+}</pre></div>
+<div><span class="good">Fixed</span><pre>function handleAdd(item) {
+  setCart([...cart, item]); // new array
+}</pre></div>
+</div>
+<h3>Mistake 2: storing a copy of data that can be calculated</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>const [cart, setCart] = useState([]);
+const [total, setTotal] = useState(0);
+// must remember to update both -&gt; drift</pre></div>
+<div><span class="good">Fixed</span><pre>const [cart, setCart] = useState([]);
+const total = cart.length; // derived, always correct</pre></div>
+</div>
+<h3>Mistake 3: calling the handler instead of passing it</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre>&lt;button onClick={handleAdd('Pizza')}&gt;Add&lt;/button&gt;
+// runs during render -&gt; infinite re-render error</pre></div>
+<div><span class="good">Fixed</span><pre>&lt;button onClick={() =&gt; handleAdd('Pizza')}&gt;Add&lt;/button&gt;</pre></div>
+</div>
+
+<h2>10 · Practice</h2>
+<h3>Beginner 1</h3>
+<p>Create state <code>likes</code> starting at 0 and show it.</p>
+<details><summary>Solution</summary><pre><code>const [likes, setLikes] = useState(0);
+return &lt;p&gt;Likes: {likes}&lt;/p&gt;;</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Add a button that increases <code>likes</code>.</p>
+<details><summary>Solution</summary><pre><code>&lt;button onClick={() =&gt; setLikes(likes + 1)}&gt;Like&lt;/button&gt;</code></pre></details>
+<h3>Intermediate 1</h3>
+<p>Show the like count in two places: a heading and a footer. Prove both update.</p>
+<details><summary>Solution</summary><pre><code>export default function App() {
+  const [likes, setLikes] = useState(0);
+  return (
+    &lt;&gt;
+      &lt;h2&gt;Movie: Up ({likes} likes)&lt;/h2&gt;
+      &lt;button onClick={() =&gt; setLikes(likes + 1)}&gt;Like&lt;/button&gt;
+      &lt;footer&gt;Total likes: {likes}&lt;/footer&gt;
+    &lt;/&gt;
+  );
+}</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Make a reusable <code>LikeButton</code> that receives <code>onLike</code> as a prop.</p>
+<details><summary>Solution</summary><pre><code>function LikeButton({ onLike }) {
+  return &lt;button onClick={onLike}&gt;Like&lt;/button&gt;;
+}
+// &lt;LikeButton onLike={() =&gt; setLikes(likes + 1)} /&gt;</code></pre></details>
+<h3>Challenge</h3>
+<p>Todo app: add todos from an input; show list and "N left" count, both derived from one array.</p>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+
+export default function App() {
+  const [todos, setTodos] = useState([]);
+  const [text, setText] = useState('');
+
+  function add() {
+    if (!text.trim()) return;
+    setTodos([...todos, { id: Date.now(), text }]);
+    setText('');
+  }
+
+  return (
+    &lt;div&gt;
+      &lt;input value={text} onChange={(e) =&gt; setText(e.target.value)} /&gt;
+      &lt;button onClick={add}&gt;Add&lt;/button&gt;
+      &lt;ul&gt;{todos.map((t) =&gt; &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;)}&lt;/ul&gt;
+      &lt;p&gt;{todos.length} left&lt;/p&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>11 · Quick Revision</h2>
+<ul>
+<li>React keeps UI in sync with data: UI = f(state).</li>
+<li>Change state with the setter; never mutate.</li>
+<li>React re-renders and updates only changed DOM parts.</li>
+<li>Components give reuse; composition gives scale.</li>
+<li>Derive values (totals, counts) instead of storing duplicates.</li>
+<li>Data down via props, events up via callbacks.</li>
+</ul>
+
+<h2>12 · Interview Corner</h2>
+<details><summary>What main problem does React solve?</summary><p>Keeping the UI consistent with changing data, without writing manual DOM update code for every change.</p></details>
+<details><summary>What is reconciliation?</summary><p>React's process of comparing the new render output with the previous one and applying the minimal set of DOM changes.</p></details>
+<details><summary>Why is one-way data flow helpful?</summary><p>Data has one owner and moves in one direction, so you can trace where a value came from and who changed it.</p></details>
+<details><summary>Does React always make apps faster?</summary><p>Not automatically. It makes UI updates predictable and usually efficient, but poor patterns (huge re-renders, heavy work in render) can still be slow.</p></details>
+
+<h2>13 · Related Lessons</h2>
+<div class="related"><a href="INTRO-001.html">INTRO-001 · What is React?</a><a href="INTRO-003.html">INTRO-003 · Problems with DOM manipulation</a><a href="INTRO-004.html">INTRO-004 · React vs Vanilla JS</a><a href="INTRO-002.html#rev">INTRO-002 · Revision</a></div>
+</main>
+
+<main id="rev" class="rev" hidden>
+<h2>A · Concept in 30 Seconds</h2>
+<div class="callout">React solves three problems: keeping the screen in sync with data (state drives UI), reusing UI pieces (components), and scaling big apps (a tree of small, owned parts with one-way data flow).</div>
+
+<h2>B · Important Syntax</h2>
+<pre><code>const [value, setValue] = useState(initial);
+setValue(newValue);                 // triggers re-render
+setList([...list, item]);           // new array, no mutation
+&lt;Child data={value} onChange={setValue} /&gt;</code></pre>
+
+<h2>C · Must-Know Points</h2>
+<ul>
+<li>UI = function(state).</li>
+<li>State setters schedule a re-render; they don't change the variable immediately.</li>
+<li>React compares outputs and patches only differences in the DOM.</li>
+<li>Never mutate state; create new arrays/objects.</li>
+<li>Derived data should be calculated, not stored.</li>
+<li>Props are read-only for the child.</li>
+<li>Components can be reused with different props.</li>
+</ul>
+
+<h2>D · Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Name three benefits of React.</summary><p>Automatic UI sync with state, reusable components, and a large ecosystem/community.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Why must state updates be immutable?</summary><p>React compares old and new values with <code>Object.is</code>. Mutating keeps the same reference, so React may think nothing changed.</p></details>
+<h3>Advanced</h3>
+<details><summary>How does React decide which DOM nodes to update?</summary><p>It diffs element trees by type and position (and <code>key</code> for lists). Same type: update attributes; different type: replace the subtree.</p></details>
+<h3>Tricky</h3>
+<details><summary>Is "virtual DOM" the reason React exists?</summary><p>No. The main idea is declarative UI from state. Diffing an in-memory tree is an implementation detail that makes that practical.</p></details>
+
+<h2>E · Output-Based Questions</h2>
+<pre><code>const [n, setN] = useState(0);
+function click() {
+  setN(n + 1);
+  setN(n + 1);
+}
+// one click, what is n after re-render?</code></pre>
+<details><summary>Answer</summary><pre class="output">1</pre><p>Both calls use the same <code>n</code> (0) from this render. Use <code>setN(prev =&gt; prev + 1)</code> twice to get 2.</p></details>
+
+<h2>F · Debugging Questions</h2>
+<pre><code>function add(item) {
+  cart.push(item);
+  setCart(cart);
+}
+// list does not update. Why?</code></pre>
+<details><summary>Answer</summary><p>Same array reference, so React bails out. Fix: <code>setCart([...cart, item])</code>.</p></details>
+
+<h2>G · Scenario-Based Questions</h2>
+<details><summary>Your weather app shows °C on the card but °F in the header after toggling. What design fixes it?</summary><p>Keep one <code>unit</code> state at the common parent, pass it down to both components, and format temperatures from it.</p></details>
+
+<h2>H · Coding Challenges</h2>
+<p>A movie list with a "Watched" button per movie and a header "Watched: N".</p>
+<details><summary>Solution</summary><pre><code>import { useState } from 'react';
+const movies = ['Up', 'Coco', 'Dangal'];
+
+export default function App() {
+  const [watched, setWatched] = useState([]);
+  return (
+    &lt;div&gt;
+      &lt;h2&gt;Watched: {watched.length}&lt;/h2&gt;
+      {movies.map((m) =&gt; (
+        &lt;p key={m}&gt;
+          {m}{' '}
+          &lt;button
+            disabled={watched.includes(m)}
+            onClick={() =&gt; setWatched([...watched, m])}
+          &gt;Watched&lt;/button&gt;
+        &lt;/p&gt;
+      ))}
+    &lt;/div&gt;
+  );
+}</code></pre></details>
+
+<h2>I · Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Topic</th><th>Manual DOM</th><th>React</th></tr>
+<tr><td>Keeping UI in sync</td><td>You update every spot</td><td>Change state once</td></tr>
+<tr><td>Reuse</td><td>Copy HTML strings/templates</td><td>Components with props</td></tr>
+<tr><td>Large apps</td><td>Scattered selectors and listeners</td><td>Tree of components</td></tr>
+</table></div>
+
+<h2>J · Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Idea</th><th>Remember</th></tr>
+<tr><td>Sync</td><td>UI = f(state)</td></tr>
+<tr><td>Update</td><td><code>setX(newValue)</code>, never mutate</td></tr>
+<tr><td>Derived</td><td>Compute in render, don't store</td></tr>
+<tr><td>Flow</td><td>Props down, callbacks up</td></tr>
+<tr><td>Diffing</td><td>Only changed DOM parts update</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-013 · Conditional expressions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-013</span><span>Module 4: JSX Fundamentals</span><span>Lesson 13</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-012</b></span></div>
+<h1>Conditional expressions</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-013-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>A shop sign: <b>if</b> open show "Open", <b>else</b> show "Closed". That is an either/or choice (a <b>ternary</b>: <code>cond ? a : b</code>).</li>
+<li>A "Sale!" sticker: show it <b>only if</b> there is a sale, otherwise show nothing. That is a show-or-skip choice (<b>logical AND</b>: <code>cond &amp;&amp; a</code>).</li>
+<li>Inside JSX braces you can only put <b>expressions</b> (things that give a value), not <b>statements</b> like <code>if</code>. Ternary and <code>&amp;&amp;</code> are expressions.</li>
+</ul>
+<pre class="diagram">
+   Either / or  (ternary)                Show or skip  (&amp;&amp;)
+   ──────────────────────                ───────────────────
+   {isOpen ? &lt;Open/&gt; : &lt;Closed/&gt;}        {onSale &amp;&amp; &lt;SaleBadge/&gt;}
+
+        isOpen?                               onSale?
+        /     \                               /     \
+     true     false                        true     false
+      │         │                            │        │
+   &lt;Open/&gt;  &lt;Closed/&gt;                  &lt;SaleBadge/&gt;  false → renders nothing
+
+   React renders nothing for:  null  undefined  false  true  ''
+   React DOES render:          0  →  "0"        NaN  →  "NaN"
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>UIs change with data: logged in or not, loading or done, empty cart or full.</li>
+<li><code>if</code> cannot go inside JSX braces, so you need expression forms.</li>
+<li>Without them you would duplicate the whole JSX block in two <code>return</code>s for one small difference.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before</span><pre><code>// if inside JSX → syntax error
+function Status({ isOpen }) {
+  return (
+    &lt;p&gt;
+      Shop is {if (isOpen) { 'open' } else { 'closed' }}
+    &lt;/p&gt;
+  );
+}
+
+// Workaround: duplicate everything
+function Status({ isOpen }) {
+  if (isOpen) return &lt;p&gt;Shop is open&lt;/p&gt;;
+  return &lt;p&gt;Shop is closed&lt;/p&gt;;
+}</code></pre></div>
+<div><span class="good">After</span><pre><code>function Status({ isOpen, onSale }) {
+  return (
+    &lt;p&gt;
+      Shop is {isOpen ? 'open' : 'closed'}
+      {onSale &amp;&amp; &lt;strong&gt; · Sale today!&lt;/strong&gt;}
+    &lt;/p&gt;
+  );
+}</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Ternary</b> <code>cond ? A : B</code> → pick one of two things.</li>
+<li><b>AND</b> <code>cond &amp;&amp; A</code> → if <code>cond</code> is truthy, the result is <code>A</code>; otherwise the result is <code>cond</code> itself.</li>
+<li>That last part matters: if <code>cond</code> is <code>0</code>, React renders <b>"0"</b>. Use a real boolean: <code>count &gt; 0 &amp;&amp; ...</code>.</li>
+<li>React skips <code>null</code>, <code>undefined</code>, <code>true</code>, <code>false</code> and <code>''</code> (empty string). It renders numbers, including <code>0</code> and <code>NaN</code>.</li>
+<li><b>Fallback</b> values: <code>name || 'Guest'</code> (any falsy) or <code>name ?? 'Guest'</code> (only <code>null</code>/<code>undefined</code>, called <b>nullish coalescing</b>).</li>
+<li>For big branches, use <code>if</code> <b>before</b> the <code>return</code>, or return <code>null</code> early (<b>early return</b>).</li>
+<li>Conditions work in attributes too: <code>className={done ? 'done' : ''}</code>, <code>disabled={!ready}</code>.</li>
+<li>Avoid deeply nested ternaries — split into variables or small components.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. Ternary: either / or
+{isLoggedIn ? &lt;Profile /&gt; : &lt;LoginButton /&gt;}
+
+// 2. Ternary with text
+&lt;p&gt;{stock &gt; 0 ? 'In stock' : 'Sold out'}&lt;/p&gt;
+
+// 3. AND: show or skip
+{hasUnread &amp;&amp; &lt;span className="dot" /&gt;}
+
+// 4. AND with a number: compare first!
+{cart.length &gt; 0 &amp;&amp; &lt;CartBadge count={cart.length} /&gt;}
+
+// 5. Ternary with null = explicit "nothing"
+{error ? &lt;p className="error"&gt;{error}&lt;/p&gt; : null}
+
+// 6. Fallbacks
+&lt;h2&gt;Hello, {user.name ?? 'Guest'}&lt;/h2&gt;
+
+// 7. Conditional attribute
+&lt;li className={todo.done ? 'done' : undefined}&gt;{todo.text}&lt;/li&gt;
+
+// 8. Logic before return
+let content;
+if (loading) content = &lt;Spinner /&gt;;
+else if (error) content = &lt;ErrorBox /&gt;;
+else content = &lt;WeatherCard data={data} /&gt;;
+return &lt;main&gt;{content}&lt;/main&gt;;
+
+// 9. Early return
+if (!movie) return null;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A chat inbox: unread badge, online status, empty state, and a "typing…" hint. Buttons let you change the data and watch the UI react. In a Vite React app, replace <code>src/App.jsx</code>:</p>
+<pre><code>// src/App.jsx
+import { useState } from 'react';
+
+function ChatRow({ chat }) {
+  return (
+    &lt;li style={{ marginBottom: 8 }}&gt;
+      {/* Ternary: either green dot or grey dot */}
+      &lt;span style={{ color: chat.online ? 'green' : 'gray' }}&gt;●&lt;/span&gt;{' '}
+      &lt;strong&gt;{chat.name}&lt;/strong&gt;
+
+      {/* AND with a comparison, so 0 never shows */}
+      {chat.unread &gt; 0 &amp;&amp; &lt;span&gt; ({chat.unread} new)&lt;/span&gt;}
+
+      &lt;br /&gt;
+      &lt;small&gt;
+        {chat.typing ? &lt;em&gt;typing…&lt;/em&gt; : chat.lastMessage ?? 'No messages yet'}
+      &lt;/small&gt;
+    &lt;/li&gt;
+  );
+}
+
+const startChats = [
+  { id: 1, name: 'Asha', online: true, unread: 2, typing: false, lastMessage: 'See you at 7!' },
+  { id: 2, name: 'Ravi', online: false, unread: 0, typing: false, lastMessage: null },
+  { id: 3, name: 'Meera', online: true, unread: 0, typing: true, lastMessage: 'Ok' },
+];
+
+export default function App() {
+  const [chats, setChats] = useState(startChats);
+  const totalUnread = chats.reduce((sum, c) =&gt; sum + c.unread, 0);
+
+  // Early return style for the empty state
+  if (chats.length === 0) {
+    return (
+      &lt;main style={{ fontFamily: 'sans-serif', padding: 16 }}&gt;
+        &lt;p&gt;No chats yet. Start a conversation!&lt;/p&gt;
+        &lt;button onClick={() =&gt; setChats(startChats)}&gt;Restore chats&lt;/button&gt;
+      &lt;/main&gt;
+    );
+  }
+
+  return (
+    &lt;main style={{ fontFamily: 'sans-serif', padding: 16 }}&gt;
+      &lt;h2&gt;
+        Inbox {totalUnread &gt; 0 ? `(${totalUnread} unread)` : '(all read)'}
+      &lt;/h2&gt;
+
+      &lt;ul style={{ listStyle: 'none', padding: 0 }}&gt;
+        {chats.map((c) =&gt; (
+          &lt;ChatRow key={c.id} chat={c} /&gt;
+        ))}
+      &lt;/ul&gt;
+
+      &lt;button onClick={() =&gt; setChats(chats.map((c) =&gt; ({ ...c, unread: 0 })))}&gt;
+        Mark all read
+      &lt;/button&gt;{' '}
+      &lt;button onClick={() =&gt; setChats([])}&gt;Clear chats&lt;/button&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<p>First render:</p>
+<div class="ui">
+<h3 style="margin-top:0">Inbox (2 unread)</h3>
+<ul style="list-style:none;padding:0">
+<li style="margin-bottom:8px"><span style="color:green">●</span> <strong>Asha</strong><span> (2 new)</span><br><small>See you at 7!</small></li>
+<li style="margin-bottom:8px"><span style="color:gray">●</span> <strong>Ravi</strong><br><small>No messages yet</small></li>
+<li style="margin-bottom:8px"><span style="color:green">●</span> <strong>Meera</strong><br><small><em>typing…</em></small></li>
+</ul>
+<button type="button">Mark all read</button> <button type="button">Clear chats</button>
+</div>
+<ul>
+<li>Ravi shows no "(0 new)" and no stray <b>0</b>, because the code uses <code>chat.unread &gt; 0 &amp;&amp;</code>.</li>
+<li><b>Mark all read</b> → heading becomes "Inbox (all read)", Asha's "(2 new)" disappears.</li>
+<li><b>Clear chats</b> → whole page becomes "No chats yet. Start a conversation!" with a <b>Restore chats</b> button.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. App renders → chats.length === 0 ?
+        │ no (3 chats)                    │ yes
+        ▼                                 ▼
+ 2. totalUnread = 2                    early return → empty state
+        │
+        ▼
+ 3. Heading: totalUnread &gt; 0 ? "(2 unread)" : "(all read)"   → "(2 unread)"
+        │
+        ▼
+ 4. For each chat, ChatRow evaluates:
+        chat.online ? 'green' : 'gray'
+        chat.unread &gt; 0 &amp;&amp; &lt;span/&gt;      Asha: true → &lt;span/&gt;
+                                       Ravi: false → nothing
+        chat.typing ? &lt;em/&gt; : (lastMessage ?? 'No messages yet')
+                                       Meera: &lt;em&gt;typing…&lt;/em&gt;
+                                       Ravi:  null ?? → 'No messages yet'
+        │
+        ▼
+ 5. React DOM skips false / null, inserts the rest
+        │
+        ▼
+ 6. Click "Mark all read" → setChats(...) → re-render → steps 1–5 again
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Food delivery</b>: "Restaurant closed" banner via ternary; "Free delivery" tag via <code>total &gt;= 300 &amp;&amp;</code>.</li>
+<li><b>Shop</b>: "Add to cart" vs "Notify me" button based on stock.</li>
+<li><b>Weather</b>: loading spinner → error message → weather card (if/else before return).</li>
+<li><b>Movies</b>: show "18+" badge only if <code>movie.adult</code>; show rating or "Not rated yet" with <code>??</code>.</li>
+<li><b>Todo app</b>: "Nothing to do 🎉" empty state with early return; strike-through class with a ternary.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: A number on the left of <code>&amp;&amp;</code></h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{cart.length &amp;&amp; &lt;p&gt;{cart.length} items&lt;/p&gt;}
+// empty cart → renders "0" on the page</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{cart.length &gt; 0 &amp;&amp; &lt;p&gt;{cart.length} items&lt;/p&gt;}
+// or: {!!cart.length &amp;&amp; ...}
+// or: {cart.length ? &lt;p&gt;...&lt;/p&gt; : null}</code></pre></div>
+</div>
+<h3>Mistake 2: Using <code>if</code> inside JSX</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>return (
+  &lt;div&gt;
+    {if (isVeg) { &lt;span&gt;🟢 Veg&lt;/span&gt; }}
+  &lt;/div&gt;
+);
+// SyntaxError: Unexpected token</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>return (
+  &lt;div&gt;
+    {isVeg &amp;&amp; &lt;span&gt;🟢 Veg&lt;/span&gt;}
+  &lt;/div&gt;
+);</code></pre></div>
+</div>
+<h3>Mistake 3: <code>||</code> hiding a valid 0</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;p&gt;Rating: {movie.rating || 'Not rated'}&lt;/p&gt;
+// rating 0 → "Not rated" (wrong)</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;p&gt;Rating: {movie.rating ?? 'Not rated'}&lt;/p&gt;
+// only null / undefined → "Not rated"</code></pre></div>
+</div>
+<h3>Mistake 4: Nested ternary soup</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{loading ? &lt;Spinner /&gt; : error ? &lt;Err /&gt;
+  : data ? data.length ? &lt;List /&gt; : &lt;Empty /&gt;
+  : null}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>let body = null;
+if (loading) body = &lt;Spinner /&gt;;
+else if (error) body = &lt;Err /&gt;;
+else if (data?.length) body = &lt;List /&gt;;
+else if (data) body = &lt;Empty /&gt;;
+
+return &lt;section&gt;{body}&lt;/section&gt;;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Show "Open now" or "Closed" from <code>isOpen</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;p&gt;{isOpen ? 'Open now' : 'Closed'}&lt;/p&gt;</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Show a "Bestseller" badge only when <code>book.bestseller</code> is true.</p>
+<details><summary>Show solution</summary>
+<pre><code>{book.bestseller &amp;&amp; &lt;span className="badge"&gt;Bestseller&lt;/span&gt;}</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Fix the bug: <code>{notifications.length &amp;&amp; &lt;Bell count={notifications.length} /&gt;}</code> shows "0".</p>
+<details><summary>Show solution</summary>
+<pre><code>{notifications.length &gt; 0 &amp;&amp; &lt;Bell count={notifications.length} /&gt;}</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Write a <code>TodoItem</code> that adds class <code>done</code> when finished, and shows "(overdue)" in red only when not done and <code>dueDate</code> is past.</p>
+<details><summary>Show solution</summary>
+<pre><code>function TodoItem({ todo }) {
+  const overdue = !todo.done &amp;&amp; new Date(todo.dueDate) &lt; new Date();
+  return (
+    &lt;li className={todo.done ? 'done' : undefined}&gt;
+      {todo.text}
+      {overdue &amp;&amp; &lt;span style={{ color: 'red' }}&gt; (overdue)&lt;/span&gt;}
+    &lt;/li&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Build a weather widget with three states: loading, error, data. Use buttons to switch state. Show temperature, and "Carry an umbrella ☂️" only when <code>rainChance &gt;= 50</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>import { useState } from 'react';
+
+const sample = { city: 'Mumbai', temp: 29, rainChance: 70 };
+
+export default function App() {
+  const [status, setStatus] = useState('loading'); // 'loading' | 'error' | 'ok'
+
+  let body;
+  if (status === 'loading') body = &lt;p&gt;Loading…&lt;/p&gt;;
+  else if (status === 'error') body = &lt;p style={{ color: 'crimson' }}&gt;Could not load weather.&lt;/p&gt;;
+  else body = (
+    &lt;&gt;
+      &lt;h3&gt;{sample.city}: {sample.temp}°C&lt;/h3&gt;
+      {sample.rainChance &gt;= 50 &amp;&amp; &lt;p&gt;Carry an umbrella ☂️&lt;/p&gt;}
+    &lt;/&gt;
+  );
+
+  return (
+    &lt;main&gt;
+      {body}
+      &lt;button onClick={() =&gt; setStatus('loading')}&gt;Loading&lt;/button&gt;
+      &lt;button onClick={() =&gt; setStatus('error')}&gt;Error&lt;/button&gt;
+      &lt;button onClick={() =&gt; setStatus('ok')}&gt;Data&lt;/button&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Only expressions go inside <code>{ }</code> — no <code>if</code>, <code>for</code>, <code>switch</code>.</li>
+<li>Either/or → <code>cond ? A : B</code>.</li>
+<li>Show or skip → <code>cond &amp;&amp; A</code> (keep <code>cond</code> a real boolean).</li>
+<li><code>0</code> and <code>NaN</code> render as text; <code>null</code>/<code>undefined</code>/<code>true</code>/<code>false</code>/<code>''</code> render nothing.</li>
+<li>Fallback: <code>??</code> for null/undefined, <code>||</code> for any falsy.</li>
+<li>Many branches → <code>if</code>/<code>else</code> before <code>return</code>, or early <code>return null</code>.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why can't you use <code>if</code> inside JSX?</summary>
+<p>JSX braces accept expressions only. <code>if</code> is a statement. Use a ternary, <code>&amp;&amp;</code>, or move the <code>if</code> above the <code>return</code>.</p>
+</details>
+<details><summary>Why does <code>{count &amp;&amp; &lt;Badge /&gt;}</code> show "0"?</summary>
+<p><code>&amp;&amp;</code> returns its left side when it is falsy. <code>0</code> is a number, and React renders numbers. Use <code>count &gt; 0 &amp;&amp; ...</code>.</p>
+</details>
+<details><summary>What does a component returning <code>null</code> do?</summary>
+<p>It renders nothing to the DOM, but the component still exists and its hooks still run. Since React 18, returning <code>undefined</code> is also allowed.</p>
+</details>
+<details><summary><code>||</code> vs <code>??</code> for defaults?</summary>
+<p><code>||</code> replaces any falsy value (<code>0</code>, <code>''</code>, <code>false</code>). <code>??</code> replaces only <code>null</code>/<code>undefined</code> — safer when 0 or empty string are valid.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-008.html">JSX-008 · JSX attributes</a>
+<a href="JSX-011.html">JSX-011 · Inline styles</a>
+<a href="JSX-012.html">JSX-012 · JSX fragments</a>
+<a href="JSX-014.html">JSX-014 · Next lesson</a>
+<a href="JSX-013.html#rev">JSX-013-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">JSX braces take expressions, not statements. Use <code>cond ? A : B</code> to choose, <code>cond &amp;&amp; A</code> to show or skip, and <code>??</code> for fallbacks. Keep the left side of <code>&amp;&amp;</code> boolean so <code>0</code> never appears. Bigger logic goes above the <code>return</code>.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>{ok ? &lt;Yes /&gt; : &lt;No /&gt;}
+{ok &amp;&amp; &lt;Yes /&gt;}
+{list.length &gt; 0 &amp;&amp; &lt;List /&gt;}
+{name ?? 'Guest'}
+className={on ? 'on' : undefined}
+if (!data) return null;</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li>Ternary = two branches; <code>&amp;&amp;</code> = one branch or nothing.</li>
+<li><code>a &amp;&amp; b</code> returns <code>a</code> when <code>a</code> is falsy.</li>
+<li>Rendered as nothing: <code>null</code>, <code>undefined</code>, <code>true</code>, <code>false</code>, <code>''</code>.</li>
+<li>Rendered as text: <code>0</code>, <code>NaN</code>, any number or non-empty string.</li>
+<li>Use <code>&gt; 0</code>, <code>!!x</code> or <code>Boolean(x)</code> before <code>&amp;&amp;</code>.</li>
+<li><code>??</code> keeps <code>0</code> and <code>''</code>; <code>||</code> does not.</li>
+<li>Early <code>return null</code> for "nothing to show".</li>
+<li>Hooks must still be called before any early return (Rules of Hooks).</li>
+<li>Conditions also work in attributes and <code>style</code> values.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Two ways to conditionally render inside JSX?</summary>
+<p>Ternary (<code>? :</code>) and logical AND (<code>&amp;&amp;</code>).</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>When prefer if/else over a ternary?</summary>
+<p>When there are three or more branches, or each branch is large. Compute a variable before <code>return</code>.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>Can you return early before calling a hook?</summary>
+<p>No. Hooks must run in the same order every render. Call all hooks at the top, then do early returns.</p>
+</details>
+<details><summary>Does hiding with <code>&amp;&amp;</code> keep the child's state?</summary>
+<p>No. When the condition becomes false, the child is removed (unmounted) and its state is lost. Hiding with CSS keeps it mounted.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary>What does <code>{'' &amp;&amp; &lt;p&gt;Hi&lt;/p&gt;}</code> render?</summary>
+<p>Nothing visible. The result is <code>''</code>, and an empty string renders no text.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary><code>&lt;p&gt;{0 &amp;&amp; 'Sale'}&lt;/p&gt;</code></summary>
+<pre class="output">0</pre>
+</details>
+<details><summary><code>&lt;p&gt;{3 &amp;&amp; 'Sale'}&lt;/p&gt;</code></summary>
+<pre class="output">Sale</pre>
+</details>
+<details><summary><code>&lt;p&gt;{null ?? 'Guest'} / {0 ?? 5} / {0 || 5}&lt;/p&gt;</code></summary>
+<pre class="output">Guest / 0 / 5</pre>
+</details>
+<details><summary><code>&lt;p&gt;{true}{false}{undefined}Done&lt;/p&gt;</code></summary>
+<pre class="output">Done</pre>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>An empty cart shows a lone "0" in the header.</summary>
+<p><code>{items.length &amp;&amp; ...}</code>. Change to <code>items.length &gt; 0 &amp;&amp; ...</code>.</p>
+</details>
+<details><summary>"Rendered fewer hooks than expected" after adding <code>if (!user) return null;</code>.</summary>
+<p>The early return sits above a <code>useState</code>/<code>useEffect</code> call. Move all hooks above the early return.</p>
+</details>
+<details><summary>Price 0 (free item) shows "Price unavailable".</summary>
+<p><code>price || 'Price unavailable'</code> treats 0 as missing. Use <code>??</code>.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A product page shows "Add to cart" if in stock, "Notify me" if not, and a "Low stock" warning if stock &lt; 5.</summary>
+<pre><code>{stock &gt; 0 ? &lt;AddToCart /&gt; : &lt;NotifyMe /&gt;}
+{stock &gt; 0 &amp;&amp; stock &lt; 5 &amp;&amp; &lt;p&gt;Only {stock} left!&lt;/p&gt;}</code></pre>
+</details>
+<details><summary>A chat input draft should survive when the user toggles the emoji panel.</summary>
+<p>Conditionally render only the emoji panel, not the input. If a panel's own state must survive, keep it mounted and hide it with CSS or the <code>hidden</code> attribute.</p>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Delivery fee line</h3>
+<details><summary>Show solution</summary>
+<pre><code>function DeliveryFee({ total }) {
+  return (
+    &lt;p&gt;
+      Delivery: {total &gt;= 300 ? 'FREE' : '₹40'}
+      {total &lt; 300 &amp;&amp; &lt;small&gt; (add ₹{300 - total} more for free delivery)&lt;/small&gt;}
+    &lt;/p&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge 2: Movie card with optional parts</h3>
+<details><summary>Show solution</summary>
+<pre><code>function MovieCard({ movie }) {
+  if (!movie) return null;
+  return (
+    &lt;article&gt;
+      &lt;h3&gt;
+        {movie.title}
+        {movie.adult &amp;&amp; &lt;span&gt; 18+&lt;/span&gt;}
+      &lt;/h3&gt;
+      &lt;p&gt;Rating: {movie.rating ?? 'Not rated yet'}&lt;/p&gt;
+    &lt;/article&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td><code>? :</code> vs <code>&amp;&amp;</code></td><td>Two branches vs one branch or nothing</td></tr>
+<tr><td><code>||</code> vs <code>??</code></td><td>Any falsy vs only null/undefined</td></tr>
+<tr><td>Ternary vs if/else</td><td>Inline expression vs statement above return</td></tr>
+<tr><td><code>cond &amp;&amp; &lt;X/&gt;</code> vs CSS hide</td><td>Unmounts (state lost) vs stays mounted</td></tr>
+<tr><td><code>return null</code> vs <code>return &lt;&gt;&lt;/&gt;</code></td><td>Both render nothing; <code>null</code> is the usual choice</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Goal</th><th>Write</th></tr>
+<tr><td>Either / or</td><td><code>{ok ? &lt;A/&gt; : &lt;B/&gt;}</code></td></tr>
+<tr><td>Show or skip</td><td><code>{ok &amp;&amp; &lt;A/&gt;}</code></td></tr>
+<tr><td>Count check</td><td><code>{n &gt; 0 &amp;&amp; &lt;A/&gt;}</code></td></tr>
+<tr><td>Fallback</td><td><code>{x ?? 'Default'}</code></td></tr>
+<tr><td>Conditional class</td><td><code>className={on ? 'on' : undefined}</code></td></tr>
+<tr><td>Many branches</td><td><code>if / else</code> before <code>return</code></td></tr>
+<tr><td>Render nothing</td><td><code>return null</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

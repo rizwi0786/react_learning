@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-008 · JSX attributes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-008</span><span>Module 4: JSX Fundamentals</span><span>Lesson 8</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-007</b></span></div>
+<h1>JSX attributes</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-008-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a pizza order form. Each field (size, crust, extra cheese) is an <b>attribute</b>. Some answers are fixed words ("Large"), some are worked out ("₹" + price), and sometimes you hand over a whole pre-filled form at once.</li>
+<li>JSX attributes (also called <b>props</b> when passed to components) work the same: <b>quoted strings</b>, <b>braced expressions</b>, and <b>spread</b> (<code>{...obj}</code>) to pass many at once.</li>
+</ul>
+<pre class="diagram">
+ &lt;input  type="search"  maxLength={30}  disabled  {...extraProps}  /&gt;
+          ────┬──────   ──────┬──────   ───┬───  ──────┬───────
+              │               │            │           │
+       string literal   JS expression  boolean     spread: copy every
+       (fixed text)     (any value)    shorthand   key/value of an object
+                                       = {true}
+              └───────────────┴────────────┴───────────┘
+                                │
+                                ▼
+     props object: { type: "search", maxLength: 30, disabled: true, ...extraProps }
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Elements need configuration: image sources, link targets, input limits, click handlers.</li>
+<li>Values often come from data (a movie's poster URL), so you need expressions, not only fixed text.</li>
+<li>Components frequently receive a bag of options — spread saves writing each one by hand.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (vanilla JS)</span><pre><code>// Vanilla JS: set attributes one by one
+const img = document.createElement('img');
+img.setAttribute('src', movie.poster);
+img.setAttribute('alt', movie.title);
+img.setAttribute('width', '200');
+img.addEventListener('click', openTrailer);
+document.body.appendChild(img);</code></pre></div>
+<div><span class="good">After (JSX)</span><pre><code>// JSX: attributes inline, values from JS
+&lt;img
+  src={movie.poster}
+  alt={movie.title}
+  width={200}
+  onClick={openTrailer}
+/&gt;</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>String literal</b>: <code>title="Hello"</code> — double or single quotes, no braces. Fixed text only.</li>
+<li><b>Expression</b>: <code>price={249}</code>, <code>src={url}</code>, <code>onClick={handleClick}</code> — any JS value: number, boolean, object, array, function, JSX.</li>
+<li><b>Never both</b>: <code>src="{url}"</code> is the literal string <code>{url}</code>.</li>
+<li><b>Boolean shorthand</b>: <code>&lt;input disabled /&gt;</code> means <code>disabled={true}</code>.</li>
+<li><b>Spread attributes</b>: <code>&lt;Card {...movie} /&gt;</code> copies every property of <code>movie</code> as a prop.</li>
+<li><b>Order matters</b>: later attributes win. <code>&lt;Btn {...props} type="button" /&gt;</code> forces <code>type</code>; <code>&lt;Btn type="button" {...props} /&gt;</code> lets <code>props</code> override it.</li>
+<li><b>Names are camelCase</b> for DOM properties: <code>className</code>, <code>htmlFor</code>, <code>onClick</code>, <code>tabIndex</code>, <code>maxLength</code>. Exception: <code>aria-*</code> and <code>data-*</code> keep their dashes.</li>
+<li><code>style</code> takes an <b>object</b>, not a string: <code>style={{ color: 'red' }}</code> (outer braces = expression, inner = object).</li>
+<li><code>key</code> is special: React uses it and does <b>not</b> pass it into props. (<code>ref</code> is a normal prop for function components in React 19.)</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. String literal
+&lt;a href="https://example.com" target="_blank" rel="noreferrer"&gt;Shop&lt;/a&gt;
+
+// 2. Expressions: number, boolean, function, object, array
+&lt;input maxLength={20} required={true} onChange={handleChange} /&gt;
+&lt;div style={{ padding: 12, backgroundColor: '#fffbe6' }} /&gt;
+&lt;Chart data={[3, 5, 8]} /&gt;
+
+// 3. Boolean shorthand (true only)
+&lt;button disabled&gt;Pay&lt;/button&gt;          // disabled={true}
+
+// 4. Template literal for a mixed string
+&lt;img alt={`Poster of ${movie.title}`} src={movie.poster} /&gt;
+
+// 5. Spread
+const linkProps = { href: '/cart', title: 'Open cart' };
+&lt;a {...linkProps}&gt;Cart&lt;/a&gt;
+
+// 6. Spread + override (last one wins)
+&lt;a {...linkProps} title="Your basket"&gt;Cart&lt;/a&gt;   // title = "Your basket"
+
+// 7. Rest + spread to forward the remaining props
+function TextInput({ label, ...rest }) {
+  return &lt;label&gt;{label} &lt;input {...rest} /&gt;&lt;/label&gt;;
+}</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A movie search form that uses every attribute style. In a Vite React app, replace <code>src/App.jsx</code>:</p>
+<pre><code>// src/App.jsx
+import { useState } from 'react';
+
+// Reusable input: takes "label", forwards everything else to &lt;input&gt;
+function Field({ label, id, ...inputProps }) {
+  return (
+    &lt;p&gt;
+      &lt;label htmlFor={id}&gt;{label}&lt;/label&gt;{' '}
+      &lt;input id={id} {...inputProps} /&gt;
+    &lt;/p&gt;
+  );
+}
+
+const movie = {
+  title: 'Interstellar',
+  poster: 'https://placehold.co/120x180?text=Poster',
+  year: 2014,
+};
+
+export default function App() {
+  const [query, setQuery] = useState('');
+  const tooShort = query.trim().length &lt; 2;
+
+  // A bag of shared attributes
+  const searchAttrs = {
+    type: 'search',
+    placeholder: 'Search movies…',
+    maxLength: 30,
+    autoComplete: 'off',
+  };
+
+  return (
+    &lt;main style={{ fontFamily: 'sans-serif', padding: 16 }}&gt;
+      &lt;Field
+        label="Movie"
+        id="q"
+        {...searchAttrs}
+        value={query}
+        onChange={(e) =&gt; setQuery(e.target.value)}
+        aria-describedby="hint"
+      /&gt;
+      &lt;small id="hint"&gt;Type at least 2 letters&lt;/small&gt;
+
+      &lt;p&gt;
+        &lt;button type="submit" disabled={tooShort}&gt;
+          Search
+        &lt;/button&gt;
+      &lt;/p&gt;
+
+      &lt;img
+        src={movie.poster}
+        alt={`Poster of ${movie.title} (${movie.year})`}
+        width={120}
+        data-movie-year={movie.year}
+      /&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<p style="margin-top:0"><label for="q8">Movie</label> <input id="q8" type="search" placeholder="Search movies…" maxlength="30" aria-describedby="h8"></p>
+<small id="h8" style="color:var(--muted)">Type at least 2 letters</small>
+<p><button type="button" disabled>Search</button></p>
+<div style="width:120px;height:180px;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Poster</div>
+</div>
+<ul>
+<li><b>Search</b> starts disabled. Type "in" → it becomes enabled.</li>
+<li>Input stops accepting characters after 30 (<code>maxLength</code>).</li>
+<li>In DevTools → Elements you will see <code>maxlength="30"</code>, <code>aria-describedby="hint"</code>, <code>data-movie-year="2014"</code> and <code>for="q"</code> on the label.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. Vite compiles &lt;Field label="Movie" id="q" {...searchAttrs} value={query} ... /&gt;
+      ──► jsx(Field, { label: "Movie", id: "q", ...searchAttrs, value: query, ... })
+        │
+        ▼
+ 2. Props object is built left → right (later keys overwrite earlier ones):
+      { label, id, type:"search", placeholder, maxLength:30,
+        autoComplete:"off", value:"", onChange:fn, "aria-describedby":"hint" }
+        │
+        ▼
+ 3. Field({ label, id, ...inputProps }) runs
+      label → used in &lt;label&gt;;   inputProps → everything else
+        │
+        ▼
+ 4. &lt;input id={id} {...inputProps} /&gt; → react-dom maps prop names to DOM:
+      maxLength → maxlength   autoComplete → autocomplete   htmlFor → for
+        │
+        ▼
+ 5. Typing calls onChange → setQuery → App re-renders → disabled={tooShort} updates
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Shopping</b>: <code>&lt;ProductCard {...product} onAdd={addToCart} /&gt;</code> — spread the product object from the API.</li>
+<li><b>Design systems</b>: a <code>Button</code> that accepts <code>variant</code> and forwards the rest (<code>...rest</code>) to the real <code>&lt;button&gt;</code> so <code>type</code>, <code>disabled</code>, <code>aria-*</code> all work.</li>
+<li><b>Forms</b>: <code>&lt;input required maxLength={10} inputMode="numeric" /&gt;</code> for a phone number field.</li>
+<li><b>Testing/analytics</b>: <code>data-testid="checkout"</code> or <code>data-track="add-to-cart"</code> attributes.</li>
+<li><b>Accessibility</b>: <code>aria-label={</code>Remove ${item.name}<code>}</code> on icon-only buttons.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Quoting an expression</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;input maxLength="{limit}" /&gt;
+&lt;img src="{movie.poster}" /&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;input maxLength={limit} /&gt;
+&lt;img src={movie.poster} /&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Passing a number as a string to a component</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;Rating stars="4" /&gt;
+// inside: stars + 1  →  "41"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;Rating stars={4} /&gt;
+// inside: stars + 1  →  5</code></pre></div>
+</div>
+<h3>Mistake 3: Spread in the wrong order</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Wanted: always a safe type="button"
+function Btn(props) {
+  return &lt;button type="button" {...props} /&gt;;
+}
+&lt;Btn type="submit"&gt;Pay&lt;/Btn&gt;
+// props.type overrides → submits the form!</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Btn(props) {
+  return &lt;button {...props} type="button" /&gt;;
+}
+// type is forced last → always "button"</code></pre></div>
+</div>
+<h3>Mistake 4: HTML-style attribute names and style strings</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;label for="email" class="lbl"
+  style="color: red"&gt;Email&lt;/label&gt;
+// style string → React error;
+// class/for → dev warnings</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;label htmlFor="email" className="lbl"
+  style={{ color: 'red' }}&gt;Email&lt;/label&gt;</code></pre></div>
+</div>
+<h3>Mistake 5: Expecting key in props</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Row({ key, name }) {
+  return &lt;li&gt;{key}: {name}&lt;/li&gt;; // key is undefined
+}
+&lt;Row key={7} name="Tea" /&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Row({ id, name }) {
+  return &lt;li&gt;{id}: {name}&lt;/li&gt;;
+}
+&lt;Row key={7} id={7} name="Tea" /&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Render a link to <code>https://example.com/menu</code> that opens in a new tab.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;a href="https://example.com/menu" target="_blank" rel="noreferrer"&gt;
+  View menu
+&lt;/a&gt;</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Render an <code>&lt;input&gt;</code> limited to 6 characters, with placeholder "PIN code", disabled when <code>locked</code> is true.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;input maxLength={6} placeholder="PIN code" disabled={locked} /&gt;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Given <code>const dish = { name: 'Dosa', price: 120, veg: true }</code>, pass all of it to <code>&lt;DishCard&gt;</code> in one go.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;DishCard {...dish} /&gt;
+// same as &lt;DishCard name="Dosa" price={120} veg={true} /&gt;</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Build an <code>IconButton</code> that takes <code>icon</code> and <code>label</code>, shows the icon, uses <code>label</code> as <code>aria-label</code>, and forwards all other props.</p>
+<details><summary>Show solution</summary>
+<pre><code>function IconButton({ icon, label, ...rest }) {
+  return (
+    &lt;button aria-label={label} {...rest}&gt;
+      {icon}
+    &lt;/button&gt;
+  );
+}
+&lt;IconButton icon="🗑️" label="Delete todo" onClick={remove} /&gt;</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>A <code>PriceTag</code> that defaults to <code>currency="₹"</code> and <code>size="md"</code>, lets callers override both via props, but always sets <code>role="status"</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>function PriceTag({ amount, currency = '₹', size = 'md', ...rest }) {
+  return (
+    &lt;span data-size={size} {...rest} role="status"&gt;
+      {currency}{amount}
+    &lt;/span&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Strings: <code>attr="text"</code>. Anything else: <code>attr={expression}</code>.</li>
+<li>No quotes around braces.</li>
+<li>Bare attribute = <code>true</code>: <code>&lt;input disabled /&gt;</code>.</li>
+<li>Spread <code>{...obj}</code> passes every key; the last attribute written wins.</li>
+<li>camelCase DOM names (<code>className</code>, <code>htmlFor</code>, <code>onClick</code>), but <code>aria-*</code> / <code>data-*</code> keep dashes.</li>
+<li><code>style</code> is an object: <code>style={{ fontSize: 14 }}</code>.</li>
+<li><code>key</code> never reaches your component's props.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>What are the three ways to give a JSX attribute a value?</summary>
+<p>A string literal (<code>a="x"</code>), an expression in braces (<code>a={x}</code>), and spread (<code>{...obj}</code>). Plus the boolean shorthand (<code>a</code> means <code>a={true}</code>).</p>
+</details>
+<details><summary>In <code>&lt;Btn {...props} color="red" /&gt;</code>, who wins if <code>props.color</code> is "blue"?</summary>
+<p>"red" — attributes are applied left to right, so the later one overwrites.</p>
+</details>
+<details><summary>Why <code>className</code> and <code>htmlFor</code> instead of <code>class</code> and <code>for</code>?</summary>
+<p>JSX is JavaScript, and React's prop names follow DOM property names (<code>element.className</code>, <code>label.htmlFor</code>). <code>class</code> and <code>for</code> are also reserved words in JS.</p>
+</details>
+<details><summary>What is a downside of spreading props onto a DOM element?</summary>
+<p>Unknown or component-only props can leak onto the DOM (warnings or junk attributes), and it hides which props are actually used. Destructure what you need, then spread the rest.</p>
+</details>
+<details><summary>Can you pass <code>key</code> through spread?</summary>
+<p>If the spread object contains <code>key</code>, React warns in development ("A props object containing a \"key\" prop is being spread into JSX"). Pass <code>key</code> directly: <code>&lt;Row key={x.id} {...x} /&gt;</code>.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-007.html">JSX-007 · JSX expressions</a>
+<a href="JSX-006.html">JSX-006 · Embedding JavaScript</a>
+<a href="JSX-009.html">JSX-009 · className</a>
+<a href="JSX-002.html">JSX-002 · Why JSX?</a>
+<a href="JSX-008.html#rev">JSX-008-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">Attributes configure an element. Use <b>quotes</b> for fixed text, <b>braces</b> for any JavaScript value, and <b>spread</b> <code>{...obj}</code> to pass many at once. Later attributes override earlier ones. Names are camelCase, except <code>aria-*</code> and <code>data-*</code>.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;img src={url} alt="Logo" width={64} /&gt;   // expression + string + number
+&lt;input disabled /&gt;                        // = disabled={true}
+&lt;p style={{ color: 'teal' }} /&gt;            // object
+&lt;a {...linkProps} /&gt;                      // spread
+&lt;Btn {...props} type="button" /&gt;          // override after spread
+function Field({ label, ...rest }) {      // rest + spread
+  return &lt;input aria-label={label} {...rest} /&gt;;
+}</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>String literal: <code>attr="..."</code>; anything else in braces.</li>
+<li><code>"{x}"</code> is a literal string, not the value.</li>
+<li>Bare attribute means <code>true</code>.</li>
+<li>To pass <code>false</code>, write <code>disabled={false}</code> (or leave it out).</li>
+<li>Number props need braces: <code>count={3}</code>, not <code>count="3"</code>.</li>
+<li>Spread copies own enumerable properties of an object.</li>
+<li>Last writer wins in attribute order.</li>
+<li>camelCase for DOM props; <code>aria-*</code>, <code>data-*</code> stay dashed.</li>
+<li><code>style</code> takes an object with camelCase CSS keys.</li>
+<li><code>key</code> is consumed by React; <code>ref</code> is a normal prop in React 19 function components.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>How do you pass a number prop?</summary>
+<p>With braces: <code>&lt;Stars count={5} /&gt;</code>. Quotes would make it the string <code>"5"</code>.</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>What does <code>&lt;Card {...movie} /&gt;</code> do?</summary>
+<p>Passes each property of <code>movie</code> as a separate prop — the same as writing <code>title={movie.title} year={movie.year}</code> and so on.</p>
+</details>
+<details><summary>Why does <code>style="color:red"</code> fail in React?</summary>
+<p>React expects <code>style</code> to be an object. A string throws an error telling you to use a mapping from style properties to values.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>How does <code>&lt;A x="1" {...p} y={2} /&gt;</code> compile?</summary>
+<p>Roughly <code>jsx(A, { x: "1", ...p, y: 2 })</code> — a normal object literal with spread, so normal JS overwrite rules apply.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary><code>&lt;input value="5" /&gt;</code> vs <code>&lt;input value={5} /&gt;</code> in the DOM?</summary>
+<p>Both end up as the string "5" in the DOM, because DOM attributes are strings. The difference matters for components, which receive the raw JS value.</p>
+</details>
+<details><summary>Does <code>&lt;Checkbox checked="false" /&gt;</code> uncheck it?</summary>
+<p>No. <code>"false"</code> is a non-empty string, which is truthy. Use <code>checked={false}</code>.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<h3>Q1</h3>
+<pre><code>function Tag({ label }) { return &lt;b&gt;{label + 1}&lt;/b&gt;; }
+&lt;Tag label="2" /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">21</pre>
+</details>
+<h3>Q2</h3>
+<pre><code>const p = { color: 'blue', size: 'L' };
+function Shirt({ color, size }) { return &lt;p&gt;{color} {size}&lt;/p&gt;; }
+&lt;Shirt color="red" {...p} /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">blue L</pre>
+<p>Spread comes after <code>color="red"</code>, so it overrides.</p>
+</details>
+<h3>Q3</h3>
+<pre><code>&lt;Shirt {...p} color="red" /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">red L</pre>
+</details>
+<h3>Q4</h3>
+<pre><code>function Flag({ on }) { return &lt;p&gt;{String(on)}&lt;/p&gt;; }
+&lt;Flag on /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">true</pre>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<h3>Bug 1</h3>
+<pre><code>&lt;img src="{product.image}" alt="{product.name}" /&gt;</code></pre>
+<details><summary>Show answer</summary>
+<p>Literal strings. Use <code>src={product.image} alt={product.name}</code>.</p>
+</details>
+<h3>Bug 2</h3>
+<pre><code>&lt;div style="background: yellow; padding: 8px"&gt;Offer!&lt;/div&gt;</code></pre>
+<details><summary>Show answer</summary>
+<p>Use an object: <code>style={{ background: 'yellow', padding: 8 }}</code>. Numbers get "px" added automatically for most size properties.</p>
+</details>
+<h3>Bug 3</h3>
+<pre><code>function Input(props) {
+  return &lt;input {...props} /&gt;;
+}
+&lt;Input label="Email" /&gt;
+// No label text appears; label="Email" just sits on &lt;input&gt; as an attribute</code></pre>
+<details><summary>Show answer</summary>
+<p>Unknown lowercase props are passed to the DOM as attributes, so <code>label</code> leaks onto <code>&lt;input&gt;</code> and is never shown. Destructure component-only props: <code>function Input({ label, ...rest }) { return &lt;label&gt;{label}&lt;input {...rest} /&gt;&lt;/label&gt;; }</code>.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<h3>Scenario 1</h3>
+<p>An API returns a weather object with 10 fields; <code>WeatherCard</code> needs all of them.</p>
+<details><summary>Show answer</summary>
+<p><code>&lt;WeatherCard {...weather} /&gt;</code>. If only a few are needed, pass them explicitly for clarity.</p>
+</details>
+<h3>Scenario 2</h3>
+<p>Your <code>Button</code> must allow callers to add <code>onClick</code>, <code>disabled</code>, <code>aria-*</code>, but must always keep its own <code>className="btn"</code>.</p>
+<details><summary>Show answer</summary>
+<pre><code>function Button({ className, ...rest }) {
+  return &lt;button {...rest} className="btn" /&gt;;
+}</code></pre>
+<p>Spread first, then the fixed value. (Merging classes is covered in JSX-009.)</p>
+</details>
+<h3>Scenario 3</h3>
+<p>QA wants a stable hook to find the "Place order" button in tests.</p>
+<details><summary>Show answer</summary>
+<p>Add <code>data-testid="place-order"</code> — <code>data-*</code> attributes pass straight to the DOM.</p>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Avatar</h3>
+<p>Build <code>Avatar({ src, name, size = 40 })</code> rendering a round image with width/height from <code>size</code> and <code>alt</code> = name.</p>
+<details><summary>Show solution</summary>
+<pre><code>function Avatar({ src, name, size = 40 }) {
+  return (
+    &lt;img
+      src={src}
+      alt={name}
+      width={size}
+      height={size}
+      style={{ borderRadius: '50%' }}
+    /&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge 2: Safe external link</h3>
+<p>Build <code>ExternalLink</code> that forwards all props to <code>&lt;a&gt;</code> but always sets <code>target="_blank"</code> and <code>rel="noreferrer"</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>function ExternalLink(props) {
+  return &lt;a {...props} target="_blank" rel="noreferrer" /&gt;;
+}
+&lt;ExternalLink href="https://example.com"&gt;Recipes&lt;/ExternalLink&gt;</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td><code>a="5"</code> vs <code>a={5}</code></td><td>String vs number</td></tr>
+<tr><td><code>disabled</code> vs <code>disabled={false}</code></td><td><code>true</code> vs <code>false</code></td></tr>
+<tr><td><code>{...p} x={1}</code> vs <code>x={1} {...p}</code></td><td>x forced vs p can override x</td></tr>
+<tr><td><code>class</code> vs <code>className</code></td><td>HTML vs JSX (class works with a dev warning)</td></tr>
+<tr><td><code>style="..."</code> vs <code>style={{...}}</code></td><td>Error vs correct object</td></tr>
+<tr><td><code>data-id</code> vs <code>dataId</code></td><td>Passed to DOM vs camelCase (not a data attribute)</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Goal</th><th>Write</th></tr>
+<tr><td>Fixed text</td><td><code>title="Hi"</code></td></tr>
+<tr><td>JS value</td><td><code>price={249}</code></td></tr>
+<tr><td>Boolean true</td><td><code>required</code></td></tr>
+<tr><td>Mixed string</td><td><code>alt={`Poster of ${t}`}</code></td></tr>
+<tr><td>Inline style</td><td><code>style={{ marginTop: 8 }}</code></td></tr>
+<tr><td>Many props</td><td><code>{...obj}</code></td></tr>
+<tr><td>Forward the rest</td><td><code>({ a, ...rest }) =&gt; &lt;x {...rest} /&gt;</code></td></tr>
+<tr><td>Label for input</td><td><code>htmlFor="id"</code></td></tr>
+<tr><td>Accessibility</td><td><code>aria-label="Close"</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

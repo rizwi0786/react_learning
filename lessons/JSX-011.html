@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-011 · Inline styles</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-011</span><span>Module 4: JSX Fundamentals</span><span>Lesson 11</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-010</b></span></div>
+<h1>Inline styles</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-011-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a restaurant order slip: <i>"Spice: medium, Size: large, Extra: cheese"</i>. Each line is a <b>name</b> and a <b>value</b>.</li>
+<li>In JSX, inline styles are that slip written as a JavaScript object (a <b>style object</b>): <code>{ color: 'red', fontSize: 18 }</code>.</li>
+<li>CSS names with dashes become one joined-up word with capitals (<b>camelCase</b>): <code>font-size</code> → <code>fontSize</code>.</li>
+</ul>
+<pre class="diagram">
+   style={{ backgroundColor: 'gold', fontSize: 18 }}
+         │└──────────────────┬──────────────────┘│
+         │          JS object (the order slip)   │
+         └── outer { } = "a JS value comes next" ┘
+
+   CSS (string)                     JSX style object
+   ─────────────────────────        ───────────────────────────
+   background-color: gold;    ──►   backgroundColor: 'gold'
+   font-size: 18px;           ──►   fontSize: 18        (px added)
+   line-height: 1.5;          ──►   lineHeight: 1.5     (no unit)
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Some styles depend on data: a progress bar width, a rating colour, a user-picked theme colour.</li>
+<li>A JS object can be computed, merged and passed around like any value.</li>
+<li>For fixed looks, CSS classes (<code>className</code>) are still better. Inline style is for <b>dynamic</b> values.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (vanilla JS)</span><pre><code>// Vanilla JS: build CSS text by hand
+const bar = document.createElement('div');
+bar.style.cssText =
+  'height: 8px; background-color: green; width: '
+  + percent + '%;';
+// easy to miss a ; or a unit
+document.body.appendChild(bar);</code></pre></div>
+<div><span class="good">After (JSX style object)</span><pre><code>// JSX: a plain object, values from JS
+&lt;div
+  style={{
+    height: 8,
+    backgroundColor: 'green',
+    width: `${percent}%`,
+  }}
+/&gt;</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><code>style</code> takes an <b>object</b>, never a string. A string throws an error.</li>
+<li><code>{{ }}</code> is not special syntax: outer braces = JS expression, inner braces = object literal.</li>
+<li>Property names are camelCase: <code>marginTop</code>, <code>borderRadius</code>, <code>zIndex</code>.</li>
+<li>Vendor prefixes start with a capital, except <code>ms</code>: <code>WebkitLineClamp</code>, <code>msTransform</code>.</li>
+<li>Numbers get <code>px</code> added automatically for size properties: <code>padding: 12</code> → <code>12px</code>.</li>
+<li><b>Unitless</b> properties keep the plain number: <code>opacity</code>, <code>zIndex</code>, <code>lineHeight</code>, <code>fontWeight</code>, <code>flex</code>, <code>flexGrow</code>.</li>
+<li>Other units need a string: <code>'50%'</code>, <code>'2rem'</code>, <code>'100vh'</code>.</li>
+<li><code>null</code>, <code>undefined</code> or booleans as a value → that property is skipped.</li>
+<li>CSS variables (<b>custom properties</b>) keep their dashes in quotes: <code>{ '--brand': 'tomato' }</code>.</li>
+<li>Not possible inline: <code>:hover</code>, <code>::before</code>, media queries, keyframes. <code>!important</code> is not supported in a style object. Use CSS for these.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. Inline object
+&lt;p style={{ color: 'tomato', fontSize: 18 }}&gt;Hot deal!&lt;/p&gt;
+
+// 2. Object in a variable (reusable)
+const badge = { padding: '2px 8px', borderRadius: 12, backgroundColor: '#e7f6ec' };
+&lt;span style={badge}&gt;Veg&lt;/span&gt;
+
+// 3. Dynamic values
+&lt;div style={{ width: `${progress}%` }} /&gt;
+&lt;p style={{ color: temp &gt; 30 ? 'crimson' : 'steelblue' }}&gt;{temp}°C&lt;/p&gt;
+
+// 4. Merge: later keys win
+&lt;span style={{ ...badge, backgroundColor: '#fde8e8' }}&gt;Non-veg&lt;/span&gt;
+
+// 5. Units
+{ margin: 0 }          // "0"
+{ marginTop: 16 }      // "16px"
+{ lineHeight: 1.4 }    // "1.4" (unitless)
+{ width: '50%' }       // string for non-px units
+
+// 6. Vendor prefix and CSS variable
+{ WebkitLineClamp: 2 }
+{ '--accent': 'orange', color: 'var(--accent)' }
+
+// 7. Skip a property conditionally
+{ fontWeight: isNew ? 700 : undefined }</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A movie rating list with a coloured score bar and a "now showing" badge. In a Vite React app, replace <code>src/App.jsx</code>:</p>
+<pre><code>// src/App.jsx
+import { useState } from 'react';
+
+const movies = [
+  { id: 1, title: 'Inside Out 2', rating: 8.1, showing: true },
+  { id: 2, title: 'Dune: Part Two', rating: 9.0, showing: false },
+  { id: 3, title: 'The Room', rating: 3.4, showing: true },
+];
+
+// Shared style objects live outside the component
+const card = {
+  border: '1px solid #ddd',
+  borderRadius: 10,          // → 10px
+  padding: 12,               // → 12px
+  marginBottom: 10,
+  maxWidth: 320,
+};
+
+const badge = {
+  display: 'inline-block',
+  marginLeft: 8,
+  padding: '1px 8px',
+  borderRadius: 999,
+  fontSize: 12,
+  backgroundColor: '#e7f6ec',
+  color: '#1b6b35',
+};
+
+function scoreColor(r) {
+  if (r &gt;= 8) return 'seagreen';
+  if (r &gt;= 5) return 'orange';
+  return 'crimson';
+}
+
+function MovieCard({ movie, big }) {
+  return (
+    &lt;div style={card}&gt;
+      &lt;strong style={{ fontSize: big ? 20 : 16, lineHeight: 1.3 }}&gt;
+        {movie.title}
+      &lt;/strong&gt;
+      {movie.showing &amp;&amp; &lt;span style={badge}&gt;Now showing&lt;/span&gt;}
+
+      {/* Track + dynamic-width fill */}
+      &lt;div style={{ height: 8, backgroundColor: '#eee', borderRadius: 4, marginTop: 8 }}&gt;
+        &lt;div
+          style={{
+            width: `${movie.rating * 10}%`,
+            height: '100%',
+            borderRadius: 4,
+            backgroundColor: scoreColor(movie.rating),
+          }}
+        /&gt;
+      &lt;/div&gt;
+      &lt;small style={{ color: scoreColor(movie.rating), fontWeight: 600 }}&gt;
+        {movie.rating} / 10
+      &lt;/small&gt;
+    &lt;/div&gt;
+  );
+}
+
+export default function App() {
+  const [big, setBig] = useState(false);
+  return (
+    &lt;main style={{ fontFamily: 'sans-serif', padding: 16 }}&gt;
+      &lt;button onClick={() =&gt; setBig(!big)} style={{ marginBottom: 12 }}&gt;
+        {big ? 'Smaller titles' : 'Bigger titles'}
+      &lt;/button&gt;
+      {movies.map((m) =&gt; (
+        &lt;MovieCard key={m.id} movie={m} big={big} /&gt;
+      ))}
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<p style="margin-top:0"><button type="button">Bigger titles</button></p>
+<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;max-width:320px">
+<strong>Inside Out 2</strong><span style="display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:12px;background:var(--good-soft);color:var(--good)">Now showing</span>
+<div style="height:8px;background:var(--line);border-radius:4px;margin-top:8px"><div style="width:81%;height:100%;border-radius:4px;background:seagreen"></div></div>
+<small style="color:seagreen;font-weight:600">8.1 / 10</small></div>
+<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;max-width:320px">
+<strong>Dune: Part Two</strong>
+<div style="height:8px;background:var(--line);border-radius:4px;margin-top:8px"><div style="width:90%;height:100%;border-radius:4px;background:seagreen"></div></div>
+<small style="color:seagreen;font-weight:600">9 / 10</small></div>
+<div style="border:1px solid var(--line);border-radius:10px;padding:12px;max-width:320px">
+<strong>The Room</strong><span style="display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:12px;background:var(--good-soft);color:var(--good)">Now showing</span>
+<div style="height:8px;background:var(--line);border-radius:4px;margin-top:8px"><div style="width:34%;height:100%;border-radius:4px;background:crimson"></div></div>
+<small style="color:crimson;font-weight:600">3.4 / 10</small></div>
+</div>
+<ul>
+<li>Note "9 / 10": the number <code>9.0</code> prints as <code>9</code> in JavaScript.</li>
+<li>Click <b>Bigger titles</b> → titles grow to 20px; button text flips to "Smaller titles".</li>
+<li>DevTools → Elements shows real CSS text, e.g. <code>style="width: 81%; height: 100%; border-radius: 4px; background-color: seagreen;"</code>.</li>
+<li>Floating-point maths can give long decimals for some ratings (e.g. <code>0.7 * 3</code> is <code>2.0999999999999996</code>). Wrap with <code>Math.round</code> if you need neat values.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. Vite compiles  &lt;div style={{ width: `${r * 10}%`, height: 8 }} /&gt;
+      ──► jsx("div", { style: { width: "81%", height: 8 } })
+        │
+        ▼
+ 2. React DOM reads the style object key by key
+        │
+        ├─ width: "81%"   string → used as-is
+        ├─ height: 8      number, not unitless → "8px"
+        └─ lineHeight: 1.3 number, unitless   → "1.3"
+        │
+        ▼
+ 3. Sets each one on the element:  el.style.width = "81%" ...
+    (CSS variables like '--accent' use el.style.setProperty)
+        │
+        ▼
+ 4. Click "Bigger titles" → setBig(true) → re-render
+        │
+        ▼
+ 5. React compares old vs new style object and updates ONLY
+    the changed keys (fontSize 16px → 20px)
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Food delivery</b>: order tracker bar, <code>width: `${step / 4 * 100}%`</code>.</li>
+<li><b>Weather app</b>: temperature text colour from cold blue to hot red.</li>
+<li><b>Chat app</b>: user-chosen bubble colour from settings: <code>backgroundColor: user.color</code>.</li>
+<li><b>Shop</b>: product image positioned by drag (<code>transform: `translate(${x}px, ${y}px)`</code>).</li>
+<li><b>Theming</b>: set a CSS variable once, <code>style={{ '--brand': theme.brand }}</code>, and let CSS classes use <code>var(--brand)</code>.</li>
+</ul>
+<div class="callout">Rule of thumb: <b>fixed look → CSS class</b>, <b>value from data → inline style</b> (or a CSS variable set inline).</div>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Passing a CSS string</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;p style="color: red; font-size: 18px"&gt;Sale&lt;/p&gt;
+// Error: The `style` prop expects a mapping
+// from style properties to values, not a string.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;p style={{ color: 'red', fontSize: 18 }}&gt;Sale&lt;/p&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Dashed property names</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;div style={{ 'background-color': 'gold' }} /&gt;
+// Dev warning: Unsupported style property
+// background-color. Did you mean backgroundColor?
+// (it may seem to work, but don't rely on it)
+
+&lt;div style={{ background-color: 'gold' }} /&gt;
+// Syntax error (minus sign)</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;div style={{ backgroundColor: 'gold' }} /&gt;</code></pre></div>
+</div>
+<h3>Mistake 3: Numbers where px is not wanted</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;div style={{ width: 50 }} /&gt;
+// wanted 50%, got 50px
+
+&lt;p style={{ fontSize: '18' }}&gt;Hi&lt;/p&gt;
+// string "18" has no unit → ignored by browser</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;div style={{ width: '50%' }} /&gt;
+
+&lt;p style={{ fontSize: 18 }}&gt;Hi&lt;/p&gt;
+// or fontSize: '18px'</code></pre></div>
+</div>
+<h3>Mistake 4: Trying :hover inline</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;button style={{ ':hover': { color: 'red' } }}&gt;
+  Buy
+&lt;/button&gt;
+// Not a CSS property: silently ignored</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>/* App.css */
+.buy:hover { color: red; }
+
+// App.jsx
+import './App.css';
+&lt;button className="buy"&gt;Buy&lt;/button&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Render "Free delivery" in green, bold, 14px.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;p style={{ color: 'green', fontWeight: 700, fontSize: 14 }}&gt;
+  Free delivery
+&lt;/p&gt;</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Convert to a style object: <code>border-radius: 8px; padding: 4px 10px; z-index: 5;</code></p>
+<details><summary>Show solution</summary>
+<pre><code>const style = { borderRadius: 8, padding: '4px 10px', zIndex: 5 };</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Show a todo's text with a line through it when <code>done</code> is true, and grey colour.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;li style={{
+  textDecoration: done ? 'line-through' : 'none',
+  color: done ? 'gray' : undefined,
+}}&gt;
+  {text}
+&lt;/li&gt;</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Create a <code>base</code> button style and two variants (primary, danger) by merging.</p>
+<details><summary>Show solution</summary>
+<pre><code>const base = { padding: '6px 14px', border: 0, borderRadius: 6, color: 'white' };
+const primary = { ...base, backgroundColor: 'royalblue' };
+const danger  = { ...base, backgroundColor: 'crimson' };
+
+&lt;button style={primary}&gt;Order&lt;/button&gt;
+&lt;button style={danger}&gt;Cancel&lt;/button&gt;</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Build a weather card whose background colour comes from the temperature (below 15 → lightblue, 15–30 → khaki, above 30 → salmon), with a slider (<code>&lt;input type="range"&gt;</code>) from 0 to 45 to change it.</p>
+<details><summary>Show solution</summary>
+<pre><code>import { useState } from 'react';
+
+function bg(t) {
+  if (t &lt; 15) return 'lightblue';
+  if (t &lt;= 30) return 'khaki';
+  return 'salmon';
+}
+
+export default function App() {
+  const [temp, setTemp] = useState(22);
+  return (
+    &lt;div style={{ backgroundColor: bg(temp), padding: 16, borderRadius: 12, width: 220 }}&gt;
+      &lt;h3 style={{ margin: 0 }}&gt;Pune&lt;/h3&gt;
+      &lt;p style={{ fontSize: 32, margin: '8px 0' }}&gt;{temp}°C&lt;/p&gt;
+      &lt;input
+        type="range" min={0} max={45} value={temp}
+        onChange={(e) =&gt; setTemp(Number(e.target.value))}
+        style={{ width: '100%' }}
+      /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li><code>style</code> = object, not string.</li>
+<li><code>{{ }}</code> = expression braces + object braces.</li>
+<li>camelCase names; CSS variables keep <code>'--name'</code> in quotes.</li>
+<li>Numbers → <code>px</code>, except unitless (<code>opacity</code>, <code>zIndex</code>, <code>lineHeight</code>, <code>fontWeight</code>, <code>flex</code>).</li>
+<li>Other units → strings: <code>'50%'</code>, <code>'2rem'</code>.</li>
+<li>No <code>:hover</code>, media queries or <code>!important</code> inline.</li>
+<li>Use inline style for data-driven values; classes for everything else.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Why double curly braces in <code>style={{ color: 'red' }}</code>?</summary>
+<p>The outer pair says "JS expression here"; the inner pair is the object literal. It is just an object passed as a prop.</p>
+</details>
+<details><summary>What does <code>{ marginTop: 10, opacity: 0.5 }</code> produce?</summary>
+<p><code>margin-top: 10px; opacity: 0.5</code>. <code>opacity</code> is unitless, so no <code>px</code>.</p>
+</details>
+<details><summary>Inline styles vs CSS classes: when to choose which?</summary>
+<p>Classes for fixed designs, hover/focus states and media queries (cacheable, cleaner). Inline styles for values that change with data or state. A middle path: set a CSS variable inline and use it in a class.</p>
+</details>
+<details><summary>How do you write a vendor-prefixed property?</summary>
+<p>Capital first letter: <code>WebkitTransition</code>, <code>MozAppearance</code>. The <code>ms</code> prefix is lowercase: <code>msTransition</code>.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-008.html">JSX-008 · JSX attributes</a>
+<a href="JSX-009.html">JSX-009 · Previous topic</a>
+<a href="JSX-010.html">JSX-010 · htmlFor</a>
+<a href="JSX-012.html">JSX-012 · JSX fragments</a>
+<a href="JSX-013.html">JSX-013 · Conditional expressions</a>
+<a href="JSX-011.html#rev">JSX-011-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">In JSX, <code>style</code> takes a JavaScript object with camelCase keys. Numbers become pixels (except unitless properties like <code>opacity</code>). Use it for dynamic values; use CSS classes for hover, media queries and fixed designs.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;p style={{ color: 'red', fontSize: 18 }}&gt;Hi&lt;/p&gt;
+const s = { marginTop: 8 };  &lt;p style={s}&gt;Hi&lt;/p&gt;
+&lt;p style={{ ...s, color: 'blue' }}&gt;Hi&lt;/p&gt;
+&lt;div style={{ width: `${pct}%` }} /&gt;
+&lt;div style={{ '--brand': 'teal' }} /&gt;
+&lt;div style={{ WebkitLineClamp: 2 }} /&gt;</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li>Object, not string — a string throws.</li>
+<li>Keys are camelCase.</li>
+<li>Numeric values get <code>px</code> unless the property is unitless.</li>
+<li>Unitless examples: <code>opacity</code>, <code>zIndex</code>, <code>lineHeight</code>, <code>fontWeight</code>, <code>flex</code>, <code>flexGrow</code>, <code>order</code>.</li>
+<li><code>null</code>/<code>undefined</code>/boolean values skip the property.</li>
+<li>Spread merges objects; later keys win.</li>
+<li>CSS variables: quoted keys starting with <code>--</code>.</li>
+<li>No pseudo-classes, pseudo-elements, media queries, keyframes or <code>!important</code>.</li>
+<li>Inline style beats most class rules (higher specificity).</li>
+<li>Define constant style objects outside the component to keep the code tidy.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>How do you write <code>background-color</code> in JSX?</summary>
+<p><code>backgroundColor</code>.</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>What is <code>{ lineHeight: 2 }</code> vs <code>{ lineHeight: '2px' }</code>?</summary>
+<p>The first is unitless (2 × font size). The second is a fixed 2 pixels — usually a bug.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>How does React update styles on re-render?</summary>
+<p>It compares the previous and next style objects and sets or clears only the keys that changed. Removed keys are reset to empty.</p>
+</details>
+<details><summary>How do you combine inline values with hover effects?</summary>
+<p>Set a CSS variable inline (<code>style={{ '--c': color }}</code>) and write <code>.btn:hover { background: var(--c) }</code> in CSS.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary>Does <code>style={{ color: 'red !important' }}</code> work?</summary>
+<p>No. <code>!important</code> is not supported in a style object; the browser rejects that value and the colour is not applied. Use a CSS class if you truly need it.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<details><summary>What CSS text appears? <code>&lt;div style={{ padding: 10, zIndex: 3, width: '50%' }} /&gt;</code></summary>
+<pre class="output">padding: 10px; z-index: 3; width: 50%;</pre>
+</details>
+<details><summary>What colour? <code>style={{ ...{ color: 'red' }, color: 'blue' }}</code></summary>
+<p>Blue — the later key wins.</p>
+</details>
+<details><summary>What happens? <code>style={{ color: isSale &amp;&amp; 'red' }}</code> when <code>isSale</code> is false</summary>
+<p>Value is <code>false</code> → property skipped → default text colour.</p>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>App crashes with "The `style` prop expects a mapping…". Why?</summary>
+<p>A CSS string was passed to <code>style</code>. Convert it to an object.</p>
+</details>
+<details><summary>Width is 75px instead of 75%: <code>style={{ width: 75 }}</code></summary>
+<p>Numbers mean pixels. Write <code>width: '75%'</code>.</p>
+</details>
+<details><summary><code>fontSize: '20'</code> has no effect.</summary>
+<p>A string without a unit is invalid CSS for font-size. Use <code>20</code> or <code>'20px'</code>.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>Each chat user picks a bubble colour. How do you style the bubble?</summary>
+<p>Fixed layout in a class; colour inline: <code>&lt;div className="bubble" style={{ backgroundColor: user.color }}&gt;</code>.</p>
+</details>
+<details><summary>Product cards need a hover shadow and a stock-level border colour.</summary>
+<p>Hover shadow in CSS (<code>.card:hover</code>); border colour inline or through a CSS variable set inline.</p>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Order progress bar (step 1–4)</h3>
+<details><summary>Show solution</summary>
+<pre><code>function OrderProgress({ step }) {
+  return (
+    &lt;div style={{ height: 10, backgroundColor: '#eee', borderRadius: 5 }}&gt;
+      &lt;div style={{
+        width: `${(step / 4) * 100}%`,
+        height: '100%',
+        backgroundColor: step === 4 ? 'seagreen' : 'orange',
+        borderRadius: 5,
+        transition: 'width 0.3s',
+      }} /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge 2: Theme via CSS variable</h3>
+<details><summary>Show solution</summary>
+<pre><code>// App.css:  .chip { background: var(--chip); padding: 2px 8px; border-radius: 9px; }
+import './App.css';
+
+function Chip({ color, children }) {
+  return &lt;span className="chip" style={{ '--chip': color }}&gt;{children}&lt;/span&gt;;
+}
+&lt;Chip color="plum"&gt;Comedy&lt;/Chip&gt;</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Compare</th><th>Difference</th></tr>
+<tr><td>HTML <code>style="..."</code> vs JSX <code>style={{}}</code></td><td>CSS string vs JS object</td></tr>
+<tr><td><code>style</code> vs <code>className</code></td><td>Per-element values vs reusable CSS rules (with hover, media queries)</td></tr>
+<tr><td><code>width: 50</code> vs <code>width: '50%'</code></td><td>50px vs half the parent</td></tr>
+<tr><td><code>opacity: 0.5</code> vs <code>margin: 0.5</code></td><td>Unitless vs <code>0.5px</code></td></tr>
+<tr><td>Inline vs CSS variable inline</td><td>Direct value vs value CSS rules can reuse</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Goal</th><th>Write</th></tr>
+<tr><td>Basic</td><td><code>style={{ color: 'red' }}</code></td></tr>
+<tr><td>Pixels</td><td><code>{ padding: 12 }</code></td></tr>
+<tr><td>Other units</td><td><code>{ width: '50%' }</code></td></tr>
+<tr><td>Unitless</td><td><code>{ lineHeight: 1.5, zIndex: 2 }</code></td></tr>
+<tr><td>Dynamic</td><td><code>{ width: `${p}%` }</code></td></tr>
+<tr><td>Merge</td><td><code>{ ...base, color: 'blue' }</code></td></tr>
+<tr><td>Prefix</td><td><code>{ WebkitLineClamp: 2 }</code></td></tr>
+<tr><td>Variable</td><td><code>{ '--brand': 'teal' }</code></td></tr>
+<tr><td>Hover / media</td><td>Use a CSS class</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

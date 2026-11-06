@@ -1,0 +1,20 @@
+{
+  "name": "react-mastery",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/ready.mjs && vite",
+    "build": "node scripts/ready.mjs && vite build && node scripts/artifact.mjs",
+    "preview": "vite preview",
+    "validate": "node scripts/validate.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.2.1",
+    "vite": "^8.3.5"
+  }
+}

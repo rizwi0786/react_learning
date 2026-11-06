@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-007 · JSX expressions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-007</span><span>Module 4: JSX Fundamentals</span><span>Lesson 7</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>JSX-006</b></span></div>
+<h1>JSX expressions</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-007-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a vending machine slot: it only accepts a <b>coin</b> (a value). You cannot push in a <b>set of instructions</b> like "if hungry, give chips".</li>
+<li>JSX braces are that slot. They accept an <b>expression</b> (something that becomes a value). They reject a <b>statement</b> (an instruction that does something but is not a value).</li>
+<li>So <code>{isOpen ? 'Open' : 'Closed'}</code> fits, but <code>{if (isOpen) { ... }}</code> does not.</li>
+</ul>
+<pre class="diagram">
+             { ...  }  ← the slot only takes VALUES
+               │
+   ┌───────────┴─────────────┐
+   ▼                         ▼
+ EXPRESSION  ✔               STATEMENT  ✘
+ produces a value            performs an action
+ ─────────────────           ─────────────────
+ count + 1                   if (x) { ... }
+ isOpen ? 'Open' : 'Closed'  for (...) { ... }
+ items.map(i =&gt; &lt;li/&gt;)       const total = 5;
+ user?.name ?? 'Guest'       switch (day) { ... }
+ getTotal()                  while (...) { ... }
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>UIs need decisions ("show Sold Out or Add to Cart?") and repetition ("one row per todo").</li>
+<li>Beginners reach for <code>if</code> and <code>for</code> inside JSX — and get a syntax error.</li>
+<li>Knowing the expression forms (ternary, <code>&amp;&amp;</code>, <code>map</code>) lets you write decisions and loops right inside the markup.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Before (statement)</span><pre><code>function Stock({ inStock }) {
+  return (
+    &lt;button&gt;
+      {if (inStock) { 'Add to cart' } else { 'Sold out' }}
+    &lt;/button&gt;
+  );
+}
+// SyntaxError: Unexpected token "if"</code></pre></div>
+<div><span class="good">After (expression)</span><pre><code>function Stock({ inStock }) {
+  return (
+    &lt;button&gt;
+      {inStock ? 'Add to cart' : 'Sold out'}
+    &lt;/button&gt;
+  );
+}
+// Works: the ternary is an expression</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Expression</b> = code that evaluates to a value. Test: could you write <code>const x = ___;</code> with it? If yes, it is an expression.</li>
+<li><b>Statement</b> = code that performs an action: <code>if</code>, <code>for</code>, <code>while</code>, <code>switch</code>, <code>const</code>/<code>let</code> declarations, <code>return</code>.</li>
+<li>Why: JSX compiles to a function call. <code>{...}</code> becomes an <b>argument</b> in that call, and JavaScript arguments must be expressions.</li>
+<li>Expression tools for decisions: <b>ternary</b> <code>a ? b : c</code>, <b>logical AND</b> <code>cond &amp;&amp; &lt;X/&gt;</code>, <b>nullish coalescing</b> <code>value ?? 'fallback'</code>, optional chaining <code>user?.name</code>.</li>
+<li>Expression tool for loops: <b>array methods</b> like <code>items.map(...)</code> and <code>items.filter(...).map(...)</code>.</li>
+<li>Need a real <code>if</code> or <code>switch</code>? Put it <b>above the <code>return</code></b> (or in a helper function), store the result, and insert the variable.</li>
+<li>JSX itself is an expression, so you can store it in a variable or return it from a function.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// ✔ Expressions that work inside { }
+{count}                              // variable
+{count + 1}                          // arithmetic
+{isVip ? 'VIP' : 'Member'}           // ternary (if/else)
+{hasCoupon &amp;&amp; &lt;span&gt;10% off&lt;/span&gt;}  // &amp;&amp; (if, no else)
+{user?.name ?? 'Guest'}              // optional chaining + ??
+{todos.map(t =&gt; &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;)}   // loop
+{getLabel(status)}                   // function call
+{(() =&gt; { if (a) return 'A'; return 'B'; })()}  // IIFE: works, but hard to read
+
+// ✘ Statements — syntax errors inside { }
+{if (x) { ... }}
+{for (const t of todos) { ... }}
+{const total = 5}
+{switch (s) { ... }}
+
+// ✔ Statement moved ABOVE the return
+let badge;
+if (score &gt; 90) badge = 'Gold';
+else badge = 'Silver';
+return &lt;span&gt;{badge}&lt;/span&gt;;</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A todo list that uses every expression form plus a <code>switch</code> done the right way. In a Vite React app (<code>npm create vite@latest todo -- --template react</code>), replace <code>src/App.jsx</code>:</p>
+<pre><code>// src/App.jsx
+import { useState } from 'react';
+
+const initialTodos = [
+  { id: 1, text: 'Buy milk', done: true, priority: 'high' },
+  { id: 2, text: 'Book movie tickets', done: false, priority: 'low' },
+  { id: 3, text: 'Pay electricity bill', done: false, priority: 'high' },
+];
+
+// A switch statement lives in a normal function...
+function priorityIcon(priority) {
+  switch (priority) {
+    case 'high':
+      return '🔴';
+    case 'low':
+      return '🟢';
+    default:
+      return '⚪';
+  }
+}
+
+export default function App() {
+  const [todos, setTodos] = useState(initialTodos);
+  const [user] = useState(null); // nobody logged in
+
+  // ...and an if statement lives ABOVE the return
+  const pending = todos.filter((t) =&gt; !t.done).length;
+  let summary;
+  if (pending === 0) {
+    summary = 'All done! 🎉';
+  } else {
+    summary = `${pending} left to do`;
+  }
+
+  function toggle(id) {
+    setTodos(todos.map((t) =&gt; (t.id === id ? { ...t, done: !t.done } : t)));
+  }
+
+  return (
+    &lt;main&gt;
+      {/* ?? and ?. — fallback when user is null */}
+      &lt;h1&gt;Hi, {user?.name ?? 'Guest'}&lt;/h1&gt;
+
+      {/* variable computed with if */}
+      &lt;p&gt;{summary}&lt;/p&gt;
+
+      {/* .map() is the "loop" */}
+      &lt;ul&gt;
+        {todos.map((t) =&gt; (
+          &lt;li key={t.id} onClick={() =&gt; toggle(t.id)}&gt;
+            {priorityIcon(t.priority)}{' '}
+            {/* ternary for if/else */}
+            {t.done ? &lt;s&gt;{t.text}&lt;/s&gt; : t.text}
+            {/* &amp;&amp; for "only if" */}
+            {t.priority === 'high' &amp;&amp; !t.done &amp;&amp; &lt;b&gt; (urgent)&lt;/b&gt;}
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3 style="margin-top:0">Hi, Guest</h3>
+<p>2 left to do</p>
+<ul style="margin:0">
+<li>🔴 <s>Buy milk</s></li>
+<li>🟢 Book movie tickets</li>
+<li>🔴 Pay electricity bill<b> (urgent)</b></li>
+</ul>
+</div>
+<ul>
+<li>Click "Pay electricity bill" → it is struck through, "(urgent)" disappears, summary becomes "1 left to do".</li>
+<li>Click the other two open items until none are left → "All done! 🎉".</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. App() runs (on first render and after every setTodos)
+        │
+        ▼
+ 2. Statements run first, above return:
+      pending = 2   →  if/else  →  summary = "2 left to do"
+        │
+        ▼
+ 3. return (...) builds ONE big expression. For each { }:
+      user?.name ?? 'Guest'      → "Guest"
+      summary                    → "2 left to do"
+      todos.map(...)             → [&lt;li&gt;, &lt;li&gt;, &lt;li&gt;]
+         ├─ t.done ? &lt;s/&gt; : text → picks one branch
+         └─ cond &amp;&amp; &lt;b/&gt;         → &lt;b&gt; or false (renders nothing)
+        │
+        ▼
+ 4. Compiled form: jsxs("main", { children: [ ...values... ] })
+    Every { } is an ARGUMENT → must be an expression
+        │
+        ▼
+ 5. React renders the elements; false/null are skipped
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Food delivery</b>: <code>{restaurant.isOpen ? &lt;OrderButton/&gt; : &lt;p&gt;Opens at 11 am&lt;/p&gt;}</code>.</li>
+<li><b>Shopping</b>: <code>{cart.length &gt; 0 &amp;&amp; &lt;CartBadge count={cart.length} /&gt;}</code>.</li>
+<li><b>Chat</b>: <code>{messages.map(m =&gt; &lt;Bubble key={m.id} {...m} /&gt;)}</code> for the message list.</li>
+<li><b>Weather</b>: a <code>switch</code> on the condition code inside <code>iconFor(code)</code>, then <code>&lt;img src={iconFor(code)} /&gt;</code>.</li>
+<li><b>Profiles</b>: <code>{profile?.avatarUrl ?? defaultAvatar}</code> while data is still loading.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Using if inside JSX</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>return (
+  &lt;p&gt;
+    {if (temp &gt; 30) 'Hot' else 'Cool'}
+  &lt;/p&gt;
+);</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>return &lt;p&gt;{temp &gt; 30 ? 'Hot' : 'Cool'}&lt;/p&gt;;
+
+// or, for more complex logic:
+const label = temp &gt; 30 ? 'Hot' : 'Cool';
+return &lt;p&gt;{label}&lt;/p&gt;;</code></pre></div>
+</div>
+<h3>Mistake 2: Using a for loop inside JSX</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;ul&gt;
+  {for (const m of movies) {
+    &lt;li&gt;{m.title}&lt;/li&gt;
+  }}
+&lt;/ul&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;ul&gt;
+  {movies.map((m) =&gt; (
+    &lt;li key={m.id}&gt;{m.title}&lt;/li&gt;
+  ))}
+&lt;/ul&gt;</code></pre></div>
+</div>
+<h3>Mistake 3: &amp;&amp; with a number shows "0"</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{cart.length &amp;&amp; &lt;p&gt;Items in cart&lt;/p&gt;}
+// cart is empty → renders "0" on screen</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{cart.length &gt; 0 &amp;&amp; &lt;p&gt;Items in cart&lt;/p&gt;}
+// empty → false → renders nothing</code></pre></div>
+</div>
+<h3>Mistake 4: map with curly body but no return</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>{todos.map((t) =&gt; {
+  &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;;
+})}
+// renders nothing: returns undefined</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>{todos.map((t) =&gt; (
+  &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;
+))}
+// ( ) = implicit return</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Show "Open now" or "Closed" from <code>isOpen</code>.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;p&gt;{isOpen ? 'Open now' : 'Closed'}&lt;/p&gt;</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Show a "New!" badge only when <code>movie.isNew</code> is true.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;h2&gt;{movie.title} {movie.isNew &amp;&amp; &lt;span&gt;New!&lt;/span&gt;}&lt;/h2&gt;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Render a list of dish names from <code>menu</code> (array of <code>{ id, name }</code>), but only dishes where <code>veg</code> is true.</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;ul&gt;
+  {menu
+    .filter((d) =&gt; d.veg)
+    .map((d) =&gt; &lt;li key={d.id}&gt;{d.name}&lt;/li&gt;)}
+&lt;/ul&gt;</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Show the weather label: "Sunny" for <code>'sun'</code>, "Rainy" for <code>'rain'</code>, "Cloudy" otherwise. Use a <code>switch</code> — where must it go?</p>
+<details><summary>Show solution</summary>
+<pre><code>function weatherLabel(code) {
+  switch (code) {
+    case 'sun': return 'Sunny';
+    case 'rain': return 'Rainy';
+    default: return 'Cloudy';
+  }
+}
+// In JSX:
+&lt;p&gt;{weatherLabel(today.code)}&lt;/p&gt;</code></pre>
+<p>The switch goes in a helper function (or above <code>return</code>), never inside braces.</p>
+</details>
+<h3>Challenge</h3>
+<p>Order status: show "Preparing", "On the way (ETA X min)" or "Delivered" based on <code>order.status</code>, and show "No orders yet" if <code>order</code> is <code>null</code>. Use an object lookup instead of a switch.</p>
+<details><summary>Show solution</summary>
+<pre><code>const STATUS_TEXT = {
+  preparing: () =&gt; 'Preparing',
+  shipping: (o) =&gt; `On the way (ETA ${o.eta} min)`,
+  delivered: () =&gt; 'Delivered',
+};
+
+function OrderStatus({ order }) {
+  if (!order) return &lt;p&gt;No orders yet&lt;/p&gt;;   // early return (statement, outside JSX)
+  return &lt;p&gt;{STATUS_TEXT[order.status]?.(order) ?? 'Unknown'}&lt;/p&gt;;
+}</code></pre>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Braces accept <b>expressions</b> only — things that produce a value.</li>
+<li>Statements (<code>if</code>, <code>for</code>, <code>switch</code>, <code>const</code>) cause a syntax error inside braces.</li>
+<li>Reason: <code>{...}</code> becomes a function-call argument after compilation.</li>
+<li>if/else → ternary. "only if" → <code>&amp;&amp;</code>. fallback → <code>??</code>. loop → <code>.map()</code>.</li>
+<li>Complex logic → variables above <code>return</code>, helper functions, or early returns.</li>
+<li>Beware <code>0 &amp;&amp; ...</code> — it renders "0".</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>What is the difference between an expression and a statement?</summary>
+<p>An expression produces a value (<code>a + b</code>, <code>fn()</code>, <code>x ? y : z</code>). A statement performs an action and does not produce a usable value (<code>if</code>, <code>for</code>, variable declarations).</p>
+</details>
+<details><summary>Why can't you use <code>if</code> inside JSX braces?</summary>
+<p>JSX compiles to <code>jsx(type, props)</code> calls. Each <code>{...}</code> becomes part of the arguments, and arguments must be expressions. <code>if</code> is a statement, so the compiler rejects it.</p>
+</details>
+<details><summary>How do you loop in JSX?</summary>
+<p>Use an array method that returns an array of elements, usually <code>.map()</code>, with a stable <code>key</code> on each item.</p>
+</details>
+<details><summary>When would you use <code>&amp;&amp;</code> vs a ternary?</summary>
+<p><code>&amp;&amp;</code> when there is nothing to show in the "false" case. Ternary when you need two different outputs. Make sure the left side of <code>&amp;&amp;</code> is a real boolean, not a number.</p>
+</details>
+<details><summary>Can an IIFE be used in JSX?</summary>
+<p>Yes — it is an expression, so it works. But it hurts readability; a named helper function or a variable above <code>return</code> is preferred.</p>
+</details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-006.html">JSX-006 · Embedding JavaScript</a>
+<a href="JSX-008.html">JSX-008 · JSX attributes</a>
+<a href="JSX-009.html">JSX-009 · className</a>
+<a href="JSX-002.html">JSX-002 · Why JSX?</a>
+<a href="JSX-007.html#rev">JSX-007-REV · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">JSX braces take <b>values, not instructions</b>. Expressions (ternary, <code>&amp;&amp;</code>, <code>??</code>, <code>.map()</code>, function calls) work. Statements (<code>if</code>, <code>for</code>, <code>switch</code>, <code>const</code>) fail because each <code>{...}</code> becomes a function argument after compilation. Put statements above <code>return</code>.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>{cond ? &lt;A /&gt; : &lt;B /&gt;}                 // if / else
+{cond &amp;&amp; &lt;A /&gt;}                        // if only
+{value ?? 'default'}                   // fallback for null/undefined
+{obj?.deep?.prop}                      // safe access
+{list.map(x =&gt; &lt;li key={x.id}&gt;{x.name}&lt;/li&gt;)}   // loop
+
+// statements go outside JSX
+if (!data) return &lt;p&gt;Loading…&lt;/p&gt;;     // early return
+const label = getLabel(status);        // helper + variable</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Expression = produces a value; statement = performs an action.</li>
+<li>Quick test: can it go on the right side of <code>const x = ...</code>?</li>
+<li><code>if</code>, <code>for</code>, <code>while</code>, <code>switch</code>, <code>let/const</code> are not allowed in braces.</li>
+<li>JSX compiles to function calls; braces become arguments.</li>
+<li>Ternary for two outcomes, <code>&amp;&amp;</code> for one.</li>
+<li><code>0 &amp;&amp; x</code> renders "0"; use <code>n &gt; 0 &amp;&amp;</code>.</li>
+<li><code>.map()</code> returns an array of elements — remember <code>key</code>.</li>
+<li>Arrow function with <code>{ }</code> body needs <code>return</code>.</li>
+<li>JSX itself is an expression — store it in variables.</li>
+<li>Early returns are a clean way to handle loading/empty states.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Give three expressions you can use inside JSX.</summary>
+<p>Ternary <code>a ? b : c</code>, logical AND <code>a &amp;&amp; b</code>, and a function call <code>fn()</code>. Also <code>.map()</code>, template literals, arithmetic.</p>
+</details>
+<h3>Intermediate</h3>
+<details><summary>Is <code>{x = 5}</code> valid inside JSX?</summary>
+<p>Syntactically yes — an assignment is an expression (it evaluates to 5). But it mutates a variable during render, which you should never do.</p>
+</details>
+<details><summary>Why is <code>.forEach()</code> useless for rendering lists?</summary>
+<p><code>forEach</code> returns <code>undefined</code>, so nothing renders. <code>.map()</code> returns a new array of elements.</p>
+</details>
+<h3>Advanced</h3>
+<details><summary>Show what <code>&lt;p&gt;{ok ? 'Yes' : 'No'}&lt;/p&gt;</code> compiles to.</summary>
+<p><code>jsx("p", { children: ok ? "Yes" : "No" })</code> — the ternary sits directly as a property value, which is why it must be an expression.</p>
+</details>
+<h3>Tricky</h3>
+<details><summary>What renders: <code>{'' &amp;&amp; &lt;b&gt;Hi&lt;/b&gt;}</code>?</summary>
+<p>Nothing visible. <code>''</code> is falsy, so the expression is <code>''</code> — an empty string renders as empty text.</p>
+</details>
+<details><summary>What renders: <code>{NaN &amp;&amp; &lt;b&gt;Hi&lt;/b&gt;}</code>?</summary>
+<p>"NaN" — like <code>0</code>, <code>NaN</code> is falsy but is a number, so React prints it.</p>
+</details>
+
+<h2>E. Output-Based Questions</h2>
+<h3>Q1</h3>
+<pre><code>const stock = 0;
+&lt;p&gt;{stock &amp;&amp; 'In stock'}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">0</pre>
+</details>
+<h3>Q2</h3>
+<pre><code>const user = null;
+&lt;p&gt;Hi {user?.name ?? 'Guest'}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">Hi Guest</pre>
+</details>
+<h3>Q3</h3>
+<pre><code>const n = [1, 2, 3];
+&lt;p&gt;{n.map(x =&gt; x * 2)}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">246</pre>
+<p>Numbers in an array render back to back with no separator.</p>
+</details>
+<h3>Q4</h3>
+<pre><code>const rating = 4.6;
+&lt;p&gt;{rating &gt; 4.5 ? 'Top rated' : rating &gt; 3 ? 'Good' : 'Average'}&lt;/p&gt;</code></pre>
+<details><summary>Show answer</summary>
+<pre class="output">Top rated</pre>
+</details>
+
+<h2>F. Debugging Questions</h2>
+<h3>Bug 1</h3>
+<pre><code>&lt;ul&gt;
+  {movies.forEach(m =&gt; &lt;li key={m.id}&gt;{m.title}&lt;/li&gt;)}
+&lt;/ul&gt;</code></pre>
+<details><summary>Show answer</summary>
+<p><code>forEach</code> returns <code>undefined</code>. Use <code>movies.map(...)</code>.</p>
+</details>
+<h3>Bug 2</h3>
+<pre><code>return (
+  &lt;div&gt;
+    {const total = price * qty}
+    &lt;p&gt;{total}&lt;/p&gt;
+  &lt;/div&gt;
+);</code></pre>
+<details><summary>Show answer</summary>
+<p><code>const</code> is a statement. Move <code>const total = price * qty;</code> above <code>return</code>.</p>
+</details>
+<h3>Bug 3</h3>
+<pre><code>{unread &amp;&amp; &lt;span className="badge"&gt;{unread}&lt;/span&gt;}
+// shows "0" when there are no unread messages</code></pre>
+<details><summary>Show answer</summary>
+<p>Use <code>unread &gt; 0 &amp;&amp; ...</code>.</p>
+</details>
+
+<h2>G. Scenario-Based Questions</h2>
+<h3>Scenario 1</h3>
+<p>A product page must show Loading…, an error message, or the product. How do you structure it?</p>
+<details><summary>Show answer</summary>
+<pre><code>if (loading) return &lt;p&gt;Loading…&lt;/p&gt;;
+if (error) return &lt;p&gt;Error: {error.message}&lt;/p&gt;;
+return &lt;ProductCard product={product} /&gt;;</code></pre>
+<p>Early returns (statements) above the main JSX keep it flat and readable.</p>
+</details>
+<h3>Scenario 2</h3>
+<p>A teammate nests four ternaries inside JSX for a status label. What do you suggest?</p>
+<details><summary>Show answer</summary>
+<p>Move it into a helper function with <code>switch</code> or an object lookup, and render <code>{statusLabel(order)}</code>.</p>
+</details>
+<h3>Scenario 3</h3>
+<p>You need to show the first 5 unread chat messages only.</p>
+<details><summary>Show answer</summary>
+<pre><code>{messages
+  .filter((m) =&gt; !m.read)
+  .slice(0, 5)
+  .map((m) =&gt; &lt;Message key={m.id} {...m} /&gt;)}</code></pre>
+</details>
+
+<h2>H. Coding Challenges</h2>
+<h3>Challenge 1: Delivery badge</h3>
+<p>Show "Free delivery" if <code>subtotal &gt;= 499</code>, else "Add ₹X more for free delivery".</p>
+<details><summary>Show solution</summary>
+<pre><code>&lt;p&gt;
+  {subtotal &gt;= 499
+    ? 'Free delivery'
+    : `Add ₹${499 - subtotal} more for free delivery`}
+&lt;/p&gt;</code></pre>
+</details>
+<h3>Challenge 2: Grouped list</h3>
+<p>Render todos with a "Done" section and a "Pending" section, hiding a section when it is empty.</p>
+<details><summary>Show solution</summary>
+<pre><code>export default function TodoGroups({ todos }) {
+  const done = todos.filter((t) =&gt; t.done);
+  const pending = todos.filter((t) =&gt; !t.done);
+  return (
+    &lt;&gt;
+      {pending.length &gt; 0 &amp;&amp; (
+        &lt;section&gt;
+          &lt;h3&gt;Pending&lt;/h3&gt;
+          &lt;ul&gt;{pending.map((t) =&gt; &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;)}&lt;/ul&gt;
+        &lt;/section&gt;
+      )}
+      {done.length &gt; 0 &amp;&amp; (
+        &lt;section&gt;
+          &lt;h3&gt;Done&lt;/h3&gt;
+          &lt;ul&gt;{done.map((t) =&gt; &lt;li key={t.id}&gt;{t.text}&lt;/li&gt;)}&lt;/ul&gt;
+        &lt;/section&gt;
+      )}
+    &lt;/&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th></th><th>Inside JSX braces?</th><th>Alternative</th></tr>
+<tr><td><code>if / else</code></td><td>No</td><td>Ternary, or <code>if</code> above <code>return</code></td></tr>
+<tr><td><code>for / while</code></td><td>No</td><td><code>.map()</code></td></tr>
+<tr><td><code>switch</code></td><td>No</td><td>Helper function or object lookup</td></tr>
+<tr><td><code>const x = …</code></td><td>No</td><td>Declare above <code>return</code></td></tr>
+<tr><td><code>&amp;&amp;</code> vs ternary</td><td>Both yes</td><td><code>&amp;&amp;</code> = one outcome, ternary = two</td></tr>
+<tr><td><code>.map()</code> vs <code>.forEach()</code></td><td>Both are expressions</td><td>Only <code>.map()</code> returns elements</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Need</th><th>Pattern</th></tr>
+<tr><td>Either/or</td><td><code>{c ? &lt;A/&gt; : &lt;B/&gt;}</code></td></tr>
+<tr><td>Show or nothing</td><td><code>{c &amp;&amp; &lt;A/&gt;}</code> (c must be boolean)</td></tr>
+<tr><td>Default value</td><td><code>{v ?? '—'}</code></td></tr>
+<tr><td>Safe nested access</td><td><code>{a?.b?.c}</code></td></tr>
+<tr><td>List</td><td><code>{xs.map(x =&gt; &lt;li key={x.id}/&gt;)}</code></td></tr>
+<tr><td>Filtered list</td><td><code>{xs.filter(f).map(...)}</code></td></tr>
+<tr><td>Many branches</td><td>helper with <code>switch</code>, then <code>{fn(x)}</code></td></tr>
+<tr><td>Loading/error</td><td>early <code>return</code> above JSX</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

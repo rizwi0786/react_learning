@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-001 · What is JSX?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-001</span><span>Module 4: JSX Fundamentals</span><span>Lesson 1</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO module (INTRO-001–INTRO-015), ENV module</b></span></div>
+<h1>What is JSX?</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-001-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>JSX looks like HTML, but it is really <b>JavaScript in a costume</b>.</li>
+<li>Like writing a food order in shorthand: “1× Masala Dosa, extra chutney”. The kitchen (build tool) rewrites it into the full ticket (function calls) before cooking.</li>
+<li>The browser never sees JSX. Vite converts it to plain JavaScript first.</li>
+</ul>
+<pre class="diagram">
+ YOU WRITE (JSX)                  BUILD TOOL (Vite)            BROWSER RUNS
+ ───────────────                  ─────────────────            ────────────
+ &lt;h1 className="title"&gt;     ──►   jsx('h1', {          ──►    returns an object:
+   Hello, {name}!                   className: 'title',         { type: 'h1',
+ &lt;/h1&gt;                              children: ['Hello, ',        props: {...} }
+                                       name, '!']                    │
+                                   })                               ▼
+                                                              react-dom turns it
+                                                              into a real &lt;h1&gt;
+</pre>
+<div class="callout"><b>One-line definition:</b> JSX (JavaScript XML) is a syntax extension that lets you write UI descriptions inside JavaScript. Each tag becomes a function call that returns a React element (a plain object).</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Without JSX you write nested function calls by hand — hard to read for anything bigger than a button.</li>
+<li>JSX keeps markup and the logic that drives it in one place (the component).</li>
+<li>It is still JavaScript, so you can use variables, <code>map</code>, ternaries — no separate template language to learn.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// Without JSX: correct, but hard to read
+import { createElement as h } from 'react';
+
+function MovieCard({ movie }) {
+  return h('div', { className: 'card' },
+    h('h2', null, movie.title),
+    h('p', null, 'Rating: ', movie.rating),
+    h('button', { onClick: () =&gt; alert('Booked!') }, 'Book')
+  );
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// With JSX: same result, reads like the UI
+function MovieCard({ movie }) {
+  return (
+    &lt;div className="card"&gt;
+      &lt;h2&gt;{movie.title}&lt;/h2&gt;
+      &lt;p&gt;Rating: {movie.rating}&lt;/p&gt;
+      &lt;button onClick={() =&gt; alert('Booked!')}&gt;Book&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>JSX = JavaScript</b> (syntax extension): not HTML, not a string, not a template.</li>
+<li><b>Compiled away</b> (transpiled): Vite’s React plugin turns each tag into a call to <code>jsx()</code> / <code>jsxs()</code> imported automatically from <code>react/jsx-runtime</code> (automatic JSX runtime). In development it uses <code>jsxDEV</code> from <code>react/jsx-dev-runtime</code>.</li>
+<li><b>Result = element</b> (React element): a plain object <code>{ type, props, key }</code>. Describes UI; doesn’t draw anything.</li>
+<li><b>Curly braces</b> <code>{ }</code> (JSX expression): insert any JavaScript <b>expression</b> — variables, maths, function calls, ternaries. Not statements (<code>if</code>, <code>for</code>).</li>
+<li><b>Lowercase tag</b> = HTML element (<code>&lt;div&gt;</code>); <b>Capitalised tag</b> = your component (<code>&lt;MovieCard /&gt;</code>).</li>
+<li><b>Attributes are props</b>: camelCase names — <code>className</code>, <code>htmlFor</code>, <code>onClick</code>.</li>
+<li><b>One root</b>: a component returns one parent element (or a Fragment <code>&lt;&gt;…&lt;/&gt;</code>).</li>
+<li><b>Every tag closes</b>: <code>&lt;img /&gt;</code>, <code>&lt;br /&gt;</code>, <code>&lt;input /&gt;</code>.</li>
+<li><b>Optional</b>: React works without JSX, but almost everyone uses it.</li>
+<li><b>File extension</b>: in a Vite project put JSX in <code>.jsx</code> (or <code>.tsx</code>) files.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>Basic tag, attribute, expression</h3>
+<pre><code>const name = 'Asha';
+const greeting = &lt;h1 className="title"&gt;Hello, {name}!&lt;/h1&gt;;</code></pre>
+<h3>What it compiles to (automatic runtime)</h3>
+<pre><code>import { jsxs as _jsxs } from 'react/jsx-runtime';   // added by the compiler
+
+const name = 'Asha';
+const greeting = _jsxs('h1', {
+  className: 'title',
+  children: ['Hello, ', name, '!'],
+});</code></pre>
+<h3>Self-closing, fragment, comment, style</h3>
+<pre><code>&lt;&gt;
+  {/* this is a JSX comment */}
+  &lt;img src="/pizza.png" alt="Pizza" /&gt;
+  &lt;p style={{ color: 'tomato', fontSize: 18 }}&gt;Hot &amp; fresh&lt;/p&gt;
+&lt;/&gt;</code></pre>
+<h3>JSX is a value — store it, pass it, return it</h3>
+<pre><code>const badge = isVeg ? &lt;span&gt;🟢 Veg&lt;/span&gt; : &lt;span&gt;🔴 Non-veg&lt;/span&gt;;
+const items = dishes.map((d) =&gt; &lt;li key={d.id}&gt;{d.name}&lt;/li&gt;);</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A food-order card. Every JSX feature from this lesson, in one runnable Vite file. The comments show what each line becomes.</p>
+<h3>src/App.jsx</h3>
+<pre><code>// No "import React" needed — the automatic runtime adds
+// "import { jsx } from 'react/jsx-runtime'" for you.
+import { useState } from 'react';
+import './App.css';
+
+const dishes = [
+  { id: 1, name: 'Masala Dosa', price: 120, veg: true },
+  { id: 2, name: 'Chicken Biryani', price: 280, veg: false },
+  { id: 3, name: 'Paneer Wrap', price: 160, veg: true },
+];
+
+function DishRow({ dish, onAdd }) {
+  // Capitalised tag → React calls this function
+  return (
+    &lt;li className="dish"&gt;
+      &lt;span&gt;{dish.veg ? '🟢' : '🔴'}&lt;/span&gt;{' '}
+      &lt;b&gt;{dish.name}&lt;/b&gt; – ₹{dish.price}{' '}
+      &lt;button onClick={() =&gt; onAdd(dish)}&gt;Add&lt;/button&gt;
+    &lt;/li&gt;
+  );
+}
+
+export default function App() {
+  const [cart, setCart] = useState([]);
+  const total = cart.reduce((sum, d) =&gt; sum + d.price, 0);
+
+  // JSX is just a value: we can build it before returning
+  const status =
+    cart.length === 0 ? (
+      &lt;p className="muted"&gt;Your cart is empty.&lt;/p&gt;
+    ) : (
+      &lt;p&gt;
+        {cart.length} item(s) · Total: &lt;b&gt;₹{total}&lt;/b&gt;
+      &lt;/p&gt;
+    );
+
+  return (
+    &lt;main&gt;
+      {/* expression: string + function call */}
+      &lt;h1&gt;Order from {'Spice Corner'.toUpperCase()}&lt;/h1&gt;
+
+      &lt;ul&gt;
+        {dishes.map((dish) =&gt; (
+          &lt;DishRow
+            key={dish.id}
+            dish={dish}
+            onAdd={(d) =&gt; setCart([...cart, d])}
+          /&gt;
+        ))}
+      &lt;/ul&gt;
+
+      {status}
+
+      &lt;label htmlFor="note"&gt;Note for the kitchen&lt;/label&gt;
+      &lt;input id="note" placeholder="Less spicy, please" /&gt;
+    &lt;/main&gt;
+  );
+}</code></pre>
+<h3>src/App.css (optional)</h3>
+<pre><code>.dish { margin: 6px 0; }
+.muted { color: gray; }</code></pre>
+
+<h2>6. Expected Output</h2>
+<p>On first load:</p>
+<div class="ui">
+<h3>Order from SPICE CORNER</h3>
+<ul>
+<li>🟢 <b>Masala Dosa</b> – ₹120 <button type="button">Add</button></li>
+<li>🔴 <b>Chicken Biryani</b> – ₹280 <button type="button">Add</button></li>
+<li>🟢 <b>Paneer Wrap</b> – ₹160 <button type="button">Add</button></li>
+</ul>
+<p style="color:gray">Your cart is empty.</p>
+<label for="jsx001note">Note for the kitchen</label> <input id="jsx001note" placeholder="Less spicy, please">
+</div>
+<p>After clicking “Add” on Dosa and Biryani, the status line becomes:</p>
+<div class="ui"><p>2 item(s) · Total: <b>₹400</b></p></div>
+<p>Browser DevTools → Elements shows normal HTML — no JSX survives:</p>
+<pre class="output">&lt;li class="dish"&gt;&lt;span&gt;🟢&lt;/span&gt; &lt;b&gt;Masala Dosa&lt;/b&gt; – ₹120 &lt;button&gt;Add&lt;/button&gt;&lt;/li&gt;</pre>
+<div class="callout">Notice: <code>className</code> in JSX became <code>class</code> in the DOM, and <code>htmlFor</code> became <code>for</code>.</div>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. You save App.jsx
+        │
+ 2. Vite dev server transforms the file (JSX → JS):
+      &lt;li className="dish"&gt;…&lt;/li&gt;
+        → jsxDEV('li', { className: 'dish', children: [...] })  (dev)
+        → jsx / jsxs(...)                                        (prod build)
+        │
+ 3. Browser loads the plain JS module
+        │
+ 4. createRoot(...).render(&lt;App /&gt;)  →  React calls App()
+        │
+ 5. App() runs the jsx() calls → returns an element tree (objects):
+      { type: 'main', props: { children: [
+          { type: 'h1', ... },
+          { type: 'ul', props: { children: [ {type: DishRow, key: '1'}, ... ] } },
+          ... ] } }
+        │
+ 6. React sees type DishRow (a function) → calls DishRow() for each
+        │
+ 7. react-dom commits: creates &lt;main&gt;, &lt;h1&gt;, &lt;li class="dish"&gt;, ...
+        │
+ 8. Click "Add" → setCart → App() runs again → new objects
+        → React diffs → updates only the status &lt;p&gt;
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Lists from data</b>: a movie app turns an API array into cards with <code>movies.map(m =&gt; &lt;MovieCard key={m.id} … /&gt;)</code>.</li>
+<li><b>Conditional UI</b>: a weather app shows <code>{temp &gt; 35 ? &lt;HeatAlert /&gt; : null}</code>.</li>
+<li><b>Reusable pieces</b>: a chat app composes <code>&lt;ChatWindow&gt;&lt;MessageList /&gt;&lt;Composer /&gt;&lt;/ChatWindow&gt;</code>.</li>
+<li><b>Safe by default</b>: values in <code>{ }</code> are escaped, so a user typing <code>&lt;script&gt;</code> in a chat message is shown as text, not run (protects against XSS, cross-site scripting).</li>
+<li><b>Tooling</b>: because JSX is structured, editors and linters can catch mistakes (missing <code>key</code>, unclosed tags) before you run the app.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Returning two roots</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Header() {
+  // SyntaxError: Adjacent JSX elements must be
+  // wrapped in an enclosing tag
+  return (
+    &lt;h1&gt;Pizza Palace&lt;/h1&gt;
+    &lt;p&gt;Open till 11 pm&lt;/p&gt;
+  );
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Header() {
+  return (
+    &lt;&gt;
+      &lt;h1&gt;Pizza Palace&lt;/h1&gt;
+      &lt;p&gt;Open till 11 pm&lt;/p&gt;
+    &lt;/&gt;
+  );
+}</code></pre></div>
+</div>
+<h3>Mistake 2: Using <code>if</code> / <code>for</code> inside braces</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>return (
+  &lt;p&gt;
+    {if (isOpen) { 'Open' } else { 'Closed' }}
+  &lt;/p&gt;
+);
+// SyntaxError: braces take an expression,
+// not a statement</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>return &lt;p&gt;{isOpen ? 'Open' : 'Closed'}&lt;/p&gt;;
+
+// or decide before the return:
+// let label = 'Closed';
+// if (isOpen) label = 'Open';
+// return &lt;p&gt;{label}&lt;/p&gt;;</code></pre></div>
+</div>
+<h3>Mistake 3: HTML habits — <code>class</code>, unclosed tags, string styles</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;div class="card" style="color: red"&gt;
+  &lt;img src="dosa.png"&gt;
+  &lt;br&gt;
+&lt;/div&gt;
+// unclosed &lt;img&gt;/&lt;br&gt; → syntax error
+// style string → runtime error
+// class → works but React warns:
+// "Invalid DOM property `class`. Did you mean `className`?"</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>&lt;div className="card" style={{ color: 'red' }}&gt;
+  &lt;img src="dosa.png" alt="Masala dosa" /&gt;
+  &lt;br /&gt;
+&lt;/div&gt;</code></pre></div>
+</div>
+<h3>Mistake 4: Rendering an object directly</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const order = { id: 7, dish: 'Biryani' };
+return &lt;p&gt;{order}&lt;/p&gt;;
+// Error: Objects are not valid as a React child</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>const order = { id: 7, dish: 'Biryani' };
+return &lt;p&gt;Order #{order.id}: {order.dish}&lt;/p&gt;;</code></pre></div>
+</div>
+<h3>Mistake 5: Lowercase component name</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function weatherCard() { return &lt;p&gt;24°C&lt;/p&gt;; }
+// &lt;weatherCard /&gt; is treated as an unknown
+// HTML tag; React warns and renders nothing useful</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function WeatherCard() { return &lt;p&gt;24°C&lt;/p&gt;; }
+// &lt;WeatherCard /&gt; → React calls the function</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Fix this JSX so it compiles: <code>&lt;label class="lbl" for="city"&gt;City&lt;/label&gt;&lt;input id="city"&gt;</code></p>
+<details><summary>Solution</summary>
+<pre><code>&lt;&gt;
+  &lt;label className="lbl" htmlFor="city"&gt;City&lt;/label&gt;
+  &lt;input id="city" /&gt;
+&lt;/&gt;</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Show “Good morning, Ravi! You have 3 new messages.” using variables <code>user = 'Ravi'</code> and <code>unread = 3</code>.</p>
+<details><summary>Solution</summary>
+<pre><code>const user = 'Ravi';
+const unread = 3;
+const msg = &lt;p&gt;Good morning, {user}! You have {unread} new messages.&lt;/p&gt;;</code></pre>
+</details>
+<h3>Intermediate 1</h3>
+<p>Rewrite this JSX as the <code>jsx</code>/<code>jsxs</code> calls the compiler produces: <code>&lt;ul&gt;&lt;li&gt;Tea&lt;/li&gt;&lt;li&gt;Coffee&lt;/li&gt;&lt;/ul&gt;</code></p>
+<details><summary>Solution</summary>
+<pre><code>import { jsx as _jsx, jsxs as _jsxs } from 'react/jsx-runtime';
+
+_jsxs('ul', {
+  children: [
+    _jsx('li', { children: 'Tea' }),
+    _jsx('li', { children: 'Coffee' }),
+  ],
+});
+// jsxs = element with several static children; jsx = one child.</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Render a weather list from <code>[{ city: 'Delhi', temp: 31 }, { city: 'Shimla', temp: 12 }]</code>, adding “🧥” when temp is below 15.</p>
+<details><summary>Solution</summary>
+<pre><code>const forecast = [
+  { city: 'Delhi', temp: 31 },
+  { city: 'Shimla', temp: 12 },
+];
+
+export default function App() {
+  return (
+    &lt;ul&gt;
+      {forecast.map((f) =&gt; (
+        &lt;li key={f.city}&gt;
+          {f.city}: {f.temp}°C {f.temp &lt; 15 ? '🧥' : null}
+        &lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Without running it, predict what this logs, then explain why <code>key</code> is not inside <code>props</code>.</p>
+<pre><code>const el = &lt;li key="m1" className="movie"&gt;Inception&lt;/li&gt;;
+console.log(el.type, el.key, el.props);</code></pre>
+<details><summary>Solution</summary>
+<pre class="output">li m1 {className: 'movie', children: 'Inception'}</pre>
+<p>The compiler passes <code>key</code> as a separate argument: <code>jsx('li', { className: 'movie', children: 'Inception' }, 'm1')</code>. React uses it for reconciliation, so components never receive <code>key</code> as a prop.</p>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>JSX = JavaScript syntax that describes UI; the browser never sees it.</li>
+<li>Vite compiles tags to <code>jsx()</code> calls from <code>react/jsx-runtime</code> (no <code>import React</code> needed).</li>
+<li>Each tag → a React element: plain object <code>{ type, props, key }</code>.</li>
+<li><code>{ }</code> holds expressions only — use ternaries, <code>&amp;&amp;</code>, <code>map</code>.</li>
+<li>One root (or <code>&lt;&gt;…&lt;/&gt;</code>), close every tag, camelCase attributes.</li>
+<li>Lowercase = HTML tag; Capitalised = component.</li>
+<li><code>{ }</code> values are escaped → safe from injected HTML by default.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What is JSX?</summary><p>A syntax extension for JavaScript that looks like HTML. It compiles to function calls (<code>jsx()</code> in the automatic runtime) that return React elements.</p></details>
+<details><summary>Q2. Can browsers run JSX directly?</summary><p>No. A compiler (Vite’s React plugin, Babel, SWC, Oxc, TypeScript) must transform it into plain JavaScript first.</p></details>
+<details><summary>Q3. Why don’t we need <code>import React from 'react'</code> anymore?</summary><p>Since the new JSX transform (React 17+), the compiler auto-imports <code>jsx</code> from <code>react/jsx-runtime</code>. The old classic runtime called <code>React.createElement</code>, which required React in scope.</p></details>
+<details><summary>Q4. Why <code>className</code> instead of <code>class</code>?</summary><p>JSX attributes map to DOM properties and JavaScript names; <code>class</code> is a reserved word in JavaScript and the DOM property is <code>className</code>.</p></details>
+<details><summary>Q5. Is JSX required for React?</summary><p>No. You can call <code>createElement</code> yourself, but JSX is far more readable and is the standard.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-015.html">INTRO-015 · React architecture</a>
+<a href="INTRO-015.html#rev">INTRO-015 · Revision</a>
+<a href="INTRO-008.html">INTRO-008 · Declarative vs imperative</a>
+<a href="JSX-002.html">JSX-002 · Next lesson</a>
+<a href="JSX-001.html#rev">JSX-001 · Revision tab</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">JSX is <b>JavaScript that describes UI</b>. You write HTML-like tags; Vite compiles each tag into a <code>jsx()</code> call (from <code>react/jsx-runtime</code>) that returns a plain object — a React element. Put JavaScript expressions in <code>{ }</code>, close every tag, use camelCase attributes, and return one root.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;h1 className="title"&gt;Hi {name}&lt;/h1&gt;        // attribute + expression
+&lt;img src={url} alt="Pizza" /&gt;               // self-closing
+&lt;&gt;&lt;A /&gt;&lt;B /&gt;&lt;/&gt;                             // fragment (one root)
+&lt;p style={{ color: 'red' }}&gt;Hot&lt;/p&gt;          // style object
+{/* comment */}                              // JSX comment
+{isOpen ? &lt;Open /&gt; : &lt;Closed /&gt;}             // conditional
+{items.map((i) =&gt; &lt;li key={i.id}&gt;{i.name}&lt;/li&gt;)}  // list
+&lt;label htmlFor="q"&gt;Search&lt;/label&gt;            // htmlFor, not for
+
+// compiled (automatic runtime):
+import { jsx } from 'react/jsx-runtime';
+jsx('h1', { className: 'title', children: 'Hi' });</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>JSX is not HTML and not a string — it’s JavaScript syntax.</li>
+<li>It must be compiled; browsers can’t run it.</li>
+<li>Automatic runtime: <code>jsx</code>/<code>jsxs</code> from <code>react/jsx-runtime</code>; dev uses <code>jsxDEV</code>.</li>
+<li>Every JSX expression evaluates to a React element object.</li>
+<li><code>{ }</code> accepts expressions, not statements.</li>
+<li>Return one root element or a Fragment.</li>
+<li>All tags must close.</li>
+<li><code>className</code>, <code>htmlFor</code>, <code>onClick</code>, <code>tabIndex</code> — camelCase.</li>
+<li>Capitalised names are components; lowercase are HTML tags.</li>
+<li>Strings in <code>{ }</code> are escaped automatically (XSS protection).</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What does JSX stand for?</summary><p>JavaScript XML.</p></details>
+<details><summary>How do you add a comment in JSX?</summary><p><code>{/* comment */}</code> inside the markup.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Difference between <code>jsx</code> and <code>jsxs</code>?</summary><p>Both create elements. <code>jsxs</code> is used when an element has multiple static children (an array literal written in source), so React can skip key warnings for them.</p></details>
+<details><summary>Why can’t you use <code>if</code> inside <code>{ }</code>?</summary><p>Braces become a value inside a function call argument; only expressions produce values. Use a ternary, <code>&amp;&amp;</code>, or compute a variable before <code>return</code>.</p></details>
+<h3>Advanced</h3>
+<details><summary>What is the shape of a React 19 element?</summary><p><code>{ $$typeof: Symbol.for('react.transitional.element'), type, key, props }</code>, plus dev-only fields. In React 19 <code>ref</code> is read from <code>props</code>.</p></details>
+<details><summary>How does React tell <code>&lt;button&gt;</code> from <code>&lt;Button&gt;</code>?</summary><p>The compiler emits a string <code>'button'</code> for lowercase tags and a variable reference <code>Button</code> for capitalised ones. React renders strings as host elements and calls functions as components.</p></details>
+<h3>Tricky</h3>
+<details><summary>What does <code>&lt;p&gt;{0 &amp;&amp; 'Items'}&lt;/p&gt;</code> render?</summary><p><code>0</code>. <code>0 &amp;&amp; …</code> evaluates to <code>0</code>, and numbers are rendered. Use <code>count &gt; 0 &amp;&amp; …</code>.</p></details>
+<details><summary>Do <code>true</code>, <code>false</code>, <code>null</code>, <code>undefined</code> render anything?</summary><p>No — they render nothing. That’s why <code>{cond &amp;&amp; &lt;X /&gt;}</code> works when <code>cond</code> is a boolean.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>const temp = 28;
+return &lt;p&gt;{temp &gt; 30 ? 'Hot' : 'Pleasant'} · {temp + 2}°C&lt;/p&gt;;</code></pre>
+<details><summary>Answer</summary><pre class="output">Pleasant · 30°C</pre></details>
+<pre><code>const likes = 0;
+return &lt;span&gt;{likes &amp;&amp; '❤️'} {[1, 2, 3]}&lt;/span&gt;;</code></pre>
+<details><summary>Answer</summary><pre class="output">0 123</pre><p><code>0</code> is rendered; arrays of numbers render each item side by side. (Literal array children have no keys; numbers/strings don’t trigger the key warning — only elements do.)</p></details>
+<pre><code>console.log(typeof &lt;div /&gt;);</code></pre>
+<details><summary>Answer</summary><pre class="output">object</pre></details>
+
+<h2>F. Debugging Questions</h2>
+<details><summary>“[plugin:vite:...] Failed to parse source … contains invalid JS syntax” in <code>utils.js</code>.</summary><p>JSX is inside a <code>.js</code> file. Vite expects JSX in <code>.jsx</code>/<code>.tsx</code>; rename the file.</p></details>
+<details><summary>“Objects are not valid as a React child (found: object with keys {city, temp})”.</summary><p>You rendered an object. Render its fields (<code>{w.city}</code>) or map an array to elements.</p></details>
+<details><summary>“Unterminated JSX contents” pointing at the end of the file.</summary><p>(Exact wording depends on the compiler.) An unclosed tag, e.g. <code>&lt;input&gt;</code> or <code>&lt;br&gt;</code>. Self-close it: <code>&lt;input /&gt;</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>A chat user sends <code>&lt;b&gt;hi&lt;/b&gt;</code>. What does <code>&lt;p&gt;{msg}&lt;/p&gt;</code> show?</summary><p>The literal text <code>&lt;b&gt;hi&lt;/b&gt;</code> — React escapes strings. Only <code>dangerouslySetInnerHTML</code> would parse it (avoid with user input).</p></details>
+<details><summary>You paste a large HTML snippet from a designer into a component.</summary><p>Convert it: <code>class</code> → <code>className</code>, <code>for</code> → <code>htmlFor</code>, close void tags, inline styles → objects, HTML comments → <code>{/* */}</code>, wrap in one root.</p></details>
+<details><summary>A shop page should show “Out of stock” instead of the Buy button when <code>stock === 0</code>.</summary><p><code>{stock === 0 ? &lt;p&gt;Out of stock&lt;/p&gt; : &lt;button&gt;Buy&lt;/button&gt;}</code></p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Convert this <code>createElement</code> code to JSX.</p>
+<pre><code>h('section', { className: 'movie' },
+  h('h2', null, title),
+  h('p', null, 'Year: ', year)
+)</code></pre>
+<details><summary>Solution</summary>
+<pre><code>&lt;section className="movie"&gt;
+  &lt;h2&gt;{title}&lt;/h2&gt;
+  &lt;p&gt;Year: {year}&lt;/p&gt;
+&lt;/section&gt;</code></pre>
+</details>
+<p>Write a <code>TodoList</code> component that shows “Nothing to do 🎉” when the list is empty, otherwise the todos with done ones struck through.</p>
+<details><summary>Solution</summary>
+<pre><code>export default function TodoList({ todos }) {
+  if (todos.length === 0) return &lt;p&gt;Nothing to do 🎉&lt;/p&gt;;
+  return (
+    &lt;ul&gt;
+      {todos.map((t) =&gt; (
+        &lt;li
+          key={t.id}
+          style={{ textDecoration: t.done ? 'line-through' : 'none' }}
+        &gt;
+          {t.text}
+        &lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Feature</th><th>HTML</th><th>JSX</th></tr>
+<tr><td>CSS class</td><td><code>class</code></td><td><code>className</code></td></tr>
+<tr><td>Label target</td><td><code>for</code></td><td><code>htmlFor</code></td></tr>
+<tr><td>Inline style</td><td><code>style="color:red"</code></td><td><code>style={{ color: 'red' }}</code></td></tr>
+<tr><td>Events</td><td><code>onclick="fn()"</code></td><td><code>onClick={fn}</code></td></tr>
+<tr><td>Void tags</td><td><code>&lt;br&gt;</code> OK</td><td>Must be <code>&lt;br /&gt;</code></td></tr>
+<tr><td>Comments</td><td><code>&lt;!-- --&gt;</code></td><td><code>{/* */}</code></td></tr>
+<tr><td>Dynamic values</td><td>Need JS + DOM APIs</td><td><code>{expression}</code></td></tr>
+</table></div>
+<div class="tablewrap"><table>
+<tr><th></th><th>Classic runtime (old)</th><th>Automatic runtime (current)</th></tr>
+<tr><td>Compiles to</td><td><code>React.createElement(...)</code></td><td><code>jsx(...)</code> from <code>react/jsx-runtime</code></td></tr>
+<tr><td>Need <code>import React</code>?</td><td>Yes</td><td>No</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Remember</th><th>One line</th></tr>
+<tr><td>JSX is</td><td>JavaScript describing UI</td></tr>
+<tr><td>Compiles to</td><td><code>jsx()</code> / <code>jsxs()</code> from <code>react/jsx-runtime</code></td></tr>
+<tr><td>Produces</td><td>Element object <code>{ type, props, key }</code></td></tr>
+<tr><td><code>{ }</code></td><td>Expressions only</td></tr>
+<tr><td>Root</td><td>One parent or <code>&lt;&gt;…&lt;/&gt;</code></td></tr>
+<tr><td>Tags</td><td>Always closed</td></tr>
+<tr><td>Attributes</td><td>camelCase: <code>className</code>, <code>htmlFor</code>, <code>onClick</code></td></tr>
+<tr><td>Components</td><td>Capitalised names</td></tr>
+<tr><td>Files</td><td><code>.jsx</code> in Vite</td></tr>
+<tr><td>Safety</td><td>Strings auto-escaped</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

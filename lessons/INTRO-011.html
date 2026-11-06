@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-011 · Client-side rendering</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-011</span><span>Module 2: React Introduction</span><span>Lesson 11</span><span>Level: <b>Intermediate</b></span><span>Time: <b>45 min</b></span><span>Prerequisites: <b>INTRO-010</b></span></div>
+<h1>Client-side rendering</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-011-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<p>Client-side rendering is flat-pack furniture: the shop (server) sends you a box of parts (JavaScript), and you build the table (the page) at home (in the browser).</p>
+<pre class="diagram">
+ time ---&gt;
+ Server  | index.html (empty #root) | main.js bundle     | /api data (JSON)
+         |            |             |        |           |       |
+ Browser |  parse HTML  -&gt; BLANK    | download, parse,   | fetch -&gt; re-render
+         |  screen (no content)     | run JS -&gt; render   | with real data
+         |                          | "Loading..."       |
+         +--------------------------+--------------------+----------------
+           user sees: nothing          user sees: spinner    user sees: page
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Building HTML strings by hand for every data change is slow and error-prone.</li>
+<li>CSR lets the browser own the UI: after the first load, every update is instant and local.</li>
+<li>The server only serves static files and a JSON API, so hosting is cheap (any CDN).</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// server builds a full HTML page for every tiny change
+app.get("/weather", async (req, res) =&gt; {
+  const w = await getWeather();
+  res.send("&lt;h1&gt;" + w.temp + " C&lt;/h1&gt;"); // reload to refresh
+});</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// server sends JSON; the browser renders
+app.get("/api/weather", async (req, res) =&gt; {
+  res.json(await getWeather());
+});
+// React: fetch -&gt; setWeather -&gt; UI updates, no reload</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li>The server sends a nearly empty HTML shell: <code>&lt;div id="root"&gt;&lt;/div&gt;</code> plus a script tag.</li>
+<li>The browser downloads and runs the JavaScript bundle; React builds all the DOM (client-side rendering, CSR).</li>
+<li>Data is fetched after the first render, so you usually see a loading state first.</li>
+<li>A plain Vite + React app is CSR by default.</li>
+<li><b>Pros</b>: cheap static hosting, rich interaction, fast navigation after load, low server work.</li>
+<li><b>Cons</b>: blank screen until JS runs (slow first paint on weak phones), weaker SEO and link previews, a "waterfall" of HTML → JS → data.</li>
+<li>Measure with Core Web Vitals: Largest Contentful Paint (LCP) is often the CSR pain point.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>The HTML shell (index.html in a Vite app)</h3>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8" /&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
+    &lt;title&gt;SkyCast&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id="root"&gt;&lt;/div&gt;                       &lt;!-- empty! --&gt;
+    &lt;script type="module" src="/src/main.jsx"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>The entry point that starts CSR</h3>
+<pre><code>// src/main.jsx
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App.jsx";
+
+createRoot(document.getElementById("root")).render(
+  &lt;StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/StrictMode&gt;
+);</code></pre>
+<h3>Fetch data after render</h3>
+<pre><code>useEffect(() =&gt; {
+  let ignore = false;
+  fetch(url).then((r) =&gt; r.json()).then((d) =&gt; { if (!ignore) setData(d); });
+  return () =&gt; { ignore = true; };
+}, [url]);</code></pre>
+
+<h2>5. Practical Example</h2>
+<p>A CSR weather card using the free Open-Meteo API (no key needed). Use with the <code>main.jsx</code> above.</p>
+<pre><code>// src/App.jsx
+import { useEffect, useState } from "react";
+
+const API =
+  "https://api.open-meteo.com/v1/forecast" +
+  "?latitude=28.61&amp;longitude=77.21&amp;current=temperature_2m,wind_speed_10m";
+
+export default function App() {
+  const [weather, setWeather] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() =&gt; {
+    let ignore = false;
+    console.log("effect: fetching weather");
+
+    fetch(API)
+      .then((res) =&gt; {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then((data) =&gt; {
+        if (ignore) return;            // stale request, skip
+        console.log("data arrived");
+        setWeather(data.current);      // { temperature_2m, wind_speed_10m, ... }
+      })
+      .catch((err) =&gt; {
+        if (!ignore) setError(err.message);
+      });
+
+    return () =&gt; {
+      ignore = true;
+      console.log("cleanup");
+    };
+  }, []);
+
+  if (error) return &lt;p&gt;Could not load weather: {error}&lt;/p&gt;;
+  if (!weather) return &lt;p&gt;Loading weather...&lt;/p&gt;;
+
+  return (
+    &lt;article&gt;
+      &lt;h1&gt;New Delhi&lt;/h1&gt;
+      &lt;p&gt;Temperature: {weather.temperature_2m} °C&lt;/p&gt;
+      &lt;p&gt;Wind: {weather.wind_speed_10m} km/h&lt;/p&gt;
+      &lt;small&gt;Rendered in your browser at {new Date().toLocaleTimeString()}&lt;/small&gt;
+    &lt;/article&gt;
+  );
+}</code></pre>
+
+<h2>6. Expected Output</h2>
+<p>First (a few hundred ms): <b>Loading weather...</b>. Then:</p>
+<div class="ui">
+<h3>New Delhi</h3>
+<p>Temperature: 24.6 °C</p>
+<p>Wind: 7.9 km/h</p>
+<small>Rendered in your browser at 10:42:13 AM</small>
+</div>
+<p>Numbers are live, so yours will differ. Console in <b>development with Strict Mode</b>:</p>
+<pre class="output">effect: fetching weather
+cleanup
+effect: fetching weather
+data arrived</pre>
+<p>In a <b>production build</b> (<code>npm run build</code> + <code>npm run preview</code>), or without <code>&lt;StrictMode&gt;</code>:</p>
+<pre class="output">effect: fetching weather
+data arrived</pre>
+<div class="callout">Strict Mode runs effects setup → cleanup → setup once more in development only, to catch missing cleanups. The <code>ignore</code> flag makes the first, cancelled request harmless.</div>
+<p>Right-click → <b>View Page Source</b>: you will only see the empty <code>&lt;div id="root"&gt;&lt;/div&gt;</code>. The weather text exists only in the live DOM (Elements tab).</p>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. GET /                 -&gt; index.html (~1 KB, empty #root)
+ 2. Browser parses HTML   -&gt; sees &lt;script type="module" src="..."&gt;
+ 3. GET /assets/index-*.js (bundle, often 100+ KB)
+        |  screen is BLANK until this finishes
+        v
+ 4. JS runs: createRoot(#root).render(&lt;App /&gt;)
+ 5. First render: weather = null  -&gt; DOM: "Loading weather..."
+ 6. Browser paints               (first content visible)
+ 7. useEffect runs (after paint) -&gt; fetch(API)
+        |  network round trip
+        v
+ 8. JSON arrives -&gt; setWeather(data.current)
+ 9. React re-renders -&gt; diff -&gt; updates DOM -&gt; weather card visible (LCP)
+
+ Waterfall: HTML --&gt; JS --&gt; data   (each step waits for the one before)
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Admin dashboards, internal tools</b>: behind login, SEO is irrelevant; CSR is simplest.</li>
+<li><b>Chat and email clients</b>: long sessions; the first-load cost is paid once.</li>
+<li><b>Online editors (docs, photo, design)</b>: heavy interaction lives in the browser.</li>
+<li><b>Static hosting</b>: a Vite build is just files in <code>dist/</code>, deployable to any CDN.</li>
+<li>Public pages that must rank (shop product pages, movie pages) usually move to SSR or static generation (next lesson).</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: No loading state (crash on first render)</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>const [weather, setWeather] = useState(null);
+// first render: weather is null
+return &lt;p&gt;{weather.temperature_2m} °C&lt;/p&gt;;
+// TypeError: Cannot read properties of null</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>if (!weather) return &lt;p&gt;Loading weather...&lt;/p&gt;;
+return &lt;p&gt;{weather.temperature_2m} °C&lt;/p&gt;;</code></pre></div>
+</div>
+<h3>Mistake 2: Async function passed directly to useEffect</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>useEffect(async () =&gt; {
+  const res = await fetch(API);
+  setWeather((await res.json()).current);
+}, []);
+// effect returns a Promise, not a cleanup function</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>useEffect(() =&gt; {
+  let ignore = false;
+  async function load() {
+    const res = await fetch(API);
+    const data = await res.json();
+    if (!ignore) setWeather(data.current);
+  }
+  load();
+  return () =&gt; { ignore = true; };
+}, []);</code></pre></div>
+</div>
+<h3>Mistake 3: Missing dependency array (infinite fetch loop)</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>useEffect(() =&gt; {
+  fetch(API).then((r) =&gt; r.json())
+    .then((d) =&gt; setWeather(d.current));
+}); // runs after EVERY render -&gt; setState -&gt; render -&gt; ...</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>useEffect(() =&gt; {
+  fetch(API).then((r) =&gt; r.json())
+    .then((d) =&gt; setWeather(d.current));
+}, []); // run once after mount (twice in dev Strict Mode)</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Open View Page Source and the Elements tab on the weather app. What differs?</p>
+<details><summary>Solution</summary><p>Source = the original HTML from the server (empty root). Elements = the live DOM after React rendered (full weather card). That gap is what "client-side rendering" means.</p></details>
+<h3>Beginner 2</h3>
+<p>Disable JavaScript in DevTools (Settings → Debugger → Disable JavaScript) and reload. What do you see and why?</p>
+<details><summary>Solution</summary><p>A blank page. In CSR, all content is created by JavaScript, so no JS means no UI. Add a <code>&lt;noscript&gt;</code> message to the HTML shell.</p></details>
+<h3>Intermediate 1</h3>
+<p>Add a city picker (Delhi 28.61/77.21, Mumbai 19.08/72.88) that refetches when the city changes.</p>
+<details><summary>Solution</summary>
+<pre><code>const CITIES = {
+  Delhi: [28.61, 77.21],
+  Mumbai: [19.08, 72.88],
+};
+const [city, setCity] = useState("Delhi");
+
+useEffect(() =&gt; {
+  let ignore = false;
+  const [lat, lon] = CITIES[city];
+  setWeather(null); // show loading again
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&amp;longitude=${lon}&amp;current=temperature_2m,wind_speed_10m`)
+    .then((r) =&gt; r.json())
+    .then((d) =&gt; { if (!ignore) setWeather(d.current); });
+  return () =&gt; { ignore = true; }; // drop slow, outdated responses
+}, [city]);
+
+&lt;select value={city} onChange={(e) =&gt; setCity(e.target.value)}&gt;
+  {Object.keys(CITIES).map((c) =&gt; &lt;option key={c}&gt;{c}&lt;/option&gt;)}
+&lt;/select&gt;</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>In DevTools → Network, throttle to "Slow 4G" and reload. List the request order and say which one delays the first content most.</p>
+<details><summary>Solution</summary><p>Document → JS bundle (and CSS) → API call. The JS bundle usually delays the first content most, because nothing renders until it is downloaded and executed.</p></details>
+<h3>Challenge</h3>
+<p>Shrink the initial bundle: load a heavy <code>ForecastChart</code> component only when the user clicks "Show 7-day forecast".</p>
+<details><summary>Solution</summary>
+<pre><code>import { lazy, Suspense, useState } from "react";
+
+const ForecastChart = lazy(() =&gt; import("./ForecastChart.jsx")); // separate chunk
+
+export default function Forecast() {
+  const [show, setShow] = useState(false);
+  return (
+    &lt;&gt;
+      &lt;button onClick={() =&gt; setShow(true)}&gt;Show 7-day forecast&lt;/button&gt;
+      {show &amp;&amp; (
+        &lt;Suspense fallback={&lt;p&gt;Loading chart...&lt;/p&gt;}&gt;
+          &lt;ForecastChart /&gt;
+        &lt;/Suspense&gt;
+      )}
+    &lt;/&gt;
+  );
+}</code></pre>
+<p>Vite splits <code>ForecastChart.jsx</code> into its own file, downloaded on first click (code splitting).</p>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>CSR = browser builds the page with JS; server sends an empty shell.</li>
+<li>Entry: <code>createRoot(el).render(&lt;App /&gt;)</code> from <code>react-dom/client</code>.</li>
+<li>Load order: HTML → JS → render (loading) → fetch → re-render.</li>
+<li>Pros: cheap hosting, rich UI, fast later updates.</li>
+<li>Cons: blank first screen, weaker SEO, request waterfall.</li>
+<li>Strict Mode double-runs effects in dev only; use cleanup.</li>
+<li>Code splitting with <code>lazy</code> shrinks the first download.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What is client-side rendering?</summary><p>The server sends minimal HTML and a JS bundle; the browser runs the JS and React creates the DOM, then fetches data and re-renders.</p></details>
+<details><summary>Q2. Why can CSR hurt SEO?</summary><p>The initial HTML has no content. Google can run JS but may index it later; many other crawlers and social link previews do not run JS at all.</p></details>
+<details><summary>Q3. Why does my fetch run twice in development?</summary><p>React Strict Mode mounts, unmounts and remounts components in development to expose missing cleanup. Production runs it once.</p></details>
+<details><summary>Q4. How do you improve CSR first-load speed?</summary><p>Code splitting (<code>lazy</code> + dynamic <code>import()</code>), smaller dependencies, caching, preloading critical data, and showing a meaningful skeleton early.</p></details>
+<details><summary>Q5. When is CSR the right choice?</summary><p>Logged-in, highly interactive apps where SEO does not matter and users stay long: dashboards, chat, editors.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-009.html">INTRO-009 Single Page Applications</a>
+<a href="INTRO-010.html">INTRO-010 Multi Page Applications</a>
+<a href="INTRO-012.html">INTRO-012 Server-side rendering</a>
+<a href="INTRO-010.html#rev">INTRO-010 Revision</a>
+<a href="INTRO-012.html#rev">INTRO-012 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">CSR: server sends an empty HTML shell and a JS bundle. The browser runs React, which draws a loading state, fetches JSON, and re-renders. Cheap to host and great for apps, but users and crawlers see nothing until JS finishes.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>&lt;div id="root"&gt;&lt;/div&gt;
+&lt;script type="module" src="/src/main.jsx"&gt;&lt;/script&gt;
+
+import { createRoot } from "react-dom/client";
+createRoot(document.getElementById("root")).render(&lt;App /&gt;);
+
+useEffect(() =&gt; {
+  let ignore = false;
+  fetch(url).then((r) =&gt; r.json()).then((d) =&gt; !ignore &amp;&amp; setData(d));
+  return () =&gt; { ignore = true; };
+}, [url]);</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li>Initial HTML has no content; JS creates it.</li>
+<li>Vite + React (no framework) = CSR by default.</li>
+<li>First render happens before data; plan a loading state.</li>
+<li>Effects run after the browser paints.</li>
+<li>Strict Mode: effect setup → cleanup → setup in dev only.</li>
+<li>Request waterfall: HTML → JS → data.</li>
+<li>Output is static files; host on any CDN.</li>
+<li>SEO and link previews are the main weakness.</li>
+<li>Code splitting reduces time to first content.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Where does rendering happen in CSR?</summary><p>In the user's browser, by JavaScript.</p></details>
+<h3>Intermediate</h3>
+<details><summary>What is a request waterfall in CSR?</summary><p>Each request starts only after the previous finishes: HTML, then JS, then data (sometimes nested component data too), adding delays.</p></details>
+<h3>Advanced</h3>
+<details><summary>How would you avoid the data waterfall in a CSR app?</summary><p>Start the fetch earlier: in a router loader (React Router data mode), or kick it off at module/route level before render, and cache it with a data library.</p></details>
+<h3>Tricky</h3>
+<details><summary>Does CSR mean the server does nothing?</summary><p>No. It still serves files and APIs; it just does not build the HTML for each page.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>// Strict Mode, development
+function App() {
+  useEffect(() =&gt; {
+    console.log("mount");
+    return () =&gt; console.log("unmount");
+  }, []);
+  return null;
+}</code></pre>
+<details><summary>Console?</summary><pre class="output">mount
+unmount
+mount</pre><p>In production: only <code>mount</code>.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<pre><code>const [movies, setMovies] = useState();
+useEffect(() =&gt; {
+  fetch("/api/movies").then((r) =&gt; r.json()).then(setMovies);
+}, []);
+return &lt;ul&gt;{movies.map((m) =&gt; &lt;li key={m.id}&gt;{m.title}&lt;/li&gt;)}&lt;/ul&gt;;
+// TypeError on first load</code></pre>
+<details><summary>Fix</summary><p><code>movies</code> is <code>undefined</code> on the first render. Use <code>useState([])</code> or return a loading message while it is undefined.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>Marketing says shared links to your recipe pages show a blank preview in chat apps. Cause and fix?</summary><p>Preview bots read raw HTML and do not run JS; the CSR shell has no title/description. Use SSR or prerender those pages.</p></details>
+<details><summary>Users on cheap phones see a white screen for 5 seconds.</summary><p>The bundle is too large/slow to parse. Code-split routes, remove heavy libraries, and consider SSR for the first view.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write a reusable <code>useFetch(url)</code> hook returning <code>{ data, error, loading }</code> that ignores stale responses.</p>
+<details><summary>Solution</summary>
+<pre><code>import { useEffect, useState } from "react";
+
+export function useFetch(url) {
+  const [state, setState] = useState({ data: null, error: null, loading: true });
+  useEffect(() =&gt; {
+    let ignore = false;
+    setState({ data: null, error: null, loading: true });
+    fetch(url)
+      .then((r) =&gt; { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then((data) =&gt; !ignore &amp;&amp; setState({ data, error: null, loading: false }))
+      .catch((e) =&gt; !ignore &amp;&amp; setState({ data: null, error: e.message, loading: false }));
+    return () =&gt; { ignore = true; };
+  }, [url]);
+  return state;
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Factor</th><th>CSR</th><th>SSR</th></tr>
+<tr><td>First HTML</td><td>Empty shell</td><td>Full content</td></tr>
+<tr><td>First content visible</td><td>After JS runs</td><td>As soon as HTML arrives</td></tr>
+<tr><td>Server cost</td><td>Low (static files)</td><td>Higher (render per request)</td></tr>
+<tr><td>SEO</td><td>Weaker</td><td>Strong</td></tr>
+<tr><td>Hosting</td><td>Any CDN</td><td>Needs a server or edge runtime</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Item</th><th>CSR fact</th></tr>
+<tr><td>Start</td><td><code>createRoot(el).render(&lt;App /&gt;)</code></td></tr>
+<tr><td>Data</td><td><code>useEffect</code> + fetch + cleanup flag</td></tr>
+<tr><td>First paint</td><td>Loading state</td></tr>
+<tr><td>Dev double effect</td><td>Strict Mode only</td></tr>
+<tr><td>Speed fix</td><td><code>lazy()</code> + <code>Suspense</code></td></tr>
+<tr><td>SEO fix</td><td>SSR / static prerender</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

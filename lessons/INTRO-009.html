@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INTRO-009 · Single Page Applications</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">INTRO-009</span><span>Module 2: React Introduction</span><span>Lesson 9</span><span>Level: <b>Beginner</b></span><span>Time: <b>30 min</b></span><span>Prerequisites: <b>INTRO-008</b></span></div>
+<h1>Single Page Applications</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · INTRO-009-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<p>Think of a food delivery app as one restaurant table. The waiter swaps the plates (views) on the table; you never walk to a new restaurant (a new page load).</p>
+<pre class="diagram">
+  Browser asks ONCE:  GET /  -----------------&gt;  Server
+                      &lt;-- index.html + app.js --
+
+  +------------------------------------------------+
+  |  index.html   (loaded one time)                |
+  |  +------------------------------------------+  |
+  |  |  &lt;div id="root"&gt;                         |  |
+  |  |    click "Menu"   -&gt; show &lt;Menu /&gt;       |  |
+  |  |    click "Cart"   -&gt; show &lt;Cart /&gt;       |  |
+  |  |    click "Orders" -&gt; show &lt;Orders /&gt;     |  |
+  |  +------------------------------------------+  |
+  |  URL bar changes: /menu  /cart  /orders        |
+  |  but NO new HTML document is downloaded        |
+  +------------------------------------------------+
+
+  Later data?  fetch('/api/menu')  -&gt;  JSON only (small)
+</pre>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Full page reloads blank the screen and re-download the header, footer, CSS and scripts.</li>
+<li>Typed text, scroll position and in-memory state are lost on every click.</li>
+<li>An SPA keeps the page alive and only swaps the part that changed.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>&lt;!-- Every link = new document from the server --&gt;
+&lt;nav&gt;
+  &lt;a href="/menu.html"&gt;Menu&lt;/a&gt;
+  &lt;a href="/cart.html"&gt;Cart&lt;/a&gt;
+&lt;/nav&gt;
+&lt;!-- click -&gt; white flash -&gt; whole page rebuilt
+     -&gt; cart count in JS memory is gone --&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// SPA: change the view, keep the page
+import { Link } from "react-router";
+
+function Nav() {
+  return (
+    &lt;nav&gt;
+      &lt;Link to="/menu"&gt;Menu&lt;/Link&gt;
+      &lt;Link to="/cart"&gt;Cart&lt;/Link&gt;
+    &lt;/nav&gt;
+  );
+}
+// click -&gt; URL updates -&gt; only &lt;main&gt; re-renders</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li>One HTML page (document) is loaded once; JavaScript draws every screen inside it.</li>
+<li>Changing screens = changing what React renders, based on the URL (client-side routing).</li>
+<li>The URL is changed without a reload using the browser's History API (<code>history.pushState</code>).</li>
+<li>Back/Forward buttons fire a <code>popstate</code> event; the app listens and re-renders.</li>
+<li>After the first load, the app talks to the server only for data, usually JSON (API calls).</li>
+<li>In practice you use a router library such as React Router 7 instead of writing this by hand.</li>
+<li>The server must return <code>index.html</code> for every app URL (history fallback), or deep links give 404.</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<h3>The raw browser tools (what routers use underneath)</h3>
+<pre><code>// change the URL without reloading
+window.history.pushState({}, "", "/cart");
+
+// read the current path
+window.location.pathname; // "/cart"
+
+// react when the user presses Back / Forward
+window.addEventListener("popstate", () =&gt; {
+  console.log("now at", window.location.pathname);
+});</code></pre>
+<h3>The same idea with React Router 7 (declarative mode)</h3>
+<pre><code>// npm install react-router
+import { BrowserRouter, Routes, Route, Link } from "react-router";
+
+&lt;BrowserRouter&gt;
+  &lt;Link to="/cart"&gt;Cart&lt;/Link&gt;
+  &lt;Routes&gt;
+    &lt;Route path="/" element={&lt;Menu /&gt;} /&gt;
+    &lt;Route path="/cart" element={&lt;Cart /&gt;} /&gt;
+  &lt;/Routes&gt;
+&lt;/BrowserRouter&gt;</code></pre>
+<div class="callout">React Router 7 ships from the <code>react-router</code> package. <code>react-router-dom</code> still exists only as a re-export for older code.</div>
+
+<h2>5. Practical Example</h2>
+<p>A tiny food-delivery SPA with a hand-made router, so you can see exactly how views swap. Paste into <code>src/App.jsx</code> of a Vite React app (<code>npm create vite@latest my-spa -- --template react</code>).</p>
+<pre><code>// src/App.jsx
+import { useEffect, useState } from "react";
+
+const DISHES = [
+  { id: 1, name: "Paneer Wrap", price: 149 },
+  { id: 2, name: "Veg Biryani", price: 199 },
+  { id: 3, name: "Masala Dosa", price: 99 },
+];
+
+function Menu({ onAdd }) {
+  return (
+    &lt;section&gt;
+      &lt;h2&gt;Menu&lt;/h2&gt;
+      &lt;ul&gt;
+        {DISHES.map((d) =&gt; (
+          &lt;li key={d.id}&gt;
+            {d.name} - Rs {d.price}{" "}
+            &lt;button onClick={() =&gt; onAdd(d)}&gt;Add&lt;/button&gt;
+          &lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/section&gt;
+  );
+}
+
+function Cart({ items }) {
+  const total = items.reduce((sum, d) =&gt; sum + d.price, 0);
+  return (
+    &lt;section&gt;
+      &lt;h2&gt;Cart&lt;/h2&gt;
+      {items.length === 0 ? &lt;p&gt;Your cart is empty.&lt;/p&gt; : (
+        &lt;ul&gt;{items.map((d, i) =&gt; &lt;li key={i}&gt;{d.name}&lt;/li&gt;)}&lt;/ul&gt;
+      )}
+      &lt;p&gt;Total: Rs {total}&lt;/p&gt;
+    &lt;/section&gt;
+  );
+}
+
+function NavLink({ to, current, onNavigate, children }) {
+  return (
+    &lt;a
+      href={to}
+      onClick={(e) =&gt; {
+        e.preventDefault();   // stop the browser's full page load
+        onNavigate(to);
+      }}
+      style={{ fontWeight: current === to ? "bold" : "normal", marginRight: 12 }}
+    &gt;
+      {children}
+    &lt;/a&gt;
+  );
+}
+
+export default function App() {
+  const [path, setPath] = useState(window.location.pathname);
+  const [cart, setCart] = useState([]);
+
+  // Back / Forward buttons
+  useEffect(() =&gt; {
+    const onPop = () =&gt; setPath(window.location.pathname);
+    window.addEventListener("popstate", onPop);
+    return () =&gt; window.removeEventListener("popstate", onPop);
+  }, []);
+
+  function navigate(to) {
+    window.history.pushState({}, "", to); // URL changes, no reload
+    setPath(to);                          // React swaps the view
+  }
+
+  return (
+    &lt;div&gt;
+      &lt;header&gt;
+        &lt;strong&gt;QuickBite&lt;/strong&gt; | Cart items: {cart.length}
+      &lt;/header&gt;
+      &lt;nav&gt;
+        &lt;NavLink to="/" current={path} onNavigate={navigate}&gt;Menu&lt;/NavLink&gt;
+        &lt;NavLink to="/cart" current={path} onNavigate={navigate}&gt;Cart&lt;/NavLink&gt;
+      &lt;/nav&gt;
+      &lt;main&gt;
+        {path === "/cart"
+          ? &lt;Cart items={cart} /&gt;
+          : &lt;Menu onAdd={(d) =&gt; setCart([...cart, d])} /&gt;}
+      &lt;/main&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+<div class="callout">Vite's dev server already serves <code>index.html</code> for unknown paths, so refreshing on <code>/cart</code> works locally. A production host needs the same fallback rule.</div>
+
+<h2>6. Expected Output</h2>
+<p>After clicking <b>Add</b> on Veg Biryani, then the <b>Cart</b> link:</p>
+<div class="ui">
+<p><strong>QuickBite</strong> | Cart items: 1</p>
+<p><a href="#">Menu</a> &nbsp; <a href="#"><b>Cart</b></a></p>
+<h3>Cart</h3>
+<ul><li>Veg Biryani</li></ul>
+<p>Total: Rs 199</p>
+</div>
+<ul>
+<li>URL bar shows <code>/cart</code>; the Network tab shows <b>no new document request</b>.</li>
+<li>Press Back: URL returns to <code>/</code>, Menu shows, and the cart count is still 1.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ 1. Browser: GET /            -&gt; server sends index.html + JS bundle
+ 2. main.jsx: createRoot(...).render(&lt;App /&gt;)
+ 3. App reads location.pathname "/"  -&gt; renders &lt;Menu /&gt;
+ 4. User clicks "Add"         -&gt; setCart([...])  -&gt; header shows 1
+ 5. User clicks "Cart" link
+        |
+        v
+    e.preventDefault()        (browser does NOT load /cart)
+        |
+        v
+    history.pushState("/cart") (URL bar updates)
+        |
+        v
+    setPath("/cart")  -&gt; React re-renders -&gt; &lt;Cart /&gt; replaces &lt;Menu /&gt;
+ 6. User presses Back
+        |
+        v
+    browser fires "popstate" -&gt; setPath("/") -&gt; &lt;Menu /&gt; again
+    (cart state survives: the page never unloaded)
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Email web apps</b>: open a message, go back to the inbox, no reload.</li>
+<li><b>Music/movie streaming</b>: the player keeps playing while you browse pages.</li>
+<li><b>Chat apps</b>: switch conversations instantly; the socket connection stays open.</li>
+<li><b>Dashboards behind a login</b>: SEO does not matter, smooth navigation does.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Using a plain &lt;a&gt; inside a router app</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>// full reload: all React state is thrown away
+&lt;a href="/cart"&gt;Cart&lt;/a&gt;</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>import { Link } from "react-router";
+
+&lt;Link to="/cart"&gt;Cart&lt;/Link&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Changing the URL but not the view</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function navigate(to) {
+  window.history.pushState({}, "", to);
+  // URL changed, but React never re-renders
+}</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function navigate(to) {
+  window.history.pushState({}, "", to);
+  setPath(to); // state change triggers re-render
+}</code></pre></div>
+</div>
+<h3>Mistake 3: Forgetting the server fallback</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code># user refreshes on /cart in production
+GET /cart  -&gt;  404 Not Found
+# server looked for a real file called /cart</code></pre></div>
+<div><span class="good">Fixed</span><pre><code># host rule: any unknown path -&gt; index.html
+GET /cart  -&gt;  200 index.html
+# React then reads "/cart" and shows &lt;Cart /&gt;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Add an <b>Orders</b> view at <code>/orders</code> that shows "No orders yet".</p>
+<details><summary>Solution</summary>
+<pre><code>function Orders() {
+  return &lt;section&gt;&lt;h2&gt;Orders&lt;/h2&gt;&lt;p&gt;No orders yet&lt;/p&gt;&lt;/section&gt;;
+}
+// in nav:
+&lt;NavLink to="/orders" current={path} onNavigate={navigate}&gt;Orders&lt;/NavLink&gt;
+// in main:
+{path === "/cart" ? &lt;Cart items={cart} /&gt;
+  : path === "/orders" ? &lt;Orders /&gt;
+  : &lt;Menu onAdd={(d) =&gt; setCart([...cart, d])} /&gt;}</code></pre>
+</details>
+<h3>Beginner 2</h3>
+<p>Open DevTools → Network, filter "Doc", click between Menu and Cart. How many document requests appear?</p>
+<details><summary>Solution</summary><p>Only one: the first load of <code>/</code>. Navigation inside the SPA adds none.</p></details>
+<h3>Intermediate 1</h3>
+<p>Show a "Page not found" view for any path other than <code>/</code>, <code>/cart</code>, <code>/orders</code>.</p>
+<details><summary>Solution</summary>
+<pre><code>const views = {
+  "/": &lt;Menu onAdd={(d) =&gt; setCart([...cart, d])} /&gt;,
+  "/cart": &lt;Cart items={cart} /&gt;,
+  "/orders": &lt;Orders /&gt;,
+};
+&lt;main&gt;{views[path] ?? &lt;p&gt;Page not found&lt;/p&gt;}&lt;/main&gt;</code></pre>
+</details>
+<h3>Intermediate 2</h3>
+<p>Rewrite the routing with React Router 7 (<code>BrowserRouter</code>, <code>Routes</code>, <code>Route</code>, <code>Link</code>).</p>
+<details><summary>Solution</summary>
+<pre><code>import { useState } from "react";
+import { BrowserRouter, Routes, Route, Link } from "react-router";
+
+export default function App() {
+  const [cart, setCart] = useState([]);
+  return (
+    &lt;BrowserRouter&gt;
+      &lt;header&gt;QuickBite | Cart items: {cart.length}&lt;/header&gt;
+      &lt;nav&gt;&lt;Link to="/"&gt;Menu&lt;/Link&gt; &lt;Link to="/cart"&gt;Cart&lt;/Link&gt;&lt;/nav&gt;
+      &lt;Routes&gt;
+        &lt;Route path="/" element={&lt;Menu onAdd={(d) =&gt; setCart([...cart, d])} /&gt;} /&gt;
+        &lt;Route path="/cart" element={&lt;Cart items={cart} /&gt;} /&gt;
+        &lt;Route path="*" element={&lt;p&gt;Page not found&lt;/p&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/BrowserRouter&gt;
+  );
+}</code></pre>
+</details>
+<h3>Challenge</h3>
+<p>Update the browser tab title (<code>document.title</code>) to "Menu · QuickBite" or "Cart · QuickBite" whenever the view changes, including Back/Forward.</p>
+<details><summary>Solution</summary>
+<pre><code>useEffect(() =&gt; {
+  const names = { "/": "Menu", "/cart": "Cart", "/orders": "Orders" };
+  document.title = (names[path] ?? "Not found") + " · QuickBite";
+}, [path]); // runs after every path change, including popstate</code></pre>
+<p>React 19 also lets you render <code>&lt;title&gt;</code> inside a component and hoists it to <code>&lt;head&gt;</code>.</p>
+</details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>SPA = one HTML document, many views drawn by JavaScript.</li>
+<li>Navigation = URL change via <code>pushState</code> + state change → re-render.</li>
+<li>Back/Forward → <code>popstate</code> event.</li>
+<li>Only data (JSON) travels after the first load.</li>
+<li>Use <code>&lt;Link&gt;</code>, never plain <code>&lt;a&gt;</code>, for in-app links.</li>
+<li>Production server needs an index.html fallback for deep links.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>Q1. What is a Single Page Application?</summary><p>A web app that loads one HTML document once and then updates the screen with JavaScript, changing views without full page reloads.</p></details>
+<details><summary>Q2. How does an SPA change the URL without reloading?</summary><p>With the History API: <code>history.pushState()</code> updates the URL; the router then renders the matching component. Back/Forward fire <code>popstate</code>.</p></details>
+<details><summary>Q3. Why do SPA deep links sometimes return 404?</summary><p>The server looks for a real file at that path. It must be configured to return <code>index.html</code> for app routes (history fallback).</p></details>
+<details><summary>Q4. Is React itself a router?</summary><p>No. React only renders UI. Routing comes from a library like React Router or from a framework.</p></details>
+<details><summary>Q5. Main downsides of a pure SPA?</summary><p>Bigger initial JavaScript, blank screen until JS runs, weaker SEO/link previews without server rendering, and you must manage titles, focus and scroll yourself.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="INTRO-008.html">INTRO-008</a>
+<a href="INTRO-010.html">INTRO-010 Multi Page Applications</a>
+<a href="INTRO-011.html">INTRO-011 Client-side rendering</a>
+<a href="INTRO-012.html">INTRO-012 Server-side rendering</a>
+<a href="INTRO-009.html#rev">INTRO-009 Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">One page loads once. Clicking a link changes the URL (History API) and React swaps the view. No white flash, state survives, only JSON comes from the server afterwards.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>history.pushState({}, "", "/cart");          // change URL, no reload
+addEventListener("popstate", handler);        // Back / Forward
+e.preventDefault();                           // stop default link load
+
+import { BrowserRouter, Routes, Route, Link } from "react-router";
+&lt;Route path="/cart" element={&lt;Cart /&gt;} /&gt;
+&lt;Link to="/cart"&gt;Cart&lt;/Link&gt;</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ul>
+<li>One HTML document for the whole app.</li>
+<li>Views are components chosen by the current URL.</li>
+<li><code>pushState</code> does not fire <code>popstate</code>; only Back/Forward do.</li>
+<li>App state (cart, form input) survives navigation.</li>
+<li>First load is heavier; later navigation is faster.</li>
+<li>Needs server-side index.html fallback for deep links.</li>
+<li>SEO needs extra work (SSR or prerendering) for public pages.</li>
+<li>Routing is a library feature (React Router), not part of React.</li>
+</ul>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>What does "single page" really mean?</summary><p>One HTML document is downloaded; the app can still have many URLs and screens.</p></details>
+<h3>Intermediate</h3>
+<details><summary>Difference between pushState and replaceState?</summary><p><code>pushState</code> adds a new history entry (Back returns to the old URL). <code>replaceState</code> overwrites the current entry (no new Back step), useful for redirects.</p></details>
+<h3>Advanced</h3>
+<details><summary>What accessibility work does an SPA need on navigation?</summary><p>Move focus to the new main heading or content, update <code>document.title</code>, and announce the change, because screen readers do not get a new-page event.</p></details>
+<h3>Tricky</h3>
+<details><summary>Does an SPA never talk to the server after load?</summary><p>False. It still calls APIs for data and may lazy-load more JavaScript chunks. It just does not fetch new HTML documents.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>console.log(location.pathname);       // currently "/"
+history.pushState({}, "", "/cart");
+console.log(location.pathname);
+window.addEventListener("popstate", () =&gt; console.log("pop"));</code></pre>
+<details><summary>What prints?</summary><pre class="output">/
+/cart</pre><p>"pop" does not print: <code>pushState</code> never fires <code>popstate</code>.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<pre><code>&lt;nav&gt;
+  &lt;a href="/cart"&gt;Cart&lt;/a&gt;   {/* inside a React Router app */}
+&lt;/nav&gt;
+// Bug report: "cart empties every time I open Cart"</code></pre>
+<details><summary>Fix</summary><p>The plain anchor causes a full reload, wiping in-memory state. Use <code>&lt;Link to="/cart"&gt;</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>Users share a link to /movies/42; it works on your laptop but gives 404 on the live site. Why?</summary><p>The Vite dev server has a built-in fallback; the production host does not. Add a rewrite rule sending all app paths to <code>index.html</code>.</p></details>
+<details><summary>A music app must keep playing while users browse. SPA or MPA?</summary><p>SPA (or an app shell): the page never unloads, so the audio element keeps playing.</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write a <code>usePath()</code> hook that returns <code>[path, navigate]</code>.</p>
+<details><summary>Solution</summary>
+<pre><code>import { useEffect, useState } from "react";
+
+export function usePath() {
+  const [path, setPath] = useState(window.location.pathname);
+  useEffect(() =&gt; {
+    const onPop = () =&gt; setPath(window.location.pathname);
+    window.addEventListener("popstate", onPop);
+    return () =&gt; window.removeEventListener("popstate", onPop);
+  }, []);
+  const navigate = (to) =&gt; {
+    window.history.pushState({}, "", to);
+    setPath(to);
+  };
+  return [path, navigate];
+}</code></pre>
+</details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Topic</th><th>SPA</th><th>MPA</th></tr>
+<tr><td>HTML documents</td><td>One</td><td>One per page</td></tr>
+<tr><td>Navigation</td><td>JS swaps view</td><td>Browser loads new page</td></tr>
+<tr><td>State across pages</td><td>Kept in memory</td><td>Lost (unless stored)</td></tr>
+<tr><td>First load</td><td>Heavier</td><td>Lighter per page</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>Need</th><th>Use</th></tr>
+<tr><td>Change URL, no reload</td><td><code>history.pushState</code></td></tr>
+<tr><td>Detect Back/Forward</td><td><code>popstate</code> event</td></tr>
+<tr><td>In-app link</td><td><code>&lt;Link to&gt;</code> from <code>react-router</code></td></tr>
+<tr><td>Map URL to view</td><td><code>&lt;Routes&gt;</code> + <code>&lt;Route&gt;</code></td></tr>
+<tr><td>404 view</td><td><code>&lt;Route path="*"&gt;</code></td></tr>
+<tr><td>Deep links in prod</td><td>Server fallback to index.html</td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>

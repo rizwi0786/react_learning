@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JSX-004 · JSX transformation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="lesson.css">
+</head><body><div class="wrap">
+<a class="back" href="#" onclick="history.back();return false">← Curriculum</a>
+<div class="meta"><span class="id">JSX-004</span><span>Module 4: JSX Fundamentals</span><span>Lesson 4</span><span>Level: <b>Intermediate</b></span><span>Time: <b>45 min</b></span><span>Prerequisites: <b>JSX-003</b></span></div>
+<h1>JSX transformation</h1>
+<div class="tabs" role="tablist"><button id="tDet" role="tab" aria-selected="true">Detailed Learning</button><button id="tRev" role="tab" aria-selected="false">Interview &amp; Revision · JSX-004-REV</button></div>
+
+<main id="det">
+
+<h2>1. Visual Introduction</h2>
+<ul>
+<li>Think of a <b>restaurant order slip</b>. The waiter hears "two dosas, no onion" (JSX) and writes a standard slip the kitchen understands (a <code>jsx()</code> call).</li>
+<li>The compiler is the waiter: it rewrites every tag into a function call before the browser sees your code.</li>
+<li>Since React 17 the compiler also <b>adds the import for you</b> — this is the automatic runtime (automatic JSX runtime).</li>
+</ul>
+<pre class="diagram">
+ YOUR FILE (App.jsx)                     COMPILED FILE (what the browser gets)
+┌──────────────────────────────┐        ┌───────────────────────────────────────────────┐
+│ function Dish({ name }) {    │        │ import { jsx as _jsx } from                   │
+│   return (                   │        │        "react/jsx-runtime";   ← auto-added    │
+│     &lt;li className="dish"&gt;    │ ─────► │ function Dish({ name }) {                     │
+│       {name}                 │compile │   return _jsx("li", {                         │
+│     &lt;/li&gt;                    │        │     className: "dish",                        │
+│   );                         │        │     children: name     ← children INSIDE props│
+│ }                            │        │   });                                         │
+└──────────────────────────────┘        │ }                                             │
+                                        └───────────────────────────────────────────────┘
+</pre>
+<div class="callout">Key idea: in the automatic runtime, <b>children go inside props</b>, and <b>key is a separate argument</b>.</div>
+
+<h2>2. Why Do We Need It?</h2>
+<ul>
+<li>Old (classic) runtime compiled to <code>React.createElement</code>, so every JSX file needed <code>import React from 'react'</code>.</li>
+<li>Forgetting it → <code>ReferenceError: React is not defined</code>.</li>
+<li>Automatic runtime: no manual import, slightly smaller bundles, and a faster element-creation path.</li>
+</ul>
+<div class="cmp">
+<div><span class="bad">Classic runtime (old)</span><pre><code>import React from 'react'; // required!
+
+function Hello() {
+  return &lt;h1&gt;Hi&lt;/h1&gt;;
+}
+
+// compiles to:
+// React.createElement("h1", null, "Hi");</code></pre></div>
+<div><span class="good">Automatic runtime (now)</span><pre><code>// no React import needed
+
+function Hello() {
+  return &lt;h1&gt;Hi&lt;/h1&gt;;
+}
+
+// compiles to:
+// import { jsx as _jsx } from "react/jsx-runtime";
+// _jsx("h1", { children: "Hi" });</code></pre></div>
+</div>
+
+<h2>3. Core Concept</h2>
+<ul>
+<li><b>Entry point</b>: <code>react/jsx-runtime</code> (production) and <code>react/jsx-dev-runtime</code> (development).</li>
+<li><b>Functions emitted</b>:
+<ul>
+<li><code>jsx(type, props, key)</code> — zero or one child.</li>
+<li><code>jsxs(type, props, key)</code> — several static children (written side by side in the source).</li>
+<li><code>jsxDEV(...)</code> — dev builds; adds debug info (file name, line) for better warnings.</li>
+<li><code>Fragment</code> — imported when you write <code>&lt;&gt;…&lt;/&gt;</code>.</li>
+</ul></li>
+<li><b>type</b>: lowercase tag → string (<code>"li"</code>); Capitalised → the variable (<code>Dish</code>); dotted → member (<code>Menu.Item</code>).</li>
+<li><b>props</b>: all attributes + <code>children</code>. <code>key</code> is pulled out into the 3rd argument.</li>
+<li><b>ref</b>: in React 19, <code>ref</code> is a normal prop for function components (no <code>forwardRef</code> needed).</li>
+<li><b>Result</b>: a React element object, e.g. <code>{ $$typeof, type, key, props }</code>. Rendering happens later.</li>
+<li>The calls are marked <code>/*#__PURE__*/</code> so minifiers can drop unused elements (tree-shaking).</li>
+</ul>
+
+<h2>4. Syntax</h2>
+<pre><code>// 1. One child → jsx
+&lt;p&gt;Hello&lt;/p&gt;
+_jsx("p", { children: "Hello" })
+
+// 2. Multiple static children → jsxs (children is an array)
+&lt;p&gt;Hi {user}!&lt;/p&gt;
+_jsxs("p", { children: ["Hi ", user, "!"] })
+
+// 3. Component with props
+&lt;MovieCard title="Dune" rating={8.5} /&gt;
+_jsx(MovieCard, { title: "Dune", rating: 8.5 })
+
+// 4. key is the 3rd argument, NOT a prop
+&lt;li key={todo.id}&gt;{todo.text}&lt;/li&gt;
+_jsx("li", { children: todo.text }, todo.id)
+
+// 5. Fragment
+&lt;&gt;&lt;h2&gt;A&lt;/h2&gt;&lt;p&gt;B&lt;/p&gt;&lt;/&gt;
+_jsxs(_Fragment, { children: [_jsx("h2", { children: "A" }), _jsx("p", { children: "B" })] })
+
+// 6. Spread props
+&lt;button {...btnProps} disabled&gt;Pay&lt;/button&gt;
+_jsx("button", { ...btnProps, disabled: true, children: "Pay" })
+
+// 7. A list from map is ONE dynamic child → jsx (keys are checked)
+&lt;ul&gt;{items.map((i) =&gt; &lt;li key={i}&gt;{i}&lt;/li&gt;)}&lt;/ul&gt;
+_jsx("ul", { children: items.map((i) =&gt; _jsx("li", { children: i }, i)) })</code></pre>
+<div class="callout">Exact output differs slightly between compilers (Babel writes <code>_jsx</code>, esbuild/Oxc may write <code>jsx</code> or <code>jsx2</code>). The shape — type, props with children, key — is the same.</div>
+
+<h2>5. Practical Example</h2>
+<p>Peek inside the elements JSX creates, and build one by hand. Vite React app, replace <code>src/App.jsx</code>.</p>
+<pre><code>// src/App.jsx
+import { jsx } from 'react/jsx-runtime'; // learning only — normally the compiler adds this
+
+const todos = [
+  { id: 't1', text: 'Buy milk' },
+  { id: 't2', text: 'Call mom' },
+];
+
+// Element written in JSX
+const fromJsx = &lt;li key="t1" className="todo"&gt;Buy milk&lt;/li&gt;;
+
+// The same element built by hand
+const byHand = jsx('li', { className: 'todo', children: 'Buy milk' }, 't1');
+
+// Logged once at module load (outside a component, so Strict Mode
+// double-rendering does not repeat it)
+console.log('type:', fromJsx.type);
+console.log('key:', fromJsx.key);
+console.log('props:', fromJsx.props);
+console.log('same shape?', fromJsx.type === byHand.type &amp;&amp;
+  fromJsx.key === byHand.key &amp;&amp;
+  JSON.stringify(fromJsx.props) === JSON.stringify(byHand.props));
+
+function TodoItem({ text }) {
+  return &lt;li className="todo"&gt;{text}&lt;/li&gt;;
+}
+
+export default function App() {
+  return (
+    &lt;&gt;
+      &lt;h1&gt;My Todos&lt;/h1&gt;
+      &lt;ul&gt;
+        {todos.map((t) =&gt; (
+          &lt;TodoItem key={t.id} text={t.text} /&gt;
+        ))}
+        {byHand /* a hand-built element renders like any other */}
+      &lt;/ul&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+<p>Now see the real compiled code: run <code>npm run dev</code>, open DevTools &gt; Sources (or Network), and open <code>src/App.jsx</code> — Vite serves the <b>transformed</b> file. Its dev output uses <code>jsxDEV</code> from <code>react/jsx-dev-runtime</code>.</p>
+
+<h2>6. Expected Output</h2>
+<div class="ui">
+<h3 style="margin-top:0">My Todos</h3>
+<ul style="margin:0">
+<li>Buy milk</li>
+<li>Call mom</li>
+<li>Buy milk</li>
+</ul>
+</div>
+<p>Console (development build):</p>
+<pre class="output">type: li
+key: t1
+props: {className: 'todo', children: 'Buy milk'}
+same shape? true</pre>
+<ul>
+<li><code>key</code> is <b>not</b> inside <code>props</code>.</li>
+<li>Expanding the element in the console shows <code>$$typeof: Symbol(react.transitional.element)</code> in React 19, plus dev-only fields such as <code>_owner</code> and <code>_store</code>.</li>
+<li>The hand-built element renders exactly like JSX ones. Its key <code>t1</code> does not clash with the mapped <code>t1</code>, because keys only need to be unique within the same array.</li>
+</ul>
+
+<h2>7. Execution Flow</h2>
+<pre class="diagram">
+ ① Write          &lt;TodoItem key={t.id} text={t.text} /&gt;
+                        │
+ ② Compile (Vite)       ▼   at build / dev-serve time, NOT in the browser
+                  import { jsxDEV } from "react/jsx-dev-runtime"   (dev)
+                  import { jsx }    from "react/jsx-runtime"       (prod)
+                  jsx(TodoItem, { text: t.text }, t.id)
+                        │
+ ③ Run (browser)        ▼   when App() renders
+                  { $$typeof: Symbol(react.transitional.element),
+                    type: TodoItem, key: "t1", props: { text: "Buy milk" } }
+                        │
+ ④ Render               ▼   React calls TodoItem({ text: "Buy milk" })
+                  → returns another element: { type: "li", ... }
+                        │
+ ⑤ Commit               ▼   react-dom creates / updates &lt;li class="todo"&gt;
+</pre>
+
+<h2>8. Real-World Application</h2>
+<ul>
+<li><b>Reading errors</b>: stack traces and bundle code show <code>jsx(...)</code> / <code>jsxDEV(...)</code> calls — you now know they are your JSX tags.</li>
+<li><b>Using other libraries</b>: Preact or Emotion change the source with <code>jsxImportSource</code>, so JSX calls their runtime instead of React's.</li>
+<li><b>TypeScript projects</b>: <code>"jsx": "react-jsx"</code> in <code>tsconfig.json</code> means "automatic runtime".</li>
+<li><b>Lists in a chat app</b>: knowing <code>key</code> is separate from props explains why <code>props.key</code> is <code>undefined</code> inside a message component.</li>
+</ul>
+
+<h2>9. Common Mistakes</h2>
+<h3>Mistake 1: Reading key from props</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function Message({ key, text }) {
+  return &lt;p&gt;#{key}: {text}&lt;/p&gt;; // key is undefined
+}
+&lt;Message key={m.id} text={m.text} /&gt;
+// Dev warning: `key` is not a prop.</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function Message({ id, text }) {
+  return &lt;p&gt;#{id}: {text}&lt;/p&gt;;
+}
+&lt;Message key={m.id} id={m.id} text={m.text} /&gt;</code></pre></div>
+</div>
+<h3>Mistake 2: Lowercase component name</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>function cartBadge() { return &lt;span&gt;3&lt;/span&gt;; }
+
+&lt;cartBadge /&gt;
+// compiles to jsx("cartBadge", {}) → a string!
+// Renders an unknown &lt;cartbadge&gt; tag + warning</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>function CartBadge() { return &lt;span&gt;3&lt;/span&gt;; }
+
+&lt;CartBadge /&gt;
+// compiles to jsx(CartBadge, {}) → your function</code></pre></div>
+</div>
+<h3>Mistake 3: Mixing runtimes in an old project</h3>
+<div class="cmp">
+<div><span class="bad">Wrong</span><pre><code>/** @jsxRuntime classic */
+// file forced to classic runtime, but no React import
+export const Tag = () =&gt; &lt;b&gt;New&lt;/b&gt;;
+// ReferenceError: React is not defined</code></pre></div>
+<div><span class="good">Fixed</span><pre><code>// Remove the pragma and use the automatic runtime
+// (Vite's React plugin default)
+export const Tag = () =&gt; &lt;b&gt;New&lt;/b&gt;;</code></pre></div>
+</div>
+
+<h2>10. Practice</h2>
+<h3>Beginner 1</h3>
+<p>Compile by hand (automatic runtime): <code>&lt;h2 id="menu"&gt;Menu&lt;/h2&gt;</code></p>
+<details><summary>Show solution</summary><pre><code>import { jsx as _jsx } from "react/jsx-runtime";
+_jsx("h2", { id: "menu", children: "Menu" });</code></pre></details>
+<h3>Beginner 2</h3>
+<p>Which function — <code>jsx</code> or <code>jsxs</code> — is used for <code>&lt;p&gt;Price: {price}&lt;/p&gt;</code>? Why?</p>
+<details><summary>Show solution</summary><p><code>jsxs</code>, because there are two static children: the text <code>"Price: "</code> and <code>price</code>.</p><pre><code>_jsxs("p", { children: ["Price: ", price] })</code></pre></details>
+<h3>Intermediate 1</h3>
+<p>Compile: <code>&lt;Movie key={m.id} title={m.title} {...extra} /&gt;</code> (key first, then props, then spread).</p>
+<details><summary>Show solution</summary><pre><code>_jsx(Movie, { title: m.title, ...extra }, m.id)</code></pre></details>
+<h3>Intermediate 2</h3>
+<p>Reverse it — write the JSX for:</p>
+<pre><code>_jsxs("div", { className: "cart", children: [
+  _jsx("h3", { children: "Cart" }),
+  _jsx(CartList, { items: items })
+] })</code></pre>
+<details><summary>Show solution</summary><pre><code>&lt;div className="cart"&gt;
+  &lt;h3&gt;Cart&lt;/h3&gt;
+  &lt;CartList items={items} /&gt;
+&lt;/div&gt;</code></pre></details>
+<h3>Challenge</h3>
+<p>Compile the whole component by hand, including the import line:</p>
+<pre><code>function Weather({ days }) {
+  return (
+    &lt;&gt;
+      &lt;h2&gt;Forecast&lt;/h2&gt;
+      &lt;ul&gt;
+        {days.map((d) =&gt; &lt;li key={d.day}&gt;{d.day}: {d.temp}°&lt;/li&gt;)}
+      &lt;/ul&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+<details><summary>Show solution</summary><pre><code>import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+
+function Weather({ days }) {
+  return _jsxs(_Fragment, {
+    children: [
+      _jsx("h2", { children: "Forecast" }),
+      _jsx("ul", {
+        children: days.map((d) =&gt;
+          _jsxs("li", { children: [d.day, ": ", d.temp, "°"] }, d.day)
+        ),
+      }),
+    ],
+  });
+}</code></pre><p><code>ul</code> uses <code>jsx</code> (one dynamic child: the array). Each <code>li</code> uses <code>jsxs</code> (four static children).</p></details>
+
+<h2>11. Quick Revision</h2>
+<ul>
+<li>Automatic runtime = compiler imports <code>jsx</code>/<code>jsxs</code> from <code>react/jsx-runtime</code> for you.</li>
+<li>No more <code>import React</code> just for JSX.</li>
+<li>Signature: <code>jsx(type, props, key)</code>; children live in <code>props.children</code>.</li>
+<li><code>jsxs</code> = multiple static children; <code>jsx</code> = zero/one child.</li>
+<li>Dev builds use <code>jsxDEV</code> from <code>react/jsx-dev-runtime</code>.</li>
+<li><code>key</code> is never in props; React 19 treats <code>ref</code> as a regular prop.</li>
+<li>Lowercase tag → string; Capitalised → component variable.</li>
+</ul>
+
+<h2>12. Interview Corner</h2>
+<details><summary>What changed with the new JSX transform (React 17)?</summary><p>Compilers stopped emitting <code>React.createElement</code> and instead auto-import <code>jsx</code>/<code>jsxs</code> from <code>react/jsx-runtime</code>. No React import is needed in JSX files, and the element-creation path is simpler.</p></details>
+<details><summary>Difference between jsx and jsxs?</summary><p>Both create elements. <code>jsxs</code> is used when children is a static array written in the source, so React knows those children don't need keys. <code>jsx</code> handles zero/one child (including a dynamic array, which is key-checked).</p></details>
+<details><summary>Why isn't <code>key</code> available as a prop?</summary><p>The compiler passes it as a separate argument. React uses it internally for reconciliation; pass the value again under another prop name if the child needs it.</p></details>
+<details><summary>Should you call <code>jsx()</code> directly in app code?</summary><p>No. It's an entry point for compilers. In hand-written non-JSX code use <code>createElement</code>, which is the public API for that.</p></details>
+
+<h2>13. Related Lessons</h2>
+<div class="related">
+<a href="JSX-003.html">JSX-003 · JSX vs HTML</a>
+<a href="JSX-005.html">JSX-005 · Babel &amp; compilers</a>
+<a href="JSX-002.html">JSX-002 · Why JSX?</a>
+<a href="JSX-001.html">JSX-001 · What is JSX?</a>
+<a href="INTRO-015.html">INTRO-015 · React architecture</a>
+<a href="JSX-004.html#rev">JSX-004 · Revision</a>
+</div>
+
+</main>
+
+<main id="rev" class="rev" hidden>
+
+<h2>A. Concept in 30 Seconds</h2>
+<div class="callout">Your JSX becomes <code>jsx(type, props, key)</code> calls. The compiler auto-imports them from <code>react/jsx-runtime</code>. Children go in <code>props.children</code>; key is separate. Each call returns an element object.</div>
+
+<h2>B. Important Syntax</h2>
+<pre><code>import { jsx, jsxs, Fragment } from "react/jsx-runtime";      // prod
+import { jsxDEV } from "react/jsx-dev-runtime";              // dev
+
+jsx("img", { src: "/tea.png", alt: "Tea" })                  // &lt;img src="/tea.png" alt="Tea" /&gt;
+jsxs("p", { children: ["Qty: ", qty] })                       // &lt;p&gt;Qty: {qty}&lt;/p&gt;
+jsx(Row, { name }, id)                                        // &lt;Row key={id} name={name} /&gt;
+
+// tsconfig.json → "jsx": "react-jsx"   (automatic runtime)
+// file pragma   → /** @jsxImportSource preact */</code></pre>
+
+<h2>C. Must-Know Points</h2>
+<ol>
+<li>Automatic runtime is the default in Vite's React plugin and modern tools.</li>
+<li>Classic runtime = <code>React.createElement</code>; needs React in scope.</li>
+<li>Children are part of props in the automatic runtime.</li>
+<li><code>key</code> → 3rd argument; never readable as a prop.</li>
+<li><code>jsxs</code> for static multiple children; <code>jsx</code> otherwise.</li>
+<li>Dev uses <code>jsxDEV</code> for richer warnings.</li>
+<li>Fragment shorthand imports <code>Fragment</code> from the runtime.</li>
+<li><code>jsxImportSource</code> swaps the runtime package (e.g. Preact).</li>
+<li>Elements are objects; React 19 marks them with <code>Symbol(react.transitional.element)</code>.</li>
+<li>In React 19, <code>ref</code> is a normal prop on function components.</li>
+</ol>
+
+<h2>D. Interview Questions</h2>
+<h3>Basic</h3>
+<details><summary>Do you still need <code>import React from 'react'</code> in every component?</summary><p>No, not with the automatic runtime. Import only what you use, e.g. <code>import { useState } from 'react'</code>.</p></details>
+<details><summary>Which package path does the compiler import from?</summary><p><code>react/jsx-runtime</code> (and <code>react/jsx-dev-runtime</code> in development).</p></details>
+<h3>Intermediate</h3>
+<details><summary>Where does <code>children</code> go in a <code>jsx()</code> call?</summary><p>Inside the props object as <code>props.children</code> — not as extra arguments like <code>createElement</code>.</p></details>
+<details><summary>What is <code>/*#__PURE__*/</code> in compiled output?</summary><p>An annotation telling minifiers the call has no side effects, so it can be removed if the result is unused.</p></details>
+<h3>Advanced</h3>
+<details><summary>How would you make JSX compile to Preact?</summary><p>Set the JSX import source to <code>preact</code> (compiler option or <code>/** @jsxImportSource preact */</code>). JSX then calls <code>preact/jsx-runtime</code>.</p></details>
+<h3>Tricky</h3>
+<details><summary>What does <code>&lt;div {...props} key="a" /&gt;</code> compile to in Babel?</summary><p>Babel falls back to <code>createElement</code> (imported from <code>react</code>) when <code>key</code> comes <i>after</i> a spread, to keep old semantics. Put <code>key</code> before the spread to keep the fast <code>jsx()</code> path.</p></details>
+<details><summary>Is a component function called when JSX is evaluated?</summary><p>No. <code>jsx(TodoItem, props)</code> only creates an object. React calls <code>TodoItem</code> later, during rendering.</p></details>
+
+<h2>E. Output-Based Questions</h2>
+<pre><code>const el = &lt;Card key="c1" title="Pasta" /&gt;;
+console.log(el.key, el.props.key, el.props.title);</code></pre>
+<details><summary>Answer</summary><pre class="output">c1 undefined Pasta</pre><p>In development, reading <code>props.key</code> also logs a warning that <code>key</code> is not a prop.</p></details>
+<pre><code>const el = &lt;p&gt;Hi {name}&lt;/p&gt;;
+console.log(Array.isArray(el.props.children));</code></pre>
+<details><summary>Answer</summary><pre class="output">true</pre><p>Two children (<code>"Hi "</code> and <code>name</code>) → an array.</p></details>
+
+<h2>F. Debugging Questions</h2>
+<p>An old file throws <code>React is not defined</code>. Why?</p>
+<pre><code>/** @jsx React.createElement */
+export const Chip = () =&gt; &lt;span&gt;Veg&lt;/span&gt;;</code></pre>
+<details><summary>Answer</summary><p>The pragma forces the classic transform, which emits <code>React.createElement</code>, but React isn't imported. Remove the pragma (automatic runtime) or add <code>import React from 'react'</code>.</p></details>
+<p>A component renders as <code>&lt;orderrow&gt;</code> in the DOM. Why?</p>
+<pre><code>const orderRow = ({ id }) =&gt; &lt;tr&gt;&lt;td&gt;{id}&lt;/td&gt;&lt;/tr&gt;;
+&lt;orderRow id={7} /&gt;</code></pre>
+<details><summary>Answer</summary><p>Lowercase → compiled as the string <code>"orderRow"</code>. Rename to <code>OrderRow</code>.</p></details>
+
+<h2>G. Scenario-Based Questions</h2>
+<details><summary>Your bundle analyser shows thousands of <code>jsx(</code> calls. Is that a problem?</summary><p>No — that's your JSX. Each call is cheap object creation. Performance work belongs in rendering (fewer re-renders), not in the transform.</p></details>
+<details><summary>Migrating a 2019 project: lots of <code>import React from 'react'</code> lines that are only for JSX. Remove them?</summary><p>Yes, once the compiler uses the automatic runtime. Keep imports that use <code>React.something</code> or switch to named imports (<code>useState</code>, etc.).</p></details>
+
+<h2>H. Coding Challenges</h2>
+<p>Write the compiled output for:</p>
+<pre><code>&lt;button type="button" onClick={add} disabled={!stock}&gt;
+  Add {qty}
+&lt;/button&gt;</code></pre>
+<details><summary>Solution</summary><pre><code>_jsxs("button", {
+  type: "button",
+  onClick: add,
+  disabled: !stock,
+  children: ["Add ", qty],
+})</code></pre><p>Leading/trailing line-break whitespace is trimmed by the JSX rules, so the first child is <code>"Add "</code>.</p></details>
+
+<h2>I. Comparison Questions</h2>
+<div class="tablewrap"><table>
+<tr><th>Aspect</th><th>Classic runtime</th><th>Automatic runtime</th></tr>
+<tr><td>Emitted call</td><td><code>React.createElement</code></td><td><code>jsx</code> / <code>jsxs</code> / <code>jsxDEV</code></td></tr>
+<tr><td>Import</td><td>You write <code>import React</code></td><td>Compiler adds it</td></tr>
+<tr><td>Children</td><td>Extra arguments</td><td><code>props.children</code></td></tr>
+<tr><td>Key</td><td>In config object</td><td>Separate 3rd argument</td></tr>
+<tr><td>Status</td><td>Legacy</td><td>Default since React 17</td></tr>
+</table></div>
+
+<h2>J. Revision Cheat Sheet</h2>
+<div class="tablewrap"><table>
+<tr><th>JSX</th><th>Compiled (automatic)</th></tr>
+<tr><td><code>&lt;p&gt;Hi&lt;/p&gt;</code></td><td><code>jsx("p", { children: "Hi" })</code></td></tr>
+<tr><td><code>&lt;p&gt;Hi {n}&lt;/p&gt;</code></td><td><code>jsxs("p", { children: ["Hi ", n] })</code></td></tr>
+<tr><td><code>&lt;Card x={1} /&gt;</code></td><td><code>jsx(Card, { x: 1 })</code></td></tr>
+<tr><td><code>&lt;li key={id} /&gt;</code></td><td><code>jsx("li", {}, id)</code></td></tr>
+<tr><td><code>&lt;&gt;…&lt;/&gt;</code></td><td><code>jsxs(Fragment, { children: [...] })</code></td></tr>
+<tr><td><code>&lt;a {...p} /&gt;</code></td><td><code>jsx("a", { ...p })</code></td></tr>
+</table></div>
+<p><a href="#det" onclick="document.getElementById('tDet').click();return false">← Back to Detailed Learning</a></p>
+
+</main>
+</div>
+<script>
+const show=r=>{document.getElementById('det').hidden=r;document.getElementById('rev').hidden=!r;document.getElementById('tDet').setAttribute('aria-selected',!r);document.getElementById('tRev').setAttribute('aria-selected',r)};
+document.getElementById('tDet').onclick=()=>{show(false);history.replaceState(null,'','#det')};
+document.getElementById('tRev').onclick=()=>{show(true);history.replaceState(null,'','#rev')};
+show(location.hash==='#rev');
+</script>
+</body></html>
